@@ -12,6 +12,12 @@ class Quiz(models.Model):
     )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    time_limit_minutes = models.PositiveIntegerField(
+        default=15, help_text="Time limit for students to complete this quiz, in minutes"
+    )
+    max_attempts = models.PositiveIntegerField(
+        default=2, help_text="Maximum number of attempts a student can make"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
