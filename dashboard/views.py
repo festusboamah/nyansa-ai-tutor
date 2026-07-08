@@ -12,6 +12,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 import markdown as md
+from .email_utils import send_report_email
 
 
 @login_required
@@ -160,3 +161,33 @@ def download_lesson_note_pdf(request, note_id):
         return HttpResponse("Error generating PDF", status=500)
 
     return response
+
+@login_required
+def email_student_report_view(request, student_id, subject_id):
+    if not request.user.is_teacher():
+        messages.error(request, "This page is only available to teachers.")
+        return redirect("home")
+
+    if request.method != "POST":
+        return redirect("student_report", student_id=student_id, subject_id=subject_id)
+
+    student = get_object_or_404(User, id=student_id)
+    subject = get_object_or_404(Subject, id=subject_id)
+
+    if not Enrollment.objects.filter(student=student, subject=subject).exists():
+        messages.error(request, "This student is not enrolled in this subject.")
+        return redirect("teacher_dashboard")
+
+    submissions = Submission.objects.filter(
+        student=student, quiz__subject=subject
+    ).select_related("quiz").prefetch_related("answers")
+
+    report_text = generate_student_report(student, subject, submissions)
+
+    success, result_message = send_report_email(student, subject, report_text)
+    if success:
+        messages.success(request, result_message)
+    else:
+        messages.error(request, result_message)
+
+    return redirect("student_report", student_id=student.id, subject_id=subject.id)

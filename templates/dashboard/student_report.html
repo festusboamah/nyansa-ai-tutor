@@ -22,5 +22,11 @@
     {% endfor %}
 </div>
 
-<a href="{% url 'teacher_dashboard' %}" class="btn-small">Back to Dashboard</a>
+<div class="result-actions">
+    <form method="post" action="{% url 'email_student_report' student.id subject.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-small">📧 Email Report to Student</button>
+    </form>
+    <a href="{% url 'teacher_dashboard' %}" class="btn-small btn-secondary">Back to Dashboard</a>
+</div>
 {% endblock %}

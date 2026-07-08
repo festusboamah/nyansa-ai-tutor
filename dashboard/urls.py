@@ -8,4 +8,5 @@ urlpatterns = [
     path("lesson-notes/create/", views.create_lesson_note_view, name="create_lesson_note"),
     path("lesson-notes/<int:note_id>/", views.lesson_note_detail_view, name="lesson_note_detail"),
     path("lesson-notes/<int:note_id>/download/", views.download_lesson_note_pdf, name="download_lesson_note"),
+    path("report/<int:student_id>/<int:subject_id>/email/", views.email_student_report_view, name="email_student_report"),
 ]
