@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from .models import Quiz, Question, Choice, Submission, Answer
+from .ai_grading import grade_short_answer, generate_submission_feedback
 
 
 @login_required
@@ -25,13 +26,14 @@ def quiz_take_view(request, quiz_id):
             submission = Submission.objects.create(quiz=quiz, student=request.user)
 
             correct_count = 0
-            total_mcq = 0
+            total_graded = 0
+            answer_summaries = []
 
             for question in questions:
                 answer_key = f"question_{question.id}"
 
                 if question.question_type == Question.QuestionType.MULTIPLE_CHOICE:
-                    total_mcq += 1
+                    total_graded += 1
                     selected_choice_id = request.POST.get(answer_key)
                     selected_choice = None
                     is_correct = False
@@ -48,20 +50,35 @@ def quiz_take_view(request, quiz_id):
                         selected_choice=selected_choice,
                         is_correct=is_correct,
                     )
+                    answer_summaries.append(
+                        f"Q: {question.text} | Correct: {is_correct}"
+                    )
                 else:
                     text_answer = request.POST.get(answer_key, "")
+                    total_graded += 1
+
+                    ai_result = grade_short_answer(question.text, text_answer)
+                    if ai_result["is_correct"]:
+                        correct_count += 1
+
                     Answer.objects.create(
                         submission=submission,
                         question=question,
                         text_answer=text_answer,
+                        is_correct=ai_result["is_correct"],
+                        ai_feedback=ai_result["feedback"],
+                    )
+                    answer_summaries.append(
+                        f"Q: {question.text} | Correct: {ai_result['is_correct']}"
                     )
 
-            if total_mcq > 0:
-                score_percent = round((correct_count / total_mcq) * 100, 1)
-            else:
-                score_percent = None
-
+            score_percent = round((correct_count / total_graded) * 100, 1) if total_graded > 0 else None
             submission.score = score_percent
+
+            overall_feedback = generate_submission_feedback(
+                quiz.title, score_percent, answer_summaries
+            )
+            submission.ai_feedback = overall_feedback
             submission.save()
 
         messages.success(request, "Quiz submitted successfully!")

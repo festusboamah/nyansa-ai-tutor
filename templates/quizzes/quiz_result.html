@@ -8,6 +8,12 @@
     {% else %}
         <p>Your answers have been submitted for review.</p>
     {% endif %}
+    {% if submission.ai_feedback %}
+    <div class="ai-feedback-box">
+        <strong>🤖 AI Feedback:</strong>
+        <p>{{ submission.ai_feedback }}</p>
+    </div>
+    {% endif %}
 </div>
 
 <h2>Answer Breakdown</h2>
@@ -23,7 +29,14 @@
         {% endif %}
     {% else %}
         <p>Your answer: {{ answer.text_answer }}</p>
-        <p class="feedback-pending">Pending review</p>
+        {% if answer.is_correct == True %}
+            <p class="feedback-correct">✓ Correct!</p>
+        {% elif answer.is_correct == False %}
+            <p class="feedback-incorrect">✗ Needs improvement</p>
+        {% endif %}
+        {% if answer.ai_feedback %}
+            <p class="ai-feedback-inline">💡 {{ answer.ai_feedback }}</p>
+        {% endif %}
     {% endif %}
 </div>
 {% endfor %}
