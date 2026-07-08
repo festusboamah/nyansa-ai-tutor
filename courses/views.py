@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Subject, Enrollment
+from .models import Subject, Enrollment, Material
+from .forms import SubjectForm, MaterialForm
 
 
 @login_required
@@ -52,3 +53,40 @@ def subject_detail_view(request, subject_id):
         "materials": materials,
         "quizzes": quizzes,
     })
+
+@login_required
+def create_subject_view(request):
+    if not request.user.is_teacher():
+        messages.error(request, "Only teachers can create subjects.")
+        return redirect("home")
+
+    if request.method == "POST":
+        form = SubjectForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Subject created successfully!")
+            return redirect("teacher_dashboard")
+    else:
+        form = SubjectForm()
+
+    return render(request, "courses/create_subject.html", {"form": form})
+
+
+@login_required
+def create_material_view(request):
+    if not request.user.is_teacher():
+        messages.error(request, "Only teachers can add materials.")
+        return redirect("home")
+
+    if request.method == "POST":
+        form = MaterialForm(request.POST, request.FILES)
+        if form.is_valid():
+            material = form.save(commit=False)
+            material.teacher = request.user
+            material.save()
+            messages.success(request, "Material added successfully!")
+            return redirect("teacher_dashboard")
+    else:
+        form = MaterialForm()
+
+    return render(request, "courses/create_material.html", {"form": form})

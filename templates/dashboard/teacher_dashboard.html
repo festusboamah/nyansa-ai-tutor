@@ -4,6 +4,11 @@
 <h1>Teacher Dashboard</h1>
 <p>Overview of your subjects and enrolled students.</p>
 
+<div class="dashboard-actions">
+    <a href="{% url 'create_subject' %}" class="btn-small">+ Create Subject</a>
+    <a href="{% url 'create_material' %}" class="btn-small btn-secondary">+ Add Material</a>
+</div>
+
 {% for data in subject_data %}
 <div class="card">
     <h2>{{ data.subject.name }}</h2>

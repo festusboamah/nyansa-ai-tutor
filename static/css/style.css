@@ -709,3 +709,19 @@ h2 {
     color: #92400e;
     margin-top: 0.4rem;
 }
+
+.form-card {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.form-card h1 {
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
