@@ -47,3 +47,29 @@ class Enrollment(models.Model):
 
     def __str__(self):
         return f"{self.student.username} → {self.subject.name}"
+
+
+class StudyDocument(models.Model):
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="study_documents"
+    )
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to="study_documents/")
+    extracted_text = models.TextField(blank=True)
+    summary = models.TextField(blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.student.username})"
+
+
+class StudyQuestion(models.Model):
+    document = models.ForeignKey(
+        StudyDocument, on_delete=models.CASCADE, related_name="questions"
+    )
+    question = models.TextField()
+    answer = models.TextField(blank=True)
+    asked_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.question[:50]
