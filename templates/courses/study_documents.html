@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}My Study Documents - Nyansa{% endblock %}
+{% block content %}
+<h1>📄 My Study Documents</h1>
+<p>Upload a PDF and let AI help you summarize and understand it.</p>
+
+<a href="{% url 'upload_study_document' %}" class="btn-small">+ Upload New Document</a>
+
+<div class="card-grid" style="margin-top: 1.5rem;">
+    {% for doc in documents %}
+    <a href="{% url 'study_document_detail' doc.id %}" class="card study-doc-card">
+        <h2>{{ doc.title }}</h2>
+        <p class="submission-date">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</p>
+        <p>{{ doc.summary|truncatewords:20 }}</p>
+    </a>
+    {% empty %}
+    <p>You haven't uploaded any study documents yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load markdown_extras %}
+{% block title %}{{ document.title }} - Nyansa{% endblock %}
+{% block content %}
+<h1>📄 {{ document.title }}</h1>
+
+<div class="card">
+    <h2>🤖 AI Summary</h2>
+    <div class="ai-summary-content">{{ document.summary|markdown }}</div>
+</div>
+
+<h2>💬 Ask Questions About This Document</h2>
+
+{% if previous_questions %}
+<div class="qa-history">
+    {% for qa in previous_questions %}
+    <div class="qa-item">
+        <div class="qa-question">🙋 {{ qa.question }}</div>
+        <div class="qa-answer">🤖 {{ qa.answer }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card form-card">
+    <form method="post">
+        {% csrf_token %}
+        <textarea name="question" rows="3" placeholder="Ask a question about this document..." required></textarea>
+        <button type="submit" class="btn-small">Ask</button>
+    </form>
+</div>
+
+<a href="{% url 'study_documents' %}" class="btn-small btn-secondary">Back to My Documents</a>
+{% endblock %}

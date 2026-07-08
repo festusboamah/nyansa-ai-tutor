@@ -19,9 +19,10 @@
         <div class="navbar-links">
             {% if user.is_authenticated %}
     {% if user.role == "STUDENT" %}
-        <a href="{% url 'dashboard' %}">Dashboard</a>
-        <a href="{% url 'browse_subjects' %}">Browse Subjects</a>
-    {% endif %}
+    <a href="{% url 'dashboard' %}">Dashboard</a>
+    <a href="{% url 'browse_subjects' %}">Browse Subjects</a>
+    <a href="{% url 'study_documents' %}">Study Hub</a>
+{% endif %}
     {% if user.role == "TEACHER" %}
         <a href="{% url 'teacher_dashboard' %}">Dashboard</a>
     {% endif %}

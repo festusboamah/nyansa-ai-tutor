@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Upload Document - Nyansa{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>📄 Upload a Study Document</h1>
+    <p>Upload a PDF and Claude will generate a summary and answer your questions about it.</p>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <p>
+            <label for="title">Document Title:</label>
+            <input type="text" name="title" id="title" required>
+        </p>
+        <p>
+            <label for="file">PDF File:</label>
+            <input type="file" name="file" id="file" accept="application/pdf" required>
+        </p>
+        <button type="submit" class="btn-small">Upload & Summarize</button>
+    </form>
+</div>
+{% endblock %}

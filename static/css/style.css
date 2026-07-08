@@ -788,3 +788,66 @@ h2 {
     font-weight: 600;
     color: #166534;
 }
+
+.study-doc-card {
+    text-decoration: none;
+    color: var(--text);
+    display: block;
+}
+
+.qa-history {
+    margin: 1.5rem 0;
+}
+
+.qa-item {
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 1rem 1.2rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+}
+
+.qa-question {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.qa-answer {
+    color: var(--text-muted);
+    padding-left: 1rem;
+    border-left: 3px solid var(--secondary);
+}
+
+.ai-summary-content h1,
+.ai-summary-content h2,
+.ai-summary-content h3 {
+    color: var(--primary);
+    margin-top: 1.2rem;
+    margin-bottom: 0.6rem;
+}
+
+.ai-summary-content h2 {
+    font-size: 1.25rem;
+}
+
+.ai-summary-content h3 {
+    font-size: 1.05rem;
+}
+
+.ai-summary-content ul {
+    margin: 0.5rem 0 1rem 1.2rem;
+}
+
+.ai-summary-content li {
+    margin-bottom: 0.4rem;
+    color: var(--text);
+}
+
+.ai-summary-content strong {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.ai-summary-content p {
+    margin-bottom: 0.8rem;
+}
