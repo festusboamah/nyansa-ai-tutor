@@ -85,3 +85,22 @@ class Answer(models.Model):
 
     def __str__(self):
         return f"Answer to: {self.question.text[:30]}"
+
+
+class Badge(models.Model):
+    class BadgeType(models.TextChoices):
+        PERFECT_SCORE = "PERFECT", "Perfect Score"
+        FIRST_ATTEMPT = "FIRST", "First Try Success"
+        IMPROVED = "IMPROVED", "Most Improved"
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="badges"
+    )
+    submission = models.ForeignKey(
+        Submission, on_delete=models.CASCADE, related_name="badges"
+    )
+    badge_type = models.CharField(max_length=10, choices=BadgeType.choices)
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student.username} - {self.get_badge_type_display()}"
