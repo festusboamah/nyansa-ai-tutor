@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} - Nyansa{% endblock %}
+{% block content %}
+<h1>{{ quiz.title }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {% for question in questions %}
+    <div class="card question-card">
+        <h2>Q{{ forloop.counter }}. {{ question.text }}</h2>
+
+        {% if question.question_type == "MCQ" %}
+            {% for choice in question.choices.all %}
+            <label class="choice-label">
+                <input type="radio" name="question_{{ question.id }}" value="{{ choice.id }}" required>
+                {{ choice.text }}
+            </label>
+            {% endfor %}
+        {% else %}
+            <textarea name="question_{{ question.id }}" rows="4" placeholder="Type your answer here..."></textarea>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <button type="submit" class="btn-small">Submit Quiz</button>
+</form>
+{% endblock %}

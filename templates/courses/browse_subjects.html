@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Browse Subjects - Nyansa{% endblock %}
+{% block content %}
+<h1>Browse Subjects</h1>
+<p>Explore available subjects and enroll to start learning.</p>
+
+<div class="card-grid">
+    {% for subject in subjects %}
+    <div class="card">
+        <h2>{{ subject.name }}</h2>
+        <p>{{ subject.description|default:"No description available." }}</p>
+
+        {% if subject.id in enrolled_ids %}
+            <span class="badge-enrolled">✓ Enrolled</span>
+            <a href="{% url 'subject_detail' subject.id %}" class="btn-small">View Subject</a>
+        {% else %}
+            <form method="post" action="{% url 'enroll_subject' subject.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-small">Enroll</button>
+            </form>
+        {% endif %}
+    </div>
+    {% empty %}
+    <p>No subjects available yet. Check back soon!</p>
+    {% endfor %}
+</div>
+{% endblock %}

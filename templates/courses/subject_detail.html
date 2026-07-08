@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ subject.name }} - Nyansa{% endblock %}
+{% block content %}
+<h1>{{ subject.name }}</h1>
+<p>{{ subject.description }}</p>
+
+<h2>📚 Materials</h2>
+<div class="card-grid">
+    {% for material in materials %}
+    <div class="card">
+        <h2>{{ material.title }}</h2>
+        <p>{{ material.description|default:"" }}</p>
+        {% if material.material_type == "VIDEO" and material.video_url %}
+            <a href="{{ material.video_url }}" target="_blank" class="btn-small">▶ Watch Video</a>
+        {% elif material.file %}
+            <a href="{{ material.file.url }}" target="_blank" class="btn-small">📄 Download</a>
+        {% endif %}
+    </div>
+    {% empty %}
+    <p>No materials uploaded yet for this subject.</p>
+    {% endfor %}
+</div>
+
+<h2>📝 Quizzes</h2>
+<div class="card-grid">
+    {% for quiz in quizzes %}
+    <div class="card">
+        <h2>{{ quiz.title }}</h2>
+        <p>{{ quiz.description|default:"" }}</p>
+        <a href="{% url 'quiz_start' quiz.id %}" class="btn-small">Take Quiz</a>
+    </div>
+    {% empty %}
+    <p>No quizzes available yet for this subject.</p>
+    {% endfor %}
+</div>
+{% endblock %}

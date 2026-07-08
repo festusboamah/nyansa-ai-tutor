@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Quiz Results - Nyansa{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Your Results: {{ submission.quiz.title }}</h1>
+    {% if submission.score is not None %}
+        <p class="score-display">Score: <strong>{{ submission.score }}%</strong></p>
+    {% else %}
+        <p>Your answers have been submitted for review.</p>
+    {% endif %}
+</div>
+
+<h2>Answer Breakdown</h2>
+{% for answer in answers %}
+<div class="card answer-card {% if answer.is_correct == True %}correct{% elif answer.is_correct == False %}incorrect{% endif %}">
+    <h2>{{ answer.question.text }}</h2>
+    {% if answer.question.question_type == "MCQ" %}
+        <p>Your answer: {{ answer.selected_choice.text|default:"No answer selected" }}</p>
+        {% if answer.is_correct %}
+            <p class="feedback-correct">✓ Correct!</p>
+        {% else %}
+            <p class="feedback-incorrect">✗ Incorrect</p>
+        {% endif %}
+    {% else %}
+        <p>Your answer: {{ answer.text_answer }}</p>
+        <p class="feedback-pending">Pending review</p>
+    {% endif %}
+</div>
+{% endfor %}
+
+<a href="{% url 'dashboard' %}" class="btn-small">Back to Dashboard</a>
+{% endblock %}

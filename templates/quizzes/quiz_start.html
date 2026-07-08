@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} - Nyansa{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>{{ quiz.title }}</h1>
+    <p>{{ quiz.description|default:"Test your knowledge on this topic." }}</p>
+    <p><strong>{{ question_count }}</strong> question{{ question_count|pluralize }} in this quiz.</p>
+    <a href="{% url 'quiz_take' quiz.id %}" class="btn-small">Start Quiz</a>
+</div>
+{% endblock %}
