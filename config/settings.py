@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -57,6 +61,8 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
