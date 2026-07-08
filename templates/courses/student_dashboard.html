@@ -7,10 +7,16 @@
 <div class="card-grid">
     {% for subject in subjects %}
     <div class="card">
-        <h2>{{ subject.name }}</h2>
-        <p>{{ subject.description|default:"No description available." }}</p>
+    <h2>{{ subject.name }}</h2>
+    <p>{{ subject.description|default:"No description available." }}</p>
+    <div class="result-actions">
         <a href="{% url 'subject_detail' subject.id %}" class="btn-small">Go to Subject</a>
+        <form method="post" action="{% url 'unenroll_subject' subject.id %}" onsubmit="return confirm('Are you sure you want to unenroll from {{ subject.name }}? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="btn-small btn-danger">Unenroll</button>
+        </form>
     </div>
+</div>
     {% empty %}
     <p>You're not enrolled in any subjects yet. <a href="{% url 'browse_subjects' %}">Browse subjects</a> to get started.</p>
     {% endfor %}

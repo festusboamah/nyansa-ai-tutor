@@ -154,3 +154,20 @@ def study_document_detail_view(request, document_id):
         "document": document,
         "previous_questions": previous_questions,
     })
+
+@login_required
+def unenroll_view(request, subject_id):
+    if not request.user.is_student():
+        messages.error(request, "Only students can unenroll from subjects.")
+        return redirect("home")
+
+    subject = get_object_or_404(Subject, id=subject_id)
+    enrollment = Enrollment.objects.filter(student=request.user, subject=subject).first()
+
+    if enrollment:
+        enrollment.delete()
+        messages.success(request, f"You have unenrolled from {subject.name}.")
+    else:
+        messages.error(request, "You are not enrolled in this subject.")
+
+    return redirect("dashboard")

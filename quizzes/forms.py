@@ -5,9 +5,10 @@ from .models import Quiz, Question, Choice
 class QuizForm(forms.ModelForm):
     class Meta:
         model = Quiz
-        fields = ["subject", "title", "description", "time_limit_minutes", "max_attempts"]
+        fields = ["subject", "title", "description", "time_limit_minutes", "max_attempts", "deadline"]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
+            "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}),
         }
 
 

@@ -11,4 +11,5 @@ urlpatterns = [
     path("study/", views.study_documents_view, name="study_documents"),
     path("study/upload/", views.upload_study_document_view, name="upload_study_document"),
     path("study/<int:document_id>/", views.study_document_detail_view, name="study_document_detail"),
+    path("unenroll/<int:subject_id>/", views.unenroll_view, name="unenroll_subject"),
 ]

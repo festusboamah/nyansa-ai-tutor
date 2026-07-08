@@ -934,3 +934,14 @@ h2 {
 .lesson-table tr:nth-child(even) td {
     background-color: #f8fafc;
 }
+
+.btn-danger {
+    background-color: white;
+    color: var(--danger);
+    border: 2px solid var(--danger);
+}
+
+.btn-danger:hover {
+    background-color: #fef2f2;
+    transform: translateY(-2px);
+}

@@ -24,6 +24,7 @@ def quiz_start_view(request, quiz_id):
         "question_count": question_count,
         "attempts_used": attempts_used,
         "attempts_remaining": attempts_remaining,
+        "past_deadline": quiz.is_past_deadline(),
     })
 
 
@@ -36,11 +37,14 @@ def quiz_take_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
     questions = quiz.questions.prefetch_related("choices").all()
 
+    if quiz.is_past_deadline():
+        messages.error(request, "The deadline for this quiz has passed.")
+        return redirect("quiz_start", quiz_id=quiz.id)
+
     attempts_used = Submission.objects.filter(quiz=quiz, student=request.user).count()
     if attempts_used >= quiz.max_attempts:
         messages.error(request, "You've used all your attempts for this quiz.")
         return redirect("quiz_start", quiz_id=quiz.id)
-
     if request.method == "POST":
         with transaction.atomic():
             submission = Submission.objects.create(quiz=quiz, student=request.user)

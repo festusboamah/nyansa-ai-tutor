@@ -18,10 +18,19 @@ class Quiz(models.Model):
     max_attempts = models.PositiveIntegerField(
         default=2, help_text="Maximum number of attempts a student can make"
     )
+    deadline = models.DateTimeField(
+        null=True, blank=True, help_text="Optional deadline after which students cannot submit"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
+
+    def is_past_deadline(self):
+        if self.deadline is None:
+            return False
+        from django.utils import timezone
+        return timezone.now() > self.deadline
 
 
 class Question(models.Model):
