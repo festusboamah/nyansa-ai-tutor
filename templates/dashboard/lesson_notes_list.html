@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Lesson Notes - Nyansa{% endblock %}
+{% block content %}
+<h1>📋 My Lesson Notes</h1>
+<p>AI-generated lesson plans following the standards-based curriculum format.</p>
+
+<a href="{% url 'create_lesson_note' %}" class="btn-small">+ Create New Lesson Note</a>
+
+<div class="card-grid" style="margin-top: 1.5rem;">
+    {% for note in notes %}
+    <a href="{% url 'lesson_note_detail' note.id %}" class="card study-doc-card">
+        <h2>{{ note.subject.name }} - {{ note.strand_topic }}</h2>
+        <p class="submission-date">{{ note.class_level }} | Week Ending {{ note.week_ending|date:"M d, Y" }}</p>
+        <p>{{ note.num_days }} day{{ note.num_days|pluralize }} plan</p>
+    </a>
+    {% empty %}
+    <p>You haven't created any lesson notes yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

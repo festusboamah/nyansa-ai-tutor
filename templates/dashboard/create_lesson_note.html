@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Create Lesson Note - Nyansa{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>📋 Create AI Lesson Note</h1>
+    <p>Fill in the details below, and Claude will generate a complete standards-based lesson plan.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-small">Generate Lesson Note</button>
+    </form>
+</div>
+{% endblock %}

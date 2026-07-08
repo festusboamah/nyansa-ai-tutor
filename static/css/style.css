@@ -851,3 +851,86 @@ h2 {
 .ai-summary-content p {
     margin-bottom: 0.8rem;
 }
+
+.lesson-note-content {
+    margin-top: 1.5rem;
+}
+
+.lesson-note-content h2 {
+    color: var(--primary);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.4rem;
+    margin-top: 1.8rem;
+}
+
+.lesson-note-content h3 {
+    color: var(--secondary);
+    margin-top: 1.2rem;
+}
+
+.lesson-note-content ul {
+    margin: 0.5rem 0 1rem 1.2rem;
+}
+
+.lesson-note-content li {
+    margin-bottom: 0.4rem;
+}
+
+.lesson-note-content strong {
+    color: var(--text);
+}
+
+.lesson-note-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.2rem 0;
+    font-size: 0.9rem;
+}
+
+.lesson-note-content th {
+    background-color: var(--primary);
+    color: white;
+    padding: 0.7rem 0.9rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.lesson-note-content td {
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.lesson-note-content tr:nth-child(even) td {
+    background-color: #f8fafc;
+}
+
+.lesson-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.2rem 0 2rem;
+    font-size: 0.9rem;
+    background-color: white;
+    box-shadow: var(--shadow);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.lesson-table th {
+    background-color: var(--primary);
+    color: white;
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.lesson-table td {
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.5;
+}
+
+.lesson-table tr:nth-child(even) td {
+    background-color: #f8fafc;
+}

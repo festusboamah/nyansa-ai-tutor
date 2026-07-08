@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ note.strand_topic }} - Nyansa{% endblock %}
+{% block content %}
+<h1>📋 {{ note.subject.name }}: {{ note.strand_topic }}</h1>
+
+{% if lesson_data %}
+<table class="lesson-table">
+    <tr><th>Field</th><th>Details</th></tr>
+    <tr><td>Class</td><td>{{ note.class_level }}</td></tr>
+    <tr><td>Subject</td><td>{{ note.subject.name }}</td></tr>
+    <tr><td>Reference</td><td>{{ note.reference|default:"—" }}</td></tr>
+    <tr><td>Week Ending</td><td>{{ note.week_ending|date:"M d, Y" }}</td></tr>
+    <tr><td>Strand/Topic</td><td>{{ note.strand_topic }}</td></tr>
+    <tr><td>Content Standard</td><td>{{ note.content_standard|default:"—" }}</td></tr>
+    <tr><td>Learning Indicator(s)</td><td>{{ note.learning_indicator }}</td></tr>
+    <tr><td>Performance Indicator(s)</td><td>{{ note.performance_indicator|default:"—" }}</td></tr>
+    <tr><td>Teaching/Learning Resources</td><td>{{ note.resources|default:"—" }}</td></tr>
+</table>
+
+<h2>Daily Lesson Breakdown</h2>
+<table class="lesson-table">
+    <tr>
+        <th>Day</th>
+        <th>Starter Activity</th>
+        <th>Main Activity</th>
+        <th>Reflection / What Have We Learnt Today</th>
+    </tr>
+    {% for day in lesson_data.days %}
+    <tr>
+        <td><strong>{{ day.day }}</strong></td>
+        <td>{{ day.starter }}</td>
+        <td>{{ day.main }}</td>
+        <td>{{ day.reflection }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<div class="card">
+    <p>This lesson note couldn't be loaded properly. It may have been generated with an older format.</p>
+</div>
+{% endif %}
+
+<div class="result-actions">
+    <a href="{% url 'download_lesson_note' note.id %}" class="btn-small">⬇ Download as PDF</a>
+    <a href="{% url 'lesson_notes_list' %}" class="btn-small btn-secondary">Back to Lesson Notes</a>
+</div>
+{% endblock %}
