@@ -113,3 +113,53 @@ class Badge(models.Model):
 
     def __str__(self):
         return f"{self.student.username} - {self.get_badge_type_display()}"
+
+
+class Assignment(models.Model):
+    subject = models.ForeignKey(
+        Subject, on_delete=models.CASCADE, related_name="assignments"
+    )
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="assignments"
+    )
+    title = models.CharField(max_length=200)
+    instructions = models.TextField(blank=True)
+    grading_rubric = models.TextField(
+        blank=True, help_text="Optional: describe how this should be graded, for AI reference"
+    )
+    deadline = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+    def is_past_deadline(self):
+        if self.deadline is None:
+            return False
+        from django.utils import timezone
+        return timezone.now() > self.deadline
+
+
+class AssignmentSubmission(models.Model):
+    assignment = models.ForeignKey(
+        Assignment, on_delete=models.CASCADE, related_name="submissions"
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="assignment_submissions"
+    )
+    file = models.FileField(upload_to="assignment_submissions/")
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    ai_suggested_score = models.FloatField(null=True, blank=True)
+    ai_suggested_feedback = models.TextField(blank=True)
+
+    final_score = models.FloatField(null=True, blank=True)
+    max_score = models.FloatField(default=100)
+    teacher_feedback = models.TextField(blank=True)
+    graded_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.student.username} - {self.assignment.title}"
+
+    def is_graded(self):
+        return self.final_score is not None
