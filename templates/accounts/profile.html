@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}My Profile - Nyansa{% endblock %}
+{% block content %}
+<h1>My Profile</h1>
+
+<div class="profile-grid">
+    <div class="card stat-card">
+        <div class="stat-icon">👤</div>
+        <div class="stat-label">Member Since</div>
+        <div class="stat-value">{{ date_joined|date:"M d, Y" }}</div>
+        <div class="stat-sub">{{ account_age_days }} day{{ account_age_days|pluralize }} on Nyansa</div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-icon">🔑</div>
+        <div class="stat-label">Total Logins</div>
+        <div class="stat-value">{{ login_count }}</div>
+        <div class="stat-sub">sessions tracked</div>
+    </div>
+
+    {% if user.is_student %}
+    <div class="card stat-card">
+        <div class="stat-icon">📝</div>
+        <div class="stat-label">Quizzes Completed</div>
+        <div class="stat-value">{{ quizzes_completed }}</div>
+        <div class="stat-sub">attempts across all subjects</div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-label">Average Score</div>
+        <div class="stat-value">
+            {% if average_score is not None %}{{ average_score }}%{% else %}N/A{% endif %}
+        </div>
+        <div class="stat-sub">across all quizzes</div>
+    </div>
+    {% endif %}
+</div>
+
+{% if user.is_student %}
+<h2>🏆 Badges Earned</h2>
+{% if badges %}
+<div class="badges-grid">
+    {% for badge in badges %}
+    <div class="card badge-card">
+        <div class="badge-large-icon">🏆</div>
+        <div class="badge-name">{{ badge.get_badge_type_display }}</div>
+        <div class="badge-quiz">{{ badge.submission.quiz.title }}</div>
+        <div class="badge-date">{{ badge.awarded_at|date:"M d, Y" }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p>No badges earned yet. Complete quizzes with strong scores to start earning achievements!</p>
+{% endif %}
+{% endif %}
+
+{% endblock %}
