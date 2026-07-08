@@ -2,21 +2,73 @@
 {% block title %}My Dashboard - Nyansa{% endblock %}
 {% block content %}
 <h1>My Subjects</h1>
-<p>Here's what you're currently enrolled in.</p>
+
+{% if upcoming_items %}
+<div class="card deadlines-widget">
+    <h2>⏰ Upcoming Deadlines</h2>
+    <table class="student-table">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Title</th>
+                <th>Subject</th>
+                <th>Due</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in upcoming_items %}
+            <tr>
+                <td><span class="badge-type-{{ item.type|lower }}">{{ item.type }}</span></td>
+                <td>{{ item.title }}</td>
+                <td>{{ item.subject }}</td>
+                <td>{{ item.deadline|date:"M d, Y - g:i A" }}</td>
+                <td>
+                    <a href="{% url item.url_name item.url_id %}" class="btn-small">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<p>Here's what you're currently enrolled in, with your progress so far.</p>
 
 <div class="card-grid">
-    {% for subject in subjects %}
+    {% for item in subjects_with_grades %}
     <div class="card">
-    <h2>{{ subject.name }}</h2>
-    <p>{{ subject.description|default:"No description available." }}</p>
-    <div class="result-actions">
-        <a href="{% url 'subject_detail' subject.id %}" class="btn-small">Go to Subject</a>
-        <form method="post" action="{% url 'unenroll_subject' subject.id %}" onsubmit="return confirm('Are you sure you want to unenroll from {{ subject.name }}? This cannot be undone.');">
-            {% csrf_token %}
-            <button type="submit" class="btn-small btn-danger">Unenroll</button>
-        </form>
+        <h2>{{ item.subject.name }}</h2>
+        <p>{{ item.subject.description|default:"No description available." }}</p>
+
+        <div class="grade-breakdown">
+            <div class="grade-row">
+                <span>Quiz (20%)</span>
+                <span>{% if item.grade_data.quiz_avg is not None %}{{ item.grade_data.quiz_avg }}%{% else %}—{% endif %}</span>
+            </div>
+            <div class="grade-row">
+                <span>Assignment (20%)</span>
+                <span>{% if item.grade_data.assignment_avg is not None %}{{ item.grade_data.assignment_avg }}%{% else %}—{% endif %}</span>
+            </div>
+            <div class="grade-row">
+                <span>Exam (60%)</span>
+                <span>{% if item.grade_data.exam_avg is not None %}{{ item.grade_data.exam_avg }}%{% else %}—{% endif %}</span>
+            </div>
+            <div class="grade-row grade-final">
+                <span>Final Score</span>
+                <span>{% if item.grade_data.final_score is not None %}{{ item.grade_data.final_score }}%{% else %}N/A{% endif %}</span>
+            </div>
+            <div class="grade-letter">Grade: <strong>{{ item.grade_data.final_grade }}</strong></div>
+        </div>
+
+        <div class="result-actions">
+            <a href="{% url 'subject_detail' item.subject.id %}" class="btn-small">Go to Subject</a>
+            <form method="post" action="{% url 'unenroll_subject' item.subject.id %}" onsubmit="return confirm('Are you sure you want to unenroll from {{ item.subject.name }}? This cannot be undone.');">
+                {% csrf_token %}
+                <button type="submit" class="btn-small btn-danger">Unenroll</button>
+            </form>
+        </div>
     </div>
-</div>
     {% empty %}
     <p>You're not enrolled in any subjects yet. <a href="{% url 'browse_subjects' %}">Browse subjects</a> to get started.</p>
     {% endfor %}

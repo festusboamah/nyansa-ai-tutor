@@ -15,9 +15,39 @@ def dashboard_view(request):
     if request.user.is_teacher():
         return redirect("teacher_dashboard")
 
+    from .grading import calculate_subject_grade
+    from quizzes.models import Quiz, Assignment
+    from django.utils import timezone
+
     enrollments = Enrollment.objects.filter(student=request.user).select_related("subject")
-    subjects = [e.subject for e in enrollments]
-    return render(request, "courses/student_dashboard.html", {"subjects": subjects})
+    subjects_with_grades = []
+    for e in enrollments:
+        grade_data = calculate_subject_grade(request.user, e.subject)
+        subjects_with_grades.append({"subject": e.subject, "grade_data": grade_data})
+
+    enrolled_subject_ids = [e.subject.id for e in enrollments]
+    now = timezone.now()
+
+    upcoming_quizzes = Quiz.objects.filter(
+        subject_id__in=enrolled_subject_ids, deadline__gte=now
+    ).order_by("deadline")[:5]
+
+    upcoming_assignments = Assignment.objects.filter(
+        subject_id__in=enrolled_subject_ids, deadline__gte=now
+    ).order_by("deadline")[:5]
+
+    upcoming_items = []
+    for q in upcoming_quizzes:
+        upcoming_items.append({"title": q.title, "subject": q.subject.name, "deadline": q.deadline, "type": "Quiz" if q.assessment_type == "QUIZ" else "Exam", "url_name": "quiz_start", "url_id": q.id})
+    for a in upcoming_assignments:
+        upcoming_items.append({"title": a.title, "subject": a.subject.name, "deadline": a.deadline, "type": "Assignment", "url_name": "assignment_detail", "url_id": a.id})
+
+    upcoming_items.sort(key=lambda x: x["deadline"])
+
+    return render(request, "courses/student_dashboard.html", {
+        "subjects_with_grades": subjects_with_grades,
+        "upcoming_items": upcoming_items[:5],
+    })
 
 
 @login_required

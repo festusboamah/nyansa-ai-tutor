@@ -945,3 +945,69 @@ h2 {
     background-color: #fef2f2;
     transform: translateY(-2px);
 }
+
+.deadlines-widget {
+    border-left: 4px solid var(--danger);
+    margin-bottom: 2rem;
+}
+
+.deadlines-widget h2 {
+    margin-top: 0;
+}
+
+.badge-type-quiz {
+    background-color: #dbeafe;
+    color: #1e40af;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-type-exam {
+    background-color: #fee2e2;
+    color: #991b1b;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-type-assignment {
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.grade-breakdown {
+    background-color: #f8fafc;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+}
+
+.grade-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    padding: 0.3rem 0;
+    color: var(--text-muted);
+}
+
+.grade-final {
+    border-top: 1px solid var(--border);
+    margin-top: 0.4rem;
+    padding-top: 0.6rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.grade-letter {
+    text-align: center;
+    font-size: 1.3rem;
+    margin-top: 0.5rem;
+    color: var(--primary);
+}
