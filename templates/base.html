@@ -11,7 +11,10 @@
 
     <nav class="navbar">
         <div class="navbar-brand">
-            <a href="{% url 'home' %}">📘 Nyansa</a>
+            <a href="{% url 'home' %}" class="brand-link">
+    <img src="{% static 'images/logo.svg' %}" alt="Nyansa logo" class="brand-logo">
+    Nyansa
+</a>
         </div>
         <div class="navbar-links">
             {% if user.is_authenticated %}
