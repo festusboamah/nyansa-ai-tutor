@@ -384,3 +384,54 @@ h2 {
     font-size: 0.9rem;
     color: var(--text);
 }
+
+.timer-box {
+    display: inline-block;
+    background-color: #eef2ff;
+    color: var(--primary);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    transition: var(--transition);
+}
+
+.timer-warning {
+    background-color: #fee2e2;
+    color: var(--danger);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.badge-icon {
+    display: inline-block;
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0.2rem;
+}
+
+.result-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-secondary {
+    background-color: white;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+}
+
+.btn-secondary:hover {
+    background-color: #eef2ff;
+    transform: translateY(-2px);
+}

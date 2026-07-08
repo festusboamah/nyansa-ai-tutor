@@ -2,8 +2,11 @@
 {% block title %}{{ quiz.title }} - Nyansa{% endblock %}
 {% block content %}
 <h1>{{ quiz.title }}</h1>
+<div class="timer-box" id="timer-box">
+    ⏱ Time remaining: <span id="timer-display">--:--</span>
+</div>
 
-<form method="post">
+<form method="post" id="quiz-form">
     {% csrf_token %}
     {% for question in questions %}
     <div class="card question-card">
@@ -26,10 +29,35 @@
 </form>
 
 <script>
-document.querySelector('form').addEventListener('submit', function() {
+document.getElementById('quiz-form').addEventListener('submit', function() {
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
     btn.textContent = 'Submitting...';
 });
+
+let totalSeconds = {{ quiz.time_limit_minutes }} * 60;
+const timerDisplay = document.getElementById('timer-display');
+const timerBox = document.getElementById('timer-box');
+
+function updateTimer() {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    timerDisplay.textContent = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+
+    if (totalSeconds <= 60) {
+        timerBox.classList.add('timer-warning');
+    }
+
+    if (totalSeconds <= 0) {
+        clearInterval(timerInterval);
+        alert("Time's up! Submitting your quiz automatically.");
+        document.getElementById('quiz-form').submit();
+        return;
+    }
+    totalSeconds--;
+}
+
+updateTimer();
+const timerInterval = setInterval(updateTimer, 1000);
 </script>
 {% endblock %}

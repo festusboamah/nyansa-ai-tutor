@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Quiz, Question, Choice, Submission, Answer
+from .models import Quiz, Question, Choice, Submission, Answer, Badge
 
 
 class ChoiceInline(admin.TabularInline):
@@ -34,3 +34,9 @@ class SubmissionAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Answer)
+
+
+@admin.register(Badge)
+class BadgeAdmin(admin.ModelAdmin):
+    list_display = ("student", "badge_type", "submission", "awarded_at")
+    list_filter = ("badge_type",)

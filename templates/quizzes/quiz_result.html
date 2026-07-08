@@ -8,6 +8,15 @@
     {% else %}
         <p>Your answers have been submitted for review.</p>
     {% endif %}
+
+    {% if submission.badges.all %}
+    <div class="badges-earned">
+        {% for badge in submission.badges.all %}
+            <span class="badge-icon">🏆 {{ badge.get_badge_type_display }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {% if submission.ai_feedback %}
     <div class="ai-feedback-box">
         <strong>🤖 AI Feedback:</strong>
@@ -41,5 +50,10 @@
 </div>
 {% endfor %}
 
-<a href="{% url 'dashboard' %}" class="btn-small">Back to Dashboard</a>
+<div class="result-actions">
+    {% if attempts_remaining > 0 %}
+        <a href="{% url 'quiz_start' submission.quiz.id %}" class="btn-small">Retake Quiz ({{ attempts_remaining }} attempt{{ attempts_remaining|pluralize }} left)</a>
+    {% endif %}
+    <a href="{% url 'dashboard' %}" class="btn-small btn-secondary">Back to Dashboard</a>
+</div>
 {% endblock %}

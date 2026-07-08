@@ -5,6 +5,15 @@
     <h1>{{ quiz.title }}</h1>
     <p>{{ quiz.description|default:"Test your knowledge on this topic." }}</p>
     <p><strong>{{ question_count }}</strong> question{{ question_count|pluralize }} in this quiz.</p>
+    <p>⏱ Time limit: <strong>{{ quiz.time_limit_minutes }} minutes</strong></p>
+    <p>🔁 Attempts: <strong>{{ attempts_used }} / {{ quiz.max_attempts }}</strong> used</p>
+
+    {% if question_count == 0 %}
+    <p class="feedback-incorrect">This quiz doesn't have any questions yet. Check back later.</p>
+{% elif attempts_remaining > 0 %}
     <a href="{% url 'quiz_take' quiz.id %}" class="btn-small">Start Quiz</a>
+{% else %}
+    <p class="feedback-incorrect">You've used all your attempts for this quiz.</p>
+{% endif %}
 </div>
 {% endblock %}
