@@ -4,6 +4,11 @@ from django.contrib import messages
 from .models import Subject, Enrollment, Material, StudyDocument, StudyQuestion
 from .forms import SubjectForm, MaterialForm
 from .study_ai import extract_text_from_pdf, generate_summary, answer_question_about_document
+from quizzes.models import Submission
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
+
 
 @login_required
 def dashboard_view(request):
@@ -56,6 +61,7 @@ def subject_detail_view(request, subject_id):
         "assignments": assignments,
     })
 
+
 @login_required
 def create_subject_view(request):
     if not request.user.is_teacher():
@@ -92,6 +98,7 @@ def create_material_view(request):
         form = MaterialForm()
 
     return render(request, "courses/create_material.html", {"form": form})
+
 
 @login_required
 def study_documents_view(request):
@@ -157,6 +164,7 @@ def study_document_detail_view(request, document_id):
         "previous_questions": previous_questions,
     })
 
+
 @login_required
 def unenroll_view(request, subject_id):
     if not request.user.is_student():
@@ -173,3 +181,87 @@ def unenroll_view(request, subject_id):
         messages.error(request, "You are not enrolled in this subject.")
 
     return redirect("dashboard")
+
+
+@login_required
+def transcript_view(request):
+    if not request.user.is_student():
+        messages.error(request, "This feature is only available to students.")
+        return redirect("home")
+
+    submissions = Submission.objects.filter(
+        student=request.user
+    ).select_related("quiz", "quiz__subject").order_by("quiz__subject__name", "-submitted_at")
+
+    subjects_data = {}
+    for sub in submissions:
+        subject_name = sub.quiz.subject.name
+        if subject_name not in subjects_data:
+            subjects_data[subject_name] = []
+        subjects_data[subject_name].append(sub)
+
+    all_scores = [s.score for s in submissions if s.score is not None]
+    overall_average = round(sum(all_scores) / len(all_scores), 1) if all_scores else None
+
+    transcript_sections = []
+    for subject_name, subs in subjects_data.items():
+        scores = [s.score for s in subs if s.score is not None]
+        avg = round(sum(scores) / len(scores), 1) if scores else None
+        transcript_sections.append({
+            "subject_name": subject_name,
+            "submissions": subs,
+            "average": avg,
+        })
+
+    return render(request, "courses/transcript.html", {
+        "transcript_sections": transcript_sections,
+        "overall_average": overall_average,
+        "total_quizzes": submissions.count(),
+    })
+
+
+@login_required
+def download_transcript_pdf(request):
+    if not request.user.is_student():
+        messages.error(request, "This feature is only available to students.")
+        return redirect("home")
+
+    submissions = Submission.objects.filter(
+        student=request.user
+    ).select_related("quiz", "quiz__subject").order_by("quiz__subject__name", "-submitted_at")
+
+    subjects_data = {}
+    for sub in submissions:
+        subject_name = sub.quiz.subject.name
+        if subject_name not in subjects_data:
+            subjects_data[subject_name] = []
+        subjects_data[subject_name].append(sub)
+
+    all_scores = [s.score for s in submissions if s.score is not None]
+    overall_average = round(sum(all_scores) / len(all_scores), 1) if all_scores else None
+
+    transcript_sections = []
+    for subject_name, subs in subjects_data.items():
+        scores = [s.score for s in subs if s.score is not None]
+        avg = round(sum(scores) / len(scores), 1) if scores else None
+        transcript_sections.append({
+            "subject_name": subject_name,
+            "submissions": subs,
+            "average": avg,
+        })
+
+    html_string = render_to_string("courses/transcript_pdf.html", {
+        "transcript_sections": transcript_sections,
+        "overall_average": overall_average,
+        "total_quizzes": submissions.count(),
+        "student": request.user,
+    })
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{request.user.username}_transcript.pdf"'
+
+    pisa_status = pisa.CreatePDF(html_string, dest=response)
+    if pisa_status.err:
+        return HttpResponse("Error generating PDF", status=500)
+
+    return response

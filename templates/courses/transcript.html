@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}My Transcript - Nyansa{% endblock %}
+{% block content %}
+<h1>🎓 My Transcript</h1>
+<p>A complete record of your quiz performance across all subjects.</p>
+
+<div class="profile-grid">
+    <div class="card stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-label">Overall Average</div>
+        <div class="stat-value">{% if overall_average is not None %}{{ overall_average }}%{% else %}N/A{% endif %}</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-icon">📝</div>
+        <div class="stat-label">Total Quizzes Taken</div>
+        <div class="stat-value">{{ total_quizzes }}</div>
+    </div>
+</div>
+
+{% for section in transcript_sections %}
+<h2>{{ section.subject_name }} — Average: {% if section.average is not None %}{{ section.average }}%{% else %}N/A{% endif %}</h2>
+<table class="lesson-table">
+    <tr>
+        <th>Quiz</th>
+        <th>Score</th>
+        <th>Date</th>
+    </tr>
+    {% for sub in section.submissions %}
+    <tr>
+        <td>{{ sub.quiz.title }}</td>
+        <td>{% if sub.score is not None %}{{ sub.score }}%{% else %}Pending{% endif %}</td>
+        <td>{{ sub.submitted_at|date:"M d, Y" }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% empty %}
+<p>You haven't taken any quizzes yet.</p>
+{% endfor %}
+
+<a href="{% url 'download_transcript' %}" class="btn-small">⬇ Download Transcript as PDF</a>
+{% endblock %}

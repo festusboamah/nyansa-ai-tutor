@@ -22,6 +22,7 @@
     <a href="{% url 'dashboard' %}">Dashboard</a>
     <a href="{% url 'browse_subjects' %}">Browse Subjects</a>
     <a href="{% url 'study_documents' %}">Study Hub</a>
+    <a href="{% url 'transcript' %}">Transcript</a>
 {% endif %}
     {% if user.role == "TEACHER" %}
         <a href="{% url 'teacher_dashboard' %}">Dashboard</a>
