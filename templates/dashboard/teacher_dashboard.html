@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Teacher Dashboard - Nyansa{% endblock %}
+{% block content %}
+<h1>Teacher Dashboard</h1>
+<p>Overview of your subjects and enrolled students.</p>
+
+{% for data in subject_data %}
+<div class="card">
+    <h2>{{ data.subject.name }}</h2>
+    <p>{{ data.student_count }} student{{ data.student_count|pluralize }} enrolled</p>
+
+    {% if data.enrollments %}
+    <table class="student-table">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for enrollment in data.enrollments %}
+            <tr>
+                <td>{{ enrollment.student.username }}</td>
+                <td>
+                    <a href="{% url 'student_report' enrollment.student.id data.subject.id %}" class="btn-small">
+                        View AI Report
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No students enrolled yet.</p>
+    {% endif %}
+</div>
+{% empty %}
+<p>You don't have any subjects with materials or quizzes yet. Add some through Django admin to get started.</p>
+{% endfor %}
+{% endblock %}

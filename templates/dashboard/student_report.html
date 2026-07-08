@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ student.username }}'s Report - Nyansa{% endblock %}
+{% block content %}
+<h1>{{ student.username }}'s Report</h1>
+<p>Subject: <strong>{{ subject.name }}</strong></p>
+
+<div class="ai-feedback-box">
+    <strong>🤖 AI-Generated Performance Report:</strong>
+    <p>{{ report_text }}</p>
+</div>
+
+<h2>Quiz History</h2>
+<div class="card-grid">
+    {% for submission in submissions %}
+    <div class="card">
+        <h2>{{ submission.quiz.title }}</h2>
+        <p>Score: <strong>{{ submission.score }}%</strong></p>
+        <p class="submission-date">{{ submission.submitted_at|date:"M d, Y - g:i A" }}</p>
+    </div>
+    {% empty %}
+    <p>No quiz submissions yet.</p>
+    {% endfor %}
+</div>
+
+<a href="{% url 'teacher_dashboard' %}" class="btn-small">Back to Dashboard</a>
+{% endblock %}

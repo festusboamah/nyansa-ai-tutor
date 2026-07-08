@@ -7,8 +7,7 @@ from .models import Subject, Enrollment
 @login_required
 def dashboard_view(request):
     if request.user.is_teacher():
-        messages.info(request, "Full teacher dashboard is coming soon. Use Django admin for now.")
-        return redirect("home")
+        return redirect("teacher_dashboard")
 
     enrollments = Enrollment.objects.filter(student=request.user).select_related("subject")
     subjects = [e.subject for e in enrollments]
