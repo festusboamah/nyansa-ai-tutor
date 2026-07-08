@@ -26,6 +26,10 @@ def browse_subjects_view(request):
 
 @login_required
 def enroll_view(request, subject_id):
+    if not request.user.is_student():
+        messages.error(request, "Only students can enroll in subjects.")
+        return redirect("home")
+
     subject = get_object_or_404(Subject, id=subject_id)
     Enrollment.objects.get_or_create(student=request.user, subject=subject)
     messages.success(request, f"You are now enrolled in {subject.name}!")

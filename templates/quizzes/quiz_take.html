@@ -22,6 +22,14 @@
     </div>
     {% endfor %}
 
-    <button type="submit" class="btn-small">Submit Quiz</button>
+    <button type="submit" class="btn-small" id="submit-btn">Submit Quiz</button>
 </form>
+
+<script>
+document.querySelector('form').addEventListener('submit', function() {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+});
+</script>
 {% endblock %}

@@ -40,6 +40,10 @@ def student_report_view(request, student_id, subject_id):
     student = get_object_or_404(User, id=student_id)
     subject = get_object_or_404(Subject, id=subject_id)
 
+    if not Enrollment.objects.filter(student=student, subject=subject).exists():
+        messages.error(request, "This student is not enrolled in this subject.")
+        return redirect("teacher_dashboard")
+
     submissions = Submission.objects.filter(
         student=student, quiz__subject=subject
     ).select_related("quiz").prefetch_related("answers")
