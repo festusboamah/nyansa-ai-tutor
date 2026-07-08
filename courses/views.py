@@ -48,10 +48,12 @@ def subject_detail_view(request, subject_id):
 
     materials = subject.materials.all()
     quizzes = subject.quizzes.all()
+    assignments = subject.assignments.all()
     return render(request, "courses/subject_detail.html", {
         "subject": subject,
         "materials": materials,
         "quizzes": quizzes,
+        "assignments": assignments,
     })
 
 @login_required

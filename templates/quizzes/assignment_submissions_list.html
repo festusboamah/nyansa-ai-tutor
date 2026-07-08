@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Submissions - {{ assignment.title }}{% endblock %}
+{% block content %}
+<h1>📝 Submissions: {{ assignment.title }}</h1>
+
+<table class="student-table">
+    <thead>
+        <tr>
+            <th>Student</th>
+            <th>Submitted</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for submission in submissions %}
+        <tr>
+            <td>{{ submission.student.username }}</td>
+            <td>{{ submission.submitted_at|date:"M d, Y - g:i A" }}</td>
+            <td>
+                {% if submission.is_graded %}
+                    <span class="badge-enrolled">Graded: {{ submission.final_score }}/{{ submission.max_score }}</span>
+                {% else %}
+                    <span class="feedback-pending">Pending</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'grade_assignment' submission.id %}" class="btn-small">
+                    {% if submission.is_graded %}Review{% else %}Grade{% endif %}
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">No submissions yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

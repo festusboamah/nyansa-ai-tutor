@@ -6,6 +6,9 @@ from .models import Quiz, Question, Choice, Submission, Answer, Badge
 from .ai_grading import grade_short_answer, generate_submission_feedback
 from .forms import QuizForm, QuestionForm, ChoiceFormSet, AIQuizGenerationForm
 from .ai_quiz_generator import generate_quiz_questions
+from .models import Assignment, AssignmentSubmission
+from .assignment_forms import AssignmentForm, AssignmentSubmissionForm, GradeAssignmentForm
+from .assignment_ai import extract_text_from_file, suggest_assignment_grade
 
 
 @login_required
@@ -253,3 +256,118 @@ def ai_generate_quiz_view(request):
         form = AIQuizGenerationForm()
 
     return render(request, "quizzes/ai_generate_quiz.html", {"form": form})
+
+@login_required
+def create_assignment_view(request):
+    if not request.user.is_teacher():
+        messages.error(request, "Only teachers can create assignments.")
+        return redirect("home")
+
+    if request.method == "POST":
+        form = AssignmentForm(request.POST)
+        if form.is_valid():
+            assignment = form.save(commit=False)
+            assignment.teacher = request.user
+            assignment.save()
+            messages.success(request, "Assignment created successfully!")
+            return redirect("teacher_dashboard")
+    else:
+        form = AssignmentForm()
+
+    return render(request, "quizzes/create_assignment.html", {"form": form})
+
+
+@login_required
+def assignment_detail_view(request, assignment_id):
+    assignment = get_object_or_404(Assignment, id=assignment_id)
+    is_enrolled = assignment.subject.enrollments.filter(student=request.user).exists() if request.user.is_student() else True
+
+    if not is_enrolled:
+        messages.error(request, "You need to enroll in this subject first.")
+        return redirect("browse_subjects")
+
+    my_submission = None
+    if request.user.is_student():
+        my_submission = AssignmentSubmission.objects.filter(
+            assignment=assignment, student=request.user
+        ).order_by("-submitted_at").first()
+
+    if request.method == "POST" and request.user.is_student():
+        if assignment.is_past_deadline():
+            messages.error(request, "The deadline for this assignment has passed.")
+            return redirect("assignment_detail", assignment_id=assignment.id)
+
+        form = AssignmentSubmissionForm(request.POST, request.FILES)
+        if form.is_valid():
+            submission = form.save(commit=False)
+            submission.assignment = assignment
+            submission.student = request.user
+            submission.save()
+
+            extracted_text = extract_text_from_file(submission.file)
+            ai_result = suggest_assignment_grade(
+                assignment.title, assignment.instructions, assignment.grading_rubric,
+                extracted_text, submission.max_score,
+            )
+            submission.ai_suggested_score = ai_result["score"]
+            submission.ai_suggested_feedback = ai_result["feedback"]
+            submission.save()
+
+            messages.success(request, "Assignment submitted successfully!")
+            return redirect("assignment_detail", assignment_id=assignment.id)
+    else:
+        form = AssignmentSubmissionForm()
+
+    return render(request, "quizzes/assignment_detail.html", {
+        "assignment": assignment,
+        "form": form,
+        "my_submission": my_submission,
+    })
+
+
+@login_required
+def assignment_submissions_list_view(request, assignment_id):
+    if not request.user.is_teacher():
+        messages.error(request, "Only teachers can view submissions.")
+        return redirect("home")
+
+    assignment = get_object_or_404(Assignment, id=assignment_id, teacher=request.user)
+    submissions = assignment.submissions.select_related("student").order_by("-submitted_at")
+
+    return render(request, "quizzes/assignment_submissions_list.html", {
+        "assignment": assignment,
+        "submissions": submissions,
+    })
+
+
+@login_required
+def grade_assignment_view(request, submission_id):
+    if not request.user.is_teacher():
+        messages.error(request, "Only teachers can grade assignments.")
+        return redirect("home")
+
+    submission = get_object_or_404(
+        AssignmentSubmission, id=submission_id, assignment__teacher=request.user
+    )
+
+    if request.method == "POST":
+        form = GradeAssignmentForm(request.POST, instance=submission)
+        if form.is_valid():
+            from django.utils import timezone
+            graded_submission = form.save(commit=False)
+            graded_submission.graded_at = timezone.now()
+            graded_submission.save()
+            messages.success(request, "Grade submitted successfully!")
+            return redirect("assignment_submissions_list", assignment_id=submission.assignment.id)
+    else:
+        initial = {}
+        if submission.ai_suggested_score is not None:
+            initial["final_score"] = submission.ai_suggested_score
+        if submission.ai_suggested_feedback:
+            initial["teacher_feedback"] = submission.ai_suggested_feedback
+        form = GradeAssignmentForm(instance=submission, initial=initial)
+
+    return render(request, "quizzes/grade_assignment.html", {
+        "submission": submission,
+        "form": form,
+    })

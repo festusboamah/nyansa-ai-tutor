@@ -35,4 +35,17 @@
     <p>No quizzes available yet for this subject.</p>
     {% endfor %}
 </div>
+
+<h2>📄 Assignments</h2>
+<div class="card-grid">
+    {% for assignment in assignments %}
+    <div class="card">
+        <h2>{{ assignment.title }}</h2>
+        <p>{{ assignment.instructions|truncatewords:20 }}</p>
+        <a href="{% url 'assignment_detail' assignment.id %}" class="btn-small">View Assignment</a>
+    </div>
+    {% empty %}
+    <p>No assignments available yet for this subject.</p>
+    {% endfor %}
+</div>
 {% endblock %}

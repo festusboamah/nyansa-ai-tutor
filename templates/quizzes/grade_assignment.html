@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Grade Submission - Nyansa{% endblock %}
+{% block content %}
+<h1>Grade Submission</h1>
+<p><strong>Student:</strong> {{ submission.student.username }} | <strong>Assignment:</strong> {{ submission.assignment.title }}</p>
+
+<div class="card">
+    <h2>📎 Submitted File</h2>
+    <a href="{{ submission.file.url }}" target="_blank" class="btn-small">📄 View Submission</a>
+</div>
+
+{% if submission.ai_suggested_score is not None %}
+<div class="ai-feedback-box">
+    <strong>🤖 AI Suggested Grade (for your reference):</strong>
+    <p>Suggested Score: {{ submission.ai_suggested_score }} / {{ submission.max_score }}</p>
+    <p>{{ submission.ai_suggested_feedback }}</p>
+    <p style="font-size: 0.85rem; font-style: italic;">This is a suggestion only — the form below is pre-filled with it, but you can edit before submitting the final grade.</p>
+</div>
+{% endif %}
+
+<div class="card form-card">
+    <h2>Final Grade</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-small">Save Final Grade</button>
+    </form>
+</div>
+
+<a href="{% url 'assignment_submissions_list' submission.assignment.id %}" class="btn-small btn-secondary">Back to Submissions</a>
+{% endblock %}

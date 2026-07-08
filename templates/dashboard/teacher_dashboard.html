@@ -8,6 +8,7 @@
     <a href="{% url 'create_subject' %}" class="btn-small">+ Create Subject</a>
     <a href="{% url 'create_material' %}" class="btn-small btn-secondary">+ Add Material</a>
     <a href="{% url 'quiz_create_choice' %}" class="btn-small btn-secondary">+ Create Quiz</a>
+    <a href="{% url 'create_assignment' %}" class="btn-small btn-secondary">+ Create Assignment</a>
     <a href="{% url 'lesson_notes_list' %}" class="btn-small btn-secondary">📋 Lesson Notes</a>
 </div>
 
@@ -44,4 +45,18 @@
 {% empty %}
 <p>You don't have any subjects with materials or quizzes yet. Add some through Django admin to get started.</p>
 {% endfor %}
+
+<h2>📄 My Assignments</h2>
+<div class="card-grid">
+    {% for assignment in assignments %}
+    <div class="card">
+        <h2>{{ assignment.title }}</h2>
+        <p class="submission-date">{{ assignment.subject.name }}</p>
+        <p>{{ assignment.submissions.count }} submission{{ assignment.submissions.count|pluralize }}</p>
+        <a href="{% url 'assignment_submissions_list' assignment.id %}" class="btn-small">View Submissions</a>
+    </div>
+    {% empty %}
+    <p>You haven't created any assignments yet.</p>
+    {% endfor %}
+</div>
 {% endblock %}

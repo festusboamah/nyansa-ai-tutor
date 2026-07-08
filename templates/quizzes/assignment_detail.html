@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ assignment.title }} - Nyansa{% endblock %}
+{% block content %}
+<h1>📝 {{ assignment.title }}</h1>
+<p>{{ assignment.instructions }}</p>
+{% if assignment.deadline %}
+<p>📅 Deadline: <strong>{{ assignment.deadline|date:"M d, Y - g:i A" }}</strong></p>
+{% endif %}
+
+{% if user.is_student %}
+    {% if my_submission %}
+    <div class="card">
+        <h2>Your Submission</h2>
+        <p>Submitted: {{ my_submission.submitted_at|date:"M d, Y - g:i A" }}</p>
+        {% if my_submission.is_graded %}
+            <p class="score-display">Score: <strong>{{ my_submission.final_score }} / {{ my_submission.max_score }}</strong></p>
+            <div class="ai-feedback-box">
+                <strong>Teacher Feedback:</strong>
+                <p>{{ my_submission.teacher_feedback }}</p>
+            </div>
+        {% else %}
+            <p class="feedback-pending">Awaiting grading from your teacher.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if not my_submission or not my_submission.is_graded %}
+        {% if assignment.is_past_deadline %}
+            <p class="feedback-incorrect">The deadline for this assignment has passed.</p>
+        {% else %}
+        <div class="card form-card">
+            <h2>{% if my_submission %}Resubmit{% else %}Submit Your Work{% endif %}</h2>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn-small">Submit Assignment</button>
+            </form>
+        </div>
+        {% endif %}
+    {% endif %}
+{% else %}
+    <a href="{% url 'assignment_submissions_list' assignment.id %}" class="btn-small">View Submissions</a>
+{% endif %}
+{% endblock %}

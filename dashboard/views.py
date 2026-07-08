@@ -33,8 +33,12 @@ def teacher_dashboard_view(request):
             "enrollments": enrollments,
         })
 
+    from quizzes.models import Assignment
+    assignments = Assignment.objects.filter(teacher=request.user).select_related("subject").order_by("-created_at")
+
     return render(request, "dashboard/teacher_dashboard.html", {
         "subject_data": subject_data,
+        "assignments": assignments,
     })
 
 

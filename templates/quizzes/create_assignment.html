@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Create Assignment - Nyansa{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>📝 Create Assignment</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-small">Create Assignment</button>
+    </form>
+</div>
+{% endblock %}
