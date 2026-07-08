@@ -435,3 +435,202 @@ h2 {
     background-color: #eef2ff;
     transform: translateY(-2px);
 }
+
+/* ===== Hero Section ===== */
+.hero {
+    position: relative;
+    text-align: center;
+    padding: 4rem 2rem 3rem;
+    animation: slideUp 0.5s ease-out;
+    overflow: hidden;
+}
+
+.hero-text {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.35;
+    z-index: 1;
+    animation: blobFloat 10s ease-in-out infinite;
+}
+
+.hero-blob-1 {
+    width: 280px;
+    height: 280px;
+    background: var(--primary);
+    top: -60px;
+    left: 5%;
+    animation-delay: 0s;
+}
+
+.hero-blob-2 {
+    width: 320px;
+    height: 320px;
+    background: var(--secondary);
+    top: 20px;
+    right: 8%;
+    animation-delay: 3s;
+}
+
+.hero-blob-3 {
+    width: 220px;
+    height: 220px;
+    background: #fde68a;
+    bottom: -80px;
+    left: 40%;
+    animation-delay: 6s;
+}
+
+@keyframes blobFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(20px, -20px) scale(1.08); }
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 1rem;
+    line-height: 1.15;
+}
+
+.hero-highlight {
+    background: linear-gradient(90deg, var(--primary), var(--secondary), #fde68a, var(--primary));
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s ease-in-out infinite;
+    display: inline-block;
+}
+
+@keyframes shimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+}
+
+.hero-subtitle {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto 2rem;
+}
+
+.hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn-hero-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 0.9rem 2rem;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.05rem;
+    transition: var(--transition);
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+}
+
+.btn-hero-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 22px rgba(79, 70, 229, 0.4);
+}
+
+.btn-hero-secondary {
+    background-color: white;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    padding: 0.9rem 2rem;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.05rem;
+    transition: var(--transition);
+}
+
+.btn-hero-secondary:hover {
+    background-color: #eef2ff;
+    transform: translateY(-3px);
+}
+
+/* ===== Features Section ===== */
+.features-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem 0 4rem;
+}
+
+.feature-card {
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    animation: slideUp 0.5s ease-out;
+}
+
+.feature-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.feature-card h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+}
+
+.feature-card p {
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+/* ===== Floating Objects Strip ===== */
+.floating-strip {
+    position: relative;
+    height: 80px;
+    overflow: hidden;
+    background: linear-gradient(180deg, transparent, #eef2ff 80%);
+    margin-top: -2rem;
+}
+
+.floating-item {
+    position: absolute;
+    top: 20px;
+    font-size: 2rem;
+    opacity: 0.7;
+    animation: floatAcross 24s linear infinite;
+    animation-delay: var(--delay);
+    left: 100%;
+}
+
+@keyframes floatAcross {
+    from {
+        left: 100%;
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+    to {
+        left: -10%;
+        transform: translateY(0px);
+    }
+}

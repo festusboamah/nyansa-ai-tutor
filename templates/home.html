@@ -1,5 +1,58 @@
 {% extends "base.html" %}
+{% block title %}Nyansa - AI-Powered Learning{% endblock %}
 {% block content %}
-<h1>Welcome to Nyansa</h1>
-<p>Your AI-powered learning platform.</p>
+
+<section class="hero">
+    <div class="hero-blob hero-blob-1"></div>
+    <div class="hero-blob hero-blob-2"></div>
+    <div class="hero-blob hero-blob-3"></div>
+    <div class="hero-text">
+        <h1 class="hero-title">Learn Smarter with <span class="hero-highlight">Nyansa</span></h1>
+        <p class="hero-subtitle">AI-powered tutoring that adapts to you — instant feedback, personalized reports, and quizzes that actually help you learn.</p>
+        {% if not user.is_authenticated %}
+        <div class="hero-actions">
+            <a href="{% url 'signup' %}" class="btn-hero-primary">Get Started Free</a>
+            <a href="{% url 'login' %}" class="btn-hero-secondary">Login</a>
+        </div>
+        {% else %}
+        <div class="hero-actions">
+            {% if user.role == "STUDENT" %}
+                <a href="{% url 'dashboard' %}" class="btn-hero-primary">Go to My Dashboard</a>
+            {% else %}
+                <a href="{% url 'teacher_dashboard' %}" class="btn-hero-primary">Go to My Dashboard</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="features-section">
+    <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h2>Learn Any Subject</h2>
+        <p>Browse subjects, watch curated materials, and study at your own pace.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h2>AI-Graded Quizzes</h2>
+        <p>Get instant feedback on every answer, powered by Claude AI.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h2>Smart Reports</h2>
+        <p>Teachers get AI-generated insights into every student's progress.</p>
+    </div>
+</section>
+
+<div class="floating-strip">
+    <div class="floating-item" style="--delay: 0s;">📘</div>
+    <div class="floating-item" style="--delay: 3s;">✏️</div>
+    <div class="floating-item" style="--delay: 6s;">🧮</div>
+    <div class="floating-item" style="--delay: 9s;">🔬</div>
+    <div class="floating-item" style="--delay: 12s;">🎓</div>
+    <div class="floating-item" style="--delay: 15s;">💡</div>
+    <div class="floating-item" style="--delay: 18s;">📐</div>
+    <div class="floating-item" style="--delay: 21s;">🌍</div>
+</div>
+
 {% endblock %}
