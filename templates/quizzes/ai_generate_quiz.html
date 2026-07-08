@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}AI Quiz Generator - Nyansa{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>🤖 Generate Quiz with AI</h1>
+    <p>Describe what you want, and Claude will create the questions for you.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-small">Generate Quiz</button>
+    </form>
+</div>
+{% endblock %}

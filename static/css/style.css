@@ -725,3 +725,66 @@ h2 {
     margin-bottom: 2rem;
     flex-wrap: wrap;
 }
+
+.choice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.choice-option {
+    text-decoration: none;
+    color: var(--text);
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    cursor: pointer;
+}
+
+.choice-option-ai {
+    background: linear-gradient(135deg, #eef2ff, #ecfeff);
+    border: 2px solid var(--secondary);
+}
+
+.choice-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.choice-form-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.choice-form-row input[type="text"] {
+    flex: 1;
+}
+
+.choice-correct-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.choice-review-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 0.5rem;
+}
+
+.choice-review-list li {
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    margin-bottom: 0.3rem;
+    background-color: #f8fafc;
+}
+
+.choice-correct {
+    background-color: #dcfce7 !important;
+    font-weight: 600;
+    color: #166534;
+}

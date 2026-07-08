@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Create Quiz - Nyansa{% endblock %}
+{% block content %}
+<h1>Create a New Quiz</h1>
+<p>Choose how you'd like to build this quiz.</p>
+
+<div class="choice-grid">
+    <a href="{% url 'create_quiz' %}" class="card choice-option">
+        <div class="choice-icon">✍️</div>
+        <h2>Create Manually</h2>
+        <p>Write your own questions and answer choices, one at a time.</p>
+    </a>
+
+    <a href="{% url 'ai_generate_quiz' %}" class="card choice-option choice-option-ai">
+        <div class="choice-icon">🤖</div>
+        <h2>Generate with AI</h2>
+        <p>Describe a topic and let Claude create the questions for you instantly.</p>
+    </a>
+</div>
+{% endblock %}

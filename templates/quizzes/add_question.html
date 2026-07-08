@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} - Add Questions{% endblock %}
+{% block content %}
+<h1>{{ quiz.title }}</h1>
+<p>{{ quiz.description }}</p>
+
+{% if existing_questions %}
+<h2>Questions So Far ({{ existing_questions.count }})</h2>
+<div class="card-grid">
+    {% for q in existing_questions %}
+    <div class="card">
+        <h2>Q{{ forloop.counter }}. {{ q.text }}</h2>
+        <p class="submission-date">{{ q.get_question_type_display }}</p>
+        {% if q.question_type == "MCQ" %}
+            <ul class="choice-review-list">
+                {% for choice in q.choices.all %}
+                    <li class="{% if choice.is_correct %}choice-correct{% endif %}">
+                        {{ choice.text }} {% if choice.is_correct %}✓{% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card form-card">
+    <h2>Add Another Question</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ question_form.as_p }}
+
+        <h3>Answer Choices (for multiple choice questions)</h3>
+        {{ choice_formset.management_form }}
+        {% for choice_form in choice_formset %}
+            <div class="choice-form-row">
+                {{ choice_form.text }}
+                <label class="choice-correct-label">
+                    {{ choice_form.is_correct }} Correct
+                </label>
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn-small">Add Question</button>
+    </form>
+</div>
+
+<a href="{% url 'teacher_dashboard' %}" class="btn-small btn-secondary">Done - Back to Dashboard</a>
+{% endblock %}

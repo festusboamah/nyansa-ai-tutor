@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.db import transaction
 from .models import Quiz, Question, Choice, Submission, Answer, Badge
 from .ai_grading import grade_short_answer, generate_submission_feedback
+from .forms import QuizForm, QuestionForm, ChoiceFormSet, AIQuizGenerationForm
+from .ai_quiz_generator import generate_quiz_questions
 
 
 @login_required
@@ -135,3 +137,115 @@ def quiz_result_view(request, submission_id):
         "answers": answers,
         "attempts_remaining": attempts_remaining,
     })
+
+@login_required
+def quiz_create_choice_view(request):
+    if not request.user.is_teacher():
+        messages.error(request, "Only teachers can create quizzes.")
+        return redirect("home")
+    return render(request, "quizzes/quiz_create_choice.html")
+
+
+@login_required
+def create_quiz_view(request):
+    if not request.user.is_teacher():
+        messages.error(request, "Only teachers can create quizzes.")
+        return redirect("home")
+
+    if request.method == "POST":
+        form = QuizForm(request.POST)
+        if form.is_valid():
+            quiz = form.save(commit=False)
+            quiz.teacher = request.user
+            quiz.save()
+            messages.success(request, "Quiz created! Now add some questions.")
+            return redirect("add_question", quiz_id=quiz.id)
+    else:
+        form = QuizForm()
+
+    return render(request, "quizzes/create_quiz.html", {"form": form})
+
+
+@login_required
+def add_question_view(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id, teacher=request.user)
+
+    if request.method == "POST":
+        question_form = QuestionForm(request.POST)
+        choice_formset = ChoiceFormSet(request.POST, prefix="choices")
+
+        if question_form.is_valid():
+            question = question_form.save(commit=False)
+            question.quiz = quiz
+            question.save()
+
+            if question.question_type == Question.QuestionType.MULTIPLE_CHOICE and choice_formset.is_valid():
+                for choice_data in choice_formset.cleaned_data:
+                    if choice_data.get("text"):
+                        Choice.objects.create(
+                            question=question,
+                            text=choice_data["text"],
+                            is_correct=choice_data.get("is_correct", False),
+                        )
+
+            messages.success(request, "Question added!")
+            return redirect("add_question", quiz_id=quiz.id)
+    else:
+        question_form = QuestionForm(initial={"order": quiz.questions.count() + 1})
+        choice_formset = ChoiceFormSet(prefix="choices")
+
+    return render(request, "quizzes/add_question.html", {
+        "quiz": quiz,
+        "question_form": question_form,
+        "choice_formset": choice_formset,
+        "existing_questions": quiz.questions.all(),
+    })
+
+
+@login_required
+def ai_generate_quiz_view(request):
+    if not request.user.is_teacher():
+        messages.error(request, "Only teachers can create quizzes.")
+        return redirect("home")
+
+    if request.method == "POST":
+        form = AIQuizGenerationForm(request.POST)
+        if form.is_valid():
+            quiz = Quiz.objects.create(
+                subject=form.cleaned_data["subject"],
+                teacher=request.user,
+                title=form.cleaned_data["title"],
+                description=f"AI-generated quiz on: {form.cleaned_data['topic']}",
+            )
+
+            generated = generate_quiz_questions(
+                form.cleaned_data["topic"],
+                form.cleaned_data["num_questions"],
+                form.cleaned_data["difficulty"],
+            )
+
+            if not generated:
+                messages.error(request, "AI generation failed. Please try again or create manually.")
+                quiz.delete()
+                return redirect("ai_generate_quiz")
+
+            for i, q_data in enumerate(generated, start=1):
+                question = Question.objects.create(
+                    quiz=quiz,
+                    text=q_data["text"],
+                    question_type=Question.QuestionType.MULTIPLE_CHOICE,
+                    order=i,
+                )
+                for choice_data in q_data.get("choices", []):
+                    Choice.objects.create(
+                        question=question,
+                        text=choice_data["text"],
+                        is_correct=choice_data.get("is_correct", False),
+                    )
+
+            messages.success(request, f"AI generated {len(generated)} questions! Review them below.")
+            return redirect("add_question", quiz_id=quiz.id)
+    else:
+        form = AIQuizGenerationForm()
+
+    return render(request, "quizzes/ai_generate_quiz.html", {"form": form})
