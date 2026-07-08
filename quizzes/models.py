@@ -4,6 +4,10 @@ from courses.models import Subject
 
 
 class Quiz(models.Model):
+    class AssessmentType(models.TextChoices):
+        QUIZ = "QUIZ", "Quiz"
+        EXAM = "EXAM", "Exam"
+
     subject = models.ForeignKey(
         Subject, on_delete=models.CASCADE, related_name="quizzes"
     )
@@ -12,6 +16,9 @@ class Quiz(models.Model):
     )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    assessment_type = models.CharField(
+        max_length=10, choices=AssessmentType.choices, default=AssessmentType.QUIZ
+    )
     time_limit_minutes = models.PositiveIntegerField(
         default=15, help_text="Time limit for students to complete this quiz, in minutes"
     )
