@@ -12,6 +12,7 @@ class User(AbstractUser):
         choices=Role.choices,
         default=Role.STUDENT,
     )
+    login_count = models.PositiveIntegerField(default=0)
 
     def is_teacher(self):
         return self.role == self.Role.TEACHER
