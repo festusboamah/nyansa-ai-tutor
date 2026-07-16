@@ -9,7 +9,7 @@ class TeacherDashboardAccessTests(TestCase):
         student = User.objects.create_user(username="student", password="test-password")
         self.client.force_login(student)
 
-        response = self.client.get(reverse("teacher_dashboard"))
+        response = self.client.get(reverse("teacher_dashboard"), secure=True)
 
         self.assertRedirects(response, reverse("home"))
 
@@ -19,6 +19,6 @@ class TeacherDashboardAccessTests(TestCase):
         )
         self.client.force_login(teacher)
 
-        response = self.client.get(reverse("teacher_dashboard"))
+        response = self.client.get(reverse("teacher_dashboard"), secure=True)
 
         self.assertEqual(response.status_code, 200)
