@@ -1,0 +1,6 @@
+anthropic
+Django
+Markdown
+pypdf
+python-dotenv
+xhtml2pdf

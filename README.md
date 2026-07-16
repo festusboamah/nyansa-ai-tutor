@@ -1,108 +1,160 @@
-# 📘 Nyansa — AI-Powered Tutoring Platform
+# Nyansa: AI-Powered Tutoring Platform
 
-**Nyansa** (Twi for *"wisdom"*) is a full-stack, AI-powered learning management system built for an M.Ed Capstone Project. It's designed to help students learn faster through instant AI feedback, and help teachers teach more by automating grading, content creation, and reporting — while keeping human judgment at the center of every important decision.
+Nyansa (Twi for "wisdom") is a Django learning management system built for an M.Ed capstone project. It gives students timely feedback and gives teachers tools for creating content, reviewing work, and tracking progress. Human teachers retain control over decisions that need professional judgment.
 
 > Technology should sharpen human wisdom, not replace it.
 
----
+## Features
 
-## ✨ Key Features
+### Students
 
-### For Students
-- 📚 Browse subjects, materials, and self-enroll in courses
-- 📝 Take quizzes with **AI-graded short answers** and instant multiple-choice scoring
-- ⏱ Countdown timers, attempt limits, and retake support on every quiz
-- 🏆 Earn achievement badges (Perfect Score, First-Try Success, Most Improved)
-- 📄 **Self-Study Hub** — upload any PDF, get an AI-generated summary, and ask follow-up questions
-- 📊 Weighted grading per subject (Quiz 20% + Assignment 20% + Exam 60%), calculated automatically
-- ⏰ Deadline radar — see every upcoming quiz, exam, and assignment due date in one place
-- 🎓 Downloadable transcript (PDF) with per-subject averages
-- 👤 Personal profile with login tracking and quiz statistics
+- Browse subjects, study materials, and enroll in available subjects.
+- Take timed quizzes and exams with retakes and attempt limits.
+- Receive automatic multiple-choice scoring and AI-assisted feedback for short answers.
+- Submit assignments and view teacher-approved feedback.
+- Upload PDFs to the Self-Study Hub for summaries and document-grounded questions.
+- Track upcoming deadlines, subject grades, badges, profile statistics, and login activity.
+- Download a transcript PDF with per-subject averages.
 
-### For Teachers
-- ➕ Create subjects, upload materials, and manage content — no Django admin required
-- 🤖 **AI Quiz Generator** — describe a topic, get a complete multiple-choice quiz in seconds
-- 📋 **AI Lesson Notes** — generates full standards-based (GES-format) weekly lesson plans as downloadable PDFs
-- 📈 **AI-generated student performance reports**, emailable directly to students
-- 📎 Assignment grading with a **hybrid AI + teacher workflow** — Claude suggests a score and feedback, but the teacher always reviews and finalizes before a student sees anything
-- 👥 Class dashboard showing enrolled students and their progress at a glance
+### Teachers
 
-### Platform-Wide
-- 🔐 Role-based access control (Student / Teacher) with a custom Django User model
-- 🎨 Custom-designed, animated UI (no frontend framework — hand-built CSS)
-- 🛡️ Secure `.env`-based configuration for API keys and email credentials
+- Create subjects, upload learning materials, and manage quizzes without using the Django admin.
+- Generate multiple-choice quizzes from a topic with Claude.
+- Create GES-format lesson notes and download them as PDFs.
+- Review AI-generated assignment score and feedback suggestions before releasing grades.
+- View class progress, create student performance reports, and email reports when email is configured.
 
----
+### Platform
 
-## 🧠 AI Integration
+- Custom Django user model with `STUDENT` and `TEACHER` roles.
+- Role-aware dashboards and routes.
+- Weighted subject grades: quizzes 20%, assignments 20%, and exams 60%.
+- SQLite database for local development and local media storage for uploaded documents.
 
-Nyansa uses **Anthropic's Claude API** (Claude Sonnet 4.5) across nine distinct features:
+## AI Use
 
-| Feature | Description |
-|---|---|
-| Short-answer grading | Evaluates open-ended quiz responses, not just keyword matching |
-| Per-answer feedback | Personalized explanation for every question |
-| Quiz summary feedback | Encouraging, actionable overall feedback per submission |
-| Teacher performance reports | Narrative analysis of a student's progress over time |
-| AI quiz generation | Generates a full quiz from a topic description |
-| PDF summarization | Summarizes uploaded study documents |
-| Document Q&A | Answers student questions grounded in their uploaded material |
-| AI lesson notes | Generates standards-based weekly lesson plans |
-| Assignment grading suggestions | Suggests a score + feedback for teacher review (never final without approval) |
+Nyansa uses Anthropic's Claude API for short-answer feedback, quiz summary feedback, quiz generation, study-document summaries and Q&A, student reports, lesson notes, and assignment grading suggestions.
 
-**Design principle:** AI is used for full automation only where the task is mechanical (e.g. MCQ grading). Anywhere real judgment is required (assignment grading), AI assists but a human teacher always has the final say.
+AI-generated assignment grading is advisory. A teacher reviews and finalizes the score and feedback before a student can see it. Multiple-choice questions are scored deterministically by the application.
 
----
+## Tech Stack
 
-## 🛠️ Tech Stack
+- Python and Django
+- SQLite
+- Anthropic Claude API
+- `pypdf` for uploaded PDF text extraction
+- `xhtml2pdf` for transcripts and lesson-note PDFs
+- `Markdown` for report rendering
+- Custom HTML, CSS, and vanilla JavaScript
 
-- **Backend:** Django (Python)
-- **Database:** SQLite
-- **AI:** Anthropic Claude API
-- **PDF Processing:** pypdf, xhtml2pdf
-- **Markdown Rendering:** python-markdown
-- **Frontend:** Custom HTML/CSS (no framework), vanilla JavaScript for timers/interactivity
-- **Version Control:** Git & GitHub
-
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- Python 3.11+
-- An [Anthropic API key](https://console.anthropic.com)
 
-### Installation
+- Python 3.11 or later
+- An Anthropic API key for AI-powered features
+
+### Install and run
 
 ```bash
-# Clone the repository
 git clone https://github.com/festusboamah/nyansa-ai-tutor.git
 cd nyansa-ai-tutor
 
-# Create and activate a virtual environment
-python -m venv venv
-venv\Scripts\activate      # Windows
-source venv/bin/activate   # macOS/Linux
+# Create and activate a virtual environment.
+python -m venv .venv
 
-# Install dependencies
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
+# macOS/Linux
+source .venv/bin/activate
+
+# Install application dependencies.
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 
-# Set up environment variables
-# Create a .env file in the project root with:
-# ANTHROPIC_API_KEY=your-key-here
-
-# Run migrations
+# Apply the database schema.
 python manage.py migrate
 
-# Create a superuser (for admin access)
+# Create an administrator account (optional).
 python manage.py createsuperuser
 
-# Start the development server
+# Start the development server.
 python manage.py runserver
 ```
 
-Visit `http://127.0.0.1:8000` in your browser.
+Open `http://127.0.0.1:8000/` in a browser. Django's admin is available at `http://127.0.0.1:8000/admin/` for a superuser.
 
----
+## Configuration
 
-## 📁 Project Structure
+Create a `.env` file in the repository root. It is ignored by Git.
+
+```dotenv
+# Required for Claude-powered features.
+ANTHROPIC_API_KEY=your-anthropic-api-key
+
+# Optional: email defaults to Django's console backend, which prints emails
+# to the terminal during local development.
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+EMAIL_HOST=
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+DEFAULT_FROM_EMAIL=Nyansa <noreply@nyansa.com>
+```
+
+To send email through SMTP, set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend` and provide the SMTP host and credentials. Do not commit `.env` or API keys.
+
+The default local configuration uses SQLite (`db.sqlite3`) and writes uploaded PDFs to `media/`. Both are intentionally ignored by Git. `DEBUG` is enabled in the included settings and is suitable only for local development.
+
+## Accounts and Roles
+
+New registrations create `STUDENT` accounts. Create a `TEACHER` account through the Django admin, then set its role to `Teacher`. Teachers can create subjects and assessments; students can enroll, study, and submit work.
+
+## Key Routes
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Home page |
+| `/accounts/signup/` | Student registration |
+| `/accounts/login/` | Sign in |
+| `/courses/dashboard/` | Student dashboard |
+| `/courses/browse/` | Browse and enroll in subjects |
+| `/courses/study/` | Self-Study Hub |
+| `/courses/transcript/` | Student transcript |
+| `/quizzes/create-choice/` | Choose and create a quiz |
+| `/dashboard/` | Teacher dashboard |
+| `/admin/` | Django administration |
+
+## Project Structure
+
+```text
+accounts/        Custom user model, authentication, and profile views
+config/          Django settings, root URLs, ASGI, and WSGI configuration
+courses/         Subjects, enrolments, materials, study documents, transcripts
+dashboard/       Teacher dashboard, reports, email, and lesson notes
+quizzes/         Quizzes, exams, assignments, grading, and AI generation
+static/          CSS and image assets
+templates/       Shared and app-specific Django templates
+manage.py        Django management entry point
+requirements.txt Python dependencies
+```
+
+## Tests
+
+Run the Django test suite with:
+
+```bash
+python manage.py test
+```
+
+## Development Notes
+
+- AI features require a valid `ANTHROPIC_API_KEY`; other local pages and workflows can be explored without one, but AI requests will not succeed.
+- Keep production secrets out of `config/settings.py`; supply them through environment variables.
+- Before deployment, set `DEBUG=False`, replace the development `SECRET_KEY`, configure `ALLOWED_HOSTS`, use a production database and media storage, and serve static files with an appropriate production setup.
+
+## License
+
+This project is an academic capstone project. Add an explicit license before redistributing or accepting external contributions.
