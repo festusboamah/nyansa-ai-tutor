@@ -73,6 +73,9 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 
+# Create .env from .env.example and replace DJANGO_SECRET_KEY with a
+# newly generated secret before running Django commands.
+
 # Apply the database schema.
 python manage.py migrate
 
@@ -90,6 +93,14 @@ Open `http://127.0.0.1:8000/` in a browser. Django's admin is available at `http
 Create a `.env` file in the repository root. It is ignored by Git.
 
 ```dotenv
+# Required. Generate a unique value with:
+# python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+DJANGO_SECRET_KEY=replace-with-a-unique-secret
+
+# Set to True only for local development.
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+
 # Required for Claude-powered features.
 ANTHROPIC_API_KEY=your-anthropic-api-key
 
@@ -106,7 +117,7 @@ DEFAULT_FROM_EMAIL=Nyansa <noreply@nyansa.com>
 
 To send email through SMTP, set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend` and provide the SMTP host and credentials. Do not commit `.env` or API keys.
 
-The default local configuration uses SQLite (`db.sqlite3`) and writes uploaded PDFs to `media/`. Both are intentionally ignored by Git. `DEBUG` is enabled in the included settings and is suitable only for local development.
+The default local configuration uses SQLite (`db.sqlite3`) and writes uploaded PDFs to `media/`. Both are intentionally ignored by Git. Set `DJANGO_DEBUG=True` only for local development. For HTTPS deployments, `DJANGO_SECURE_SSL_REDIRECT` defaults to `True` and can be explicitly disabled only when TLS is terminated elsewhere.
 
 ## Accounts and Roles
 
@@ -153,8 +164,8 @@ python manage.py test
 
 - AI features require a valid `ANTHROPIC_API_KEY`; other local pages and workflows can be explored without one, but AI requests will not succeed.
 - Keep production secrets out of `config/settings.py`; supply them through environment variables.
-- Before deployment, set `DEBUG=False`, replace the development `SECRET_KEY`, configure `ALLOWED_HOSTS`, use a production database and media storage, and serve static files with an appropriate production setup.
+- Before deployment, configure `DJANGO_ALLOWED_HOSTS`, use a production database and media storage, and serve static files with an appropriate production setup.
 
 ## License
 
-This project is an academic capstone project. Add an explicit license before redistributing or accepting external contributions.
+This project is available under the [MIT License](LICENSE).

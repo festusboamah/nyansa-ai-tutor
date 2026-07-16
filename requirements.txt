@@ -1,6 +1,6 @@
-anthropic
-Django
-Markdown
-pypdf
-python-dotenv
-xhtml2pdf
+anthropic==0.49.0
+Django==5.1.7
+Markdown==3.7
+pypdf==5.4.0
+python-dotenv==1.0.1
+xhtml2pdf==0.2.16
