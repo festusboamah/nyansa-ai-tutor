@@ -11,7 +11,7 @@ class TeacherDashboardAccessTests(TestCase):
 
         response = self.client.get(reverse("teacher_dashboard"), secure=True)
 
-        self.assertRedirects(response, reverse("home"))
+        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
 
     def test_teacher_can_open_teacher_dashboard(self):
         teacher = User.objects.create_user(
