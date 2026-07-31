@@ -12,6 +12,7 @@ urlpatterns = [
     path("quizzes/", include("quizzes.urls")),
     path("dashboard/", include("dashboard.urls")),
     path("schools/", include("schools.urls")),
+    path("gradebook/", include("gradebook.urls")),
 ]
 
 if settings.DEBUG:

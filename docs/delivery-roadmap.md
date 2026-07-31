@@ -61,7 +61,7 @@ Exit criteria:
 - Invalid workbooks cannot partially publish results.
 - Existing weighted grading results have regression coverage.
 
-Current status: Phase 2A has delivered the generalized gradebook domain and calculation foundation. School/year schemes support ordered weighted categories; common assessments and entries support online, manual, and import provenance; draft entries are excluded from published calculations; and tenant, roster, recorder, and score invariants are tested. Spreadsheet workflows, batch audit records, and teacher-facing review screens remain for later Phase 2 slices.
+Current status: Phases 2A and 2B have delivered the generalized gradebook domain, calculation foundation, and teacher-facing manual-entry workflow. Teachers can manage assessments only for assigned offerings, enter scores from the active class roster, save drafts, and publish entries through an atomic validated submission. Spreadsheet workflows and batch audit records remain for later Phase 2 slices.
 
 ## Phase 3 — Lesson-plan approval
 

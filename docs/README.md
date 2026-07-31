@@ -17,6 +17,7 @@ This directory is the implementation guide for Nyansa's evolution from an AI tut
 11. [Phase 1B Academic Structure](phase-1b-academic-structure.md) — academic years, terms, classes, offerings, and assignments.
 
 12. [Phase 2A Gradebook Foundation](phase-2a-gradebook-foundation.md) — configurable weights, common assessments, grade sources, and publication-aware results.
+13. [Phase 2B Teacher Gradebook](phase-2b-teacher-gradebook.md) — assigned-offering assessment management and atomic roster grade entry.
 
 ## Document status
 

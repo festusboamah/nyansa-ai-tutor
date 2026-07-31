@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Gradebook - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">Teacher workspace</p>
+        <h1>Gradebook</h1>
+        <p>Select an assigned class and subject to manage assessments and scores.</p>
+    </div>
+</div>
+<div class="admin-grid">
+    {% for offering in offerings %}
+    <article class="card">
+        <p class="eyebrow">{{ offering.term.name }} · {{ offering.term.academic_year.name }}</p>
+        <h2>{{ offering.subject.name }}</h2>
+        <p>{{ offering.school_class.name }}</p>
+        <p>{{ offering.assessments.count }} assessment{{ offering.assessments.count|pluralize }}</p>
+        <a class="btn-small" href="{% url 'gradebook_assessments' offering.id %}">Open gradebook</a>
+    </article>
+    {% empty %}
+    <div class="card">
+        <h2>No assigned offerings</h2>
+        <p>Your school administrator must assign you to a subject offering before it appears here.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

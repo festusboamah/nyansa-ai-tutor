@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}New Assessment - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">{{ offering.school_class.name }} · {{ offering.subject.name }}</p>
+        <h1>Create assessment</h1>
+        <p>Only categories from the active {{ offering.term.academic_year.name }} grade scheme are available.</p>
+    </div>
+</div>
+<div class="form-container">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Create and enter grades</button>
+        <a class="btn btn-secondary" href="{% url 'gradebook_assessments' offering.id %}">Cancel</a>
+    </form>
+</div>
+{% endblock %}

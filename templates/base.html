@@ -26,6 +26,7 @@
 {% endif %}
     {% if user.role == "TEACHER" %}
         <a href="{% url 'teacher_dashboard' %}">Dashboard</a>
+        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'gradebook_offerings' %}">Gradebook</a>{% endif %}
     {% endif %}
     {% if request.school_membership.role == "SCHOOL_ADMIN" %}
         <a href="{% url 'school_admin_dashboard' %}">School Admin</a>
