@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Accept invitation | Nyansa{% endblock %}
+{% block content %}<div class="card form-card"><h1>Accept school invitation</h1><p>Confirm that you want to join this school using your signed-in account.</p><form method="post">{% csrf_token %}<button type="submit">Accept invitation</button></form></div>{% endblock %}

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import School, SchoolMembership
+from .models import School, SchoolInvitation, SchoolMembership
 
 
 class SchoolMembershipInline(admin.TabularInline):
@@ -24,3 +24,10 @@ class SchoolMembershipAdmin(admin.ModelAdmin):
     list_filter = ("school", "role", "status")
     search_fields = ("user__username", "user__email", "school__name", "identifier")
     autocomplete_fields = ("school", "user")
+
+
+@admin.register(SchoolInvitation)
+class SchoolInvitationAdmin(admin.ModelAdmin):
+    list_display = ("email", "school", "role", "status", "expires_at")
+    list_filter = ("school", "role", "status")
+    readonly_fields = ("token_digest", "accepted_at", "created_at")

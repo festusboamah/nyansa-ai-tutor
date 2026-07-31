@@ -1,6 +1,12 @@
 from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
+from django.utils import timezone
+from datetime import timedelta
+
+
+def default_invitation_expiry():
+    return timezone.now() + timedelta(days=7)
 
 
 class School(models.Model):
@@ -78,3 +84,29 @@ class SchoolMembership(models.Model):
     @property
     def is_active(self):
         return self.status == self.Status.ACTIVE and self.school.status == School.Status.ACTIVE
+
+
+class SchoolInvitation(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        ACCEPTED = "ACCEPTED", "Accepted"
+        REVOKED = "REVOKED", "Revoked"
+        EXPIRED = "EXPIRED", "Expired"
+
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="invitations")
+    email = models.EmailField()
+    role = models.CharField(max_length=20, choices=SchoolMembership.Role.choices)
+    token_digest = models.CharField(max_length=64, unique=True, editable=False)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="school_invitations_sent")
+    expires_at = models.DateTimeField(default=default_invitation_expiry)
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [models.UniqueConstraint(fields=["school", "email"], condition=models.Q(status="PENDING"), name="one_pending_invite_per_school_email")]
+
+    @property
+    def is_usable(self):
+        return self.status == self.Status.PENDING and self.expires_at > timezone.now()

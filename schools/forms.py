@@ -1,6 +1,16 @@
 from django import forms
 from academics.models import AcademicYear, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from .models import SchoolMembership
+from .models import SchoolInvitation
+
+
+class SchoolInvitationForm(forms.ModelForm):
+    class Meta:
+        model = SchoolInvitation
+        fields = ["email", "role"]
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
 
 
 class SchoolScopedFormMixin:

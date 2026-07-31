@@ -8,4 +8,8 @@ urlpatterns = [
     path("admin/classes/add/", views.create_school_class, name="create_school_class"),
     path("admin/offerings/add/", views.create_subject_offering, name="create_subject_offering"),
     path("admin/teachers/assign/", views.create_teacher_assignment, name="create_teacher_assignment"),
+    path("admin/people/", views.people_directory, name="people_directory"),
+    path("admin/people/invite/", views.invite_member, name="invite_member"),
+    path("admin/people/<int:membership_id>/<str:status>/", views.set_membership_status, name="set_membership_status"),
+    path("invitations/<str:token>/", views.accept_school_invitation, name="accept_school_invitation"),
 ]

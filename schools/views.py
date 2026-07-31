@@ -1,10 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.http import Http404
+from django.urls import reverse
+from django.core.mail import send_mail
+from django.conf import settings
 from academics.models import AcademicYear, SchoolClass, SubjectOffering, TeacherAssignment, Term
-from .forms import AcademicYearForm, SchoolClassForm, SubjectOfferingForm, TeacherAssignmentForm, TermForm
-from .models import SchoolMembership
-from .services import has_school_role
+from .forms import AcademicYearForm, SchoolClassForm, SchoolInvitationForm, SubjectOfferingForm, TeacherAssignmentForm, TermForm
+from .models import SchoolInvitation, SchoolMembership
+from .services import accept_invitation, create_invitation, has_school_role
 
 
 def admin_required(view):
@@ -65,3 +69,61 @@ def create_subject_offering(request):
 @admin_required
 def create_teacher_assignment(request):
     return _create(request, TeacherAssignmentForm, "Assign teacher", "Teacher assigned.", lambda obj, school: None)
+
+
+@admin_required
+def people_directory(request):
+    return render(request, "schools/people_directory.html", {
+        "memberships": SchoolMembership.objects.filter(school=request.school).select_related("user"),
+        "invitations": SchoolInvitation.objects.filter(school=request.school)[:25],
+    })
+
+
+@admin_required
+def invite_member(request):
+    form = SchoolInvitationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        invitation, token = create_invitation(
+            school=request.school,
+            email=form.cleaned_data["email"],
+            role=form.cleaned_data["role"],
+            invited_by=request.user,
+        )
+        invitation_url = request.build_absolute_uri(reverse("accept_school_invitation", args=[token]))
+        send_mail(
+            f"Invitation to join {request.school.name} on Nyansa",
+            f"You have been invited as {invitation.get_role_display()}. Accept here: {invitation_url}",
+            settings.DEFAULT_FROM_EMAIL,
+            [invitation.email],
+        )
+        messages.success(request, "Invitation sent.")
+        return redirect("people_directory")
+    return render(request, "schools/admin_form.html", {"form": form, "title": "Invite member"})
+
+
+@admin_required
+def set_membership_status(request, membership_id, status):
+    if request.method != "POST":
+        return redirect("people_directory")
+    membership = SchoolMembership.objects.filter(school=request.school, id=membership_id).first()
+    if not membership:
+        raise Http404
+    if membership.user_id == request.user.id:
+        messages.error(request, "You cannot suspend your own administrator membership.")
+        return redirect("people_directory")
+    allowed = {SchoolMembership.Status.ACTIVE, SchoolMembership.Status.SUSPENDED}
+    if status not in allowed:
+        raise Http404
+    membership.status = status
+    membership.save(update_fields=["status", "updated_at"])
+    messages.success(request, "Membership updated.")
+    return redirect("people_directory")
+
+
+@login_required
+def accept_school_invitation(request, token):
+    if request.method == "POST":
+        accept_invitation(raw_token=token, user=request.user)
+        messages.success(request, "School invitation accepted.")
+        return redirect("home")
+    return render(request, "schools/accept_invitation.html")

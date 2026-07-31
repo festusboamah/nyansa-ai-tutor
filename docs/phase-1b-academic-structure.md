@@ -7,3 +7,7 @@ The structures are additive: existing enrollments and assessments remain operati
 ## Phase 1C administration
 
 School administrators now have a tenant-scoped dashboard and creation workflows for academic years, terms, classes, subject offerings, and teacher assignments. Every relationship field is filtered to the active school, and non-administrator memberships are denied access.
+
+## Phase 1D membership management
+
+The administrator workspace includes a school-scoped people directory, email invitations for all four membership roles, secure hashed invitation tokens, acceptance by matching authenticated email, and activation/suspension controls. Administrators cannot alter another school's memberships or suspend their own active administrator membership.

@@ -5,6 +5,9 @@ from accounts.models import User
 from academics.models import AcademicYear
 from .forms import TermForm
 from .models import School, SchoolMembership
+from .models import SchoolInvitation
+from .services import accept_invitation, create_invitation
+from django.core.exceptions import PermissionDenied
 
 
 class SchoolAdminViewTests(TestCase):
@@ -49,3 +52,38 @@ class SchoolAdminViewTests(TestCase):
         }, secure=True)
         self.assertRedirects(response, reverse("school_admin_dashboard"), fetch_redirect_response=False)
         self.assertTrue(self.school.classes.filter(name="JHS 1").exists())
+
+    def test_admin_can_invite_member_without_storing_raw_token(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.post(reverse("invite_member"), {
+            "email": "teacher@example.com", "role": SchoolMembership.Role.TEACHER,
+        }, secure=True)
+        self.assertRedirects(response, reverse("people_directory"), fetch_redirect_response=False)
+        invitation = SchoolInvitation.objects.get(email="teacher@example.com")
+        self.assertEqual(len(invitation.token_digest), 64)
+        self.assertNotIn(invitation.token_digest.encode(), response.content)
+
+    def test_admin_cannot_suspend_member_from_another_school(self):
+        other_user = User.objects.create_user(username="other-member", password="test-password")
+        membership = SchoolMembership.objects.create(school=self.other_school, user=other_user, role=SchoolMembership.Role.STUDENT)
+        self.client.force_login(self.admin_user)
+        response = self.client.post(reverse("set_membership_status", args=[membership.id, "SUSPENDED"]), secure=True)
+        self.assertEqual(response.status_code, 404)
+        membership.refresh_from_db()
+        self.assertEqual(membership.status, SchoolMembership.Status.ACTIVE)
+
+    def test_matching_user_can_accept_invitation_once(self):
+        user = User.objects.create_user(username="invitee", email="invitee@example.com", password="test-password")
+        invitation, token = create_invitation(school=self.school, email=user.email, role=SchoolMembership.Role.PARENT, invited_by=self.admin_user)
+        membership = accept_invitation(raw_token=token, user=user)
+        self.assertEqual(membership.role, SchoolMembership.Role.PARENT)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, SchoolInvitation.Status.ACCEPTED)
+        with self.assertRaises(PermissionDenied):
+            accept_invitation(raw_token=token, user=user)
+
+    def test_invitation_rejects_different_email(self):
+        user = User.objects.create_user(username="wrong-user", email="wrong@example.com", password="test-password")
+        _invitation, token = create_invitation(school=self.school, email="right@example.com", role=SchoolMembership.Role.STUDENT, invited_by=self.admin_user)
+        with self.assertRaises(PermissionDenied):
+            accept_invitation(raw_token=token, user=user)

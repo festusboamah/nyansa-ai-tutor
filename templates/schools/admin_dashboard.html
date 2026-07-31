@@ -3,6 +3,7 @@
 {% block content %}
 <div class="admin-heading"><div><p class="eyebrow">School administration</p><h1>{{ school.name }}</h1></div><span class="badge-enrolled">{{ member_count }} members</span></div>
 <div class="dashboard-actions">
+  <a class="btn-small" href="{% url 'people_directory' %}">Manage people</a>
   <a class="btn-small" href="{% url 'create_academic_year' %}">Add academic year</a>
   <a class="btn-small" href="{% url 'create_term' %}">Add term</a>
   <a class="btn-small" href="{% url 'create_school_class' %}">Add class</a>
