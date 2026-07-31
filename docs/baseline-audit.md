@@ -58,3 +58,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\backup_project.ps1
 ```
 
 Stop write traffic before taking a filesystem copy of SQLite. Production PostgreSQL backups will require a database-native backup and restoration procedure rather than this development script.
+
+To rehearse migrations without touching the working database, copy `db.sqlite3` and set `NYANSA_SQLITE_PATH` to the copied file before running `manage.py migrate` and `manage.py baseline_audit`.

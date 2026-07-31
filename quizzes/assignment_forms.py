@@ -3,6 +3,14 @@ from .models import Assignment, AssignmentSubmission
 
 
 class AssignmentForm(forms.ModelForm):
+    def __init__(self, *args, school=None, **kwargs):
+        from courses.models import Subject
+
+        super().__init__(*args, **kwargs)
+        self.fields["subject"].queryset = (
+            Subject.objects.filter(school=school) if school else Subject.objects.none()
+        )
+
     class Meta:
         model = Assignment
         fields = ["subject", "title", "instructions", "grading_rubric", "deadline"]

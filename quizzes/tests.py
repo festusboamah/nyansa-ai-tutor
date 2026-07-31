@@ -3,6 +3,7 @@ from django.urls import reverse
 
 from accounts.models import User
 from courses.models import Enrollment, Subject
+from schools.models import School, SchoolMembership
 
 from .models import Assignment, AssignmentSubmission, Quiz, Submission
 
@@ -13,7 +14,14 @@ class AssessmentModelTests(TestCase):
             username="teacher", password="test-password", role=User.Role.TEACHER
         )
         self.student = User.objects.create_user(username="student", password="test-password")
-        self.subject = Subject.objects.create(name="English")
+        self.school = School.objects.create(name="Assessment School", slug="assessment-school")
+        SchoolMembership.objects.create(
+            school=self.school, user=self.student, role=SchoolMembership.Role.STUDENT
+        )
+        SchoolMembership.objects.create(
+            school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER
+        )
+        self.subject = Subject.objects.create(school=self.school, name="English")
 
     def test_quiz_defaults_remain_stable(self):
         quiz = Quiz.objects.create(subject=self.subject, teacher=self.teacher, title="Grammar")
@@ -49,7 +57,15 @@ class AssessmentAccessBaselineTests(TestCase):
         self.other_student = User.objects.create_user(
             username="other-student", password="test-password"
         )
-        self.subject = Subject.objects.create(name="Social Studies")
+        self.school = School.objects.create(name="Quiz School", slug="quiz-school")
+        for student in (self.student, self.other_student):
+            SchoolMembership.objects.create(
+                school=self.school, user=student, role=SchoolMembership.Role.STUDENT
+            )
+        SchoolMembership.objects.create(
+            school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER
+        )
+        self.subject = Subject.objects.create(school=self.school, name="Social Studies")
         Enrollment.objects.create(student=self.student, subject=self.subject)
         self.quiz = Quiz.objects.create(
             subject=self.subject, teacher=self.teacher, title="Citizenship"

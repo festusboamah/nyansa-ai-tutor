@@ -12,6 +12,13 @@ class SubjectForm(forms.ModelForm):
 
 
 class MaterialForm(forms.ModelForm):
+    def __init__(self, *args, school=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if school is None:
+            self.fields["subject"].queryset = Subject.objects.none()
+        else:
+            self.fields["subject"].queryset = Subject.objects.filter(school=school)
+
     class Meta:
         model = Material
         fields = ["subject", "title", "material_type", "file", "video_url", "description"]

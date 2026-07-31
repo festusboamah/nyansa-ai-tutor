@@ -9,15 +9,17 @@ from .ai_quiz_generator import generate_quiz_questions
 from .models import Assignment, AssignmentSubmission
 from .assignment_forms import AssignmentForm, AssignmentSubmissionForm, GradeAssignmentForm
 from .assignment_ai import extract_text_from_file, suggest_assignment_grade
+from schools.models import SchoolMembership
+from schools.services import has_school_role
 
 
 @login_required
 def quiz_start_view(request, quiz_id):
-    if not request.user.is_student():
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
         messages.error(request, "Only students can take quizzes.")
         return redirect("home")
 
-    quiz = get_object_or_404(Quiz, id=quiz_id)
+    quiz = get_object_or_404(Quiz, id=quiz_id, subject__school=request.school)
     question_count = quiz.questions.count()
     attempts_used = Submission.objects.filter(quiz=quiz, student=request.user).count()
     attempts_remaining = quiz.max_attempts - attempts_used
@@ -33,11 +35,11 @@ def quiz_start_view(request, quiz_id):
 
 @login_required
 def quiz_take_view(request, quiz_id):
-    if not request.user.is_student():
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
         messages.error(request, "Only students can take quizzes.")
         return redirect("home")
 
-    quiz = get_object_or_404(Quiz, id=quiz_id)
+    quiz = get_object_or_404(Quiz, id=quiz_id, subject__school=request.school)
     questions = quiz.questions.prefetch_related("choices").all()
 
     if quiz.is_past_deadline():
@@ -133,7 +135,12 @@ def quiz_take_view(request, quiz_id):
 
 @login_required
 def quiz_result_view(request, submission_id):
-    submission = get_object_or_404(Submission, id=submission_id, student=request.user)
+    submission = get_object_or_404(
+        Submission,
+        id=submission_id,
+        student=request.user,
+        quiz__subject__school=request.school,
+    )
     answers = submission.answers.select_related("question", "selected_choice")
 
     attempts_used = Submission.objects.filter(quiz=submission.quiz, student=request.user).count()
@@ -147,7 +154,7 @@ def quiz_result_view(request, submission_id):
 
 @login_required
 def quiz_create_choice_view(request):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "Only teachers can create quizzes.")
         return redirect("home")
     return render(request, "quizzes/quiz_create_choice.html")
@@ -155,12 +162,12 @@ def quiz_create_choice_view(request):
 
 @login_required
 def create_quiz_view(request):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "Only teachers can create quizzes.")
         return redirect("home")
 
     if request.method == "POST":
-        form = QuizForm(request.POST)
+        form = QuizForm(request.POST, school=request.school)
         if form.is_valid():
             quiz = form.save(commit=False)
             quiz.teacher = request.user
@@ -168,14 +175,16 @@ def create_quiz_view(request):
             messages.success(request, "Quiz created! Now add some questions.")
             return redirect("add_question", quiz_id=quiz.id)
     else:
-        form = QuizForm()
+        form = QuizForm(school=request.school)
 
     return render(request, "quizzes/create_quiz.html", {"form": form})
 
 
 @login_required
 def add_question_view(request, quiz_id):
-    quiz = get_object_or_404(Quiz, id=quiz_id, teacher=request.user)
+    quiz = get_object_or_404(
+        Quiz, id=quiz_id, teacher=request.user, subject__school=request.school
+    )
 
     if request.method == "POST":
         question_form = QuestionForm(request.POST)
@@ -211,12 +220,12 @@ def add_question_view(request, quiz_id):
 
 @login_required
 def ai_generate_quiz_view(request):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "Only teachers can create quizzes.")
         return redirect("home")
 
     if request.method == "POST":
-        form = AIQuizGenerationForm(request.POST)
+        form = AIQuizGenerationForm(request.POST, school=request.school)
         if form.is_valid():
             quiz = Quiz.objects.create(
                 subject=form.cleaned_data["subject"],
@@ -253,18 +262,18 @@ def ai_generate_quiz_view(request):
             messages.success(request, f"AI generated {len(generated)} questions! Review them below.")
             return redirect("add_question", quiz_id=quiz.id)
     else:
-        form = AIQuizGenerationForm()
+        form = AIQuizGenerationForm(school=request.school)
 
     return render(request, "quizzes/ai_generate_quiz.html", {"form": form})
 
 @login_required
 def create_assignment_view(request):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "Only teachers can create assignments.")
         return redirect("home")
 
     if request.method == "POST":
-        form = AssignmentForm(request.POST)
+        form = AssignmentForm(request.POST, school=request.school)
         if form.is_valid():
             assignment = form.save(commit=False)
             assignment.teacher = request.user
@@ -272,27 +281,30 @@ def create_assignment_view(request):
             messages.success(request, "Assignment created successfully!")
             return redirect("teacher_dashboard")
     else:
-        form = AssignmentForm()
+        form = AssignmentForm(school=request.school)
 
     return render(request, "quizzes/create_assignment.html", {"form": form})
 
 
 @login_required
 def assignment_detail_view(request, assignment_id):
-    assignment = get_object_or_404(Assignment, id=assignment_id)
-    is_enrolled = assignment.subject.enrollments.filter(student=request.user).exists() if request.user.is_student() else True
+    assignment = get_object_or_404(
+        Assignment, id=assignment_id, subject__school=request.school
+    )
+    is_student = has_school_role(request, SchoolMembership.Role.STUDENT)
+    is_enrolled = assignment.subject.enrollments.filter(student=request.user).exists() if is_student else True
 
     if not is_enrolled:
         messages.error(request, "You need to enroll in this subject first.")
         return redirect("browse_subjects")
 
     my_submission = None
-    if request.user.is_student():
+    if is_student:
         my_submission = AssignmentSubmission.objects.filter(
             assignment=assignment, student=request.user
         ).order_by("-submitted_at").first()
 
-    if request.method == "POST" and request.user.is_student():
+    if request.method == "POST" and is_student:
         if assignment.is_past_deadline():
             messages.error(request, "The deadline for this assignment has passed.")
             return redirect("assignment_detail", assignment_id=assignment.id)
@@ -327,11 +339,16 @@ def assignment_detail_view(request, assignment_id):
 
 @login_required
 def assignment_submissions_list_view(request, assignment_id):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "Only teachers can view submissions.")
         return redirect("home")
 
-    assignment = get_object_or_404(Assignment, id=assignment_id, teacher=request.user)
+    assignment = get_object_or_404(
+        Assignment,
+        id=assignment_id,
+        teacher=request.user,
+        subject__school=request.school,
+    )
     submissions = assignment.submissions.select_related("student").order_by("-submitted_at")
 
     return render(request, "quizzes/assignment_submissions_list.html", {
@@ -342,12 +359,15 @@ def assignment_submissions_list_view(request, assignment_id):
 
 @login_required
 def grade_assignment_view(request, submission_id):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "Only teachers can grade assignments.")
         return redirect("home")
 
     submission = get_object_or_404(
-        AssignmentSubmission, id=submission_id, assignment__teacher=request.user
+        AssignmentSubmission,
+        id=submission_id,
+        assignment__teacher=request.user,
+        assignment__subject__school=request.school,
     )
 
     if request.method == "POST":

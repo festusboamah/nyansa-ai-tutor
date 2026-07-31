@@ -13,6 +13,7 @@ This directory is the implementation guide for Nyansa's evolution from an AI tut
 7. [Engineering Workflow](engineering-workflow.md) — development, testing, migration, and review conventions.
 8. [Architecture Decisions](decisions/README.md) — decisions that require a durable record.
 9. [Phase 0 Baseline Audit](baseline-audit.md) — current record counts, integrity observations, and migration implications.
+10. [Phase 1A Multi-Tenancy](phase-1a-multitenancy.md) — delivered tenant models, compatibility strategy, and migration rehearsal.
 
 ## Document status
 

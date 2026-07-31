@@ -8,18 +8,22 @@ from quizzes.models import Submission
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
+from schools.models import SchoolMembership
+from schools.services import has_school_role
 
 
 @login_required
 def dashboard_view(request):
-    if request.user.is_teacher():
+    if has_school_role(request, SchoolMembership.Role.TEACHER):
         return redirect("teacher_dashboard")
 
     from .grading import calculate_subject_grade
     from quizzes.models import Quiz, Assignment
     from django.utils import timezone
 
-    enrollments = Enrollment.objects.filter(student=request.user).select_related("subject")
+    enrollments = Enrollment.objects.filter(
+        student=request.user, subject__school=request.school
+    ).select_related("subject")
     subjects_with_grades = []
     for e in enrollments:
         grade_data = calculate_subject_grade(request.user, e.subject)
@@ -52,8 +56,10 @@ def dashboard_view(request):
 
 @login_required
 def browse_subjects_view(request):
-    all_subjects = Subject.objects.all()
-    enrolled_ids = Enrollment.objects.filter(student=request.user).values_list("subject_id", flat=True)
+    all_subjects = Subject.objects.filter(school=request.school)
+    enrolled_ids = Enrollment.objects.filter(
+        student=request.user, subject__school=request.school
+    ).values_list("subject_id", flat=True)
     return render(request, "courses/browse_subjects.html", {
         "subjects": all_subjects,
         "enrolled_ids": list(enrolled_ids),
@@ -62,11 +68,11 @@ def browse_subjects_view(request):
 
 @login_required
 def enroll_view(request, subject_id):
-    if not request.user.is_student():
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
         messages.error(request, "Only students can enroll in subjects.")
         return redirect("home")
 
-    subject = get_object_or_404(Subject, id=subject_id)
+    subject = get_object_or_404(Subject, id=subject_id, school=request.school)
     Enrollment.objects.get_or_create(student=request.user, subject=subject)
     messages.success(request, f"You are now enrolled in {subject.name}!")
     return redirect("browse_subjects")
@@ -74,10 +80,10 @@ def enroll_view(request, subject_id):
 
 @login_required
 def subject_detail_view(request, subject_id):
-    subject = get_object_or_404(Subject, id=subject_id)
+    subject = get_object_or_404(Subject, id=subject_id, school=request.school)
     is_enrolled = Enrollment.objects.filter(student=request.user, subject=subject).exists()
 
-    if not is_enrolled and not request.user.is_teacher():
+    if not is_enrolled and not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "You need to enroll in this subject first.")
         return redirect("browse_subjects")
 
@@ -94,14 +100,22 @@ def subject_detail_view(request, subject_id):
 
 @login_required
 def create_subject_view(request):
-    if not request.user.is_teacher():
+    if not has_school_role(
+        request, SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN
+    ):
         messages.error(request, "Only teachers can create subjects.")
+        return redirect("home")
+
+    if request.school is None:
+        messages.error(request, "Select an active school before creating a subject.")
         return redirect("home")
 
     if request.method == "POST":
         form = SubjectForm(request.POST)
         if form.is_valid():
-            form.save()
+            subject = form.save(commit=False)
+            subject.school = request.school
+            subject.save()
             messages.success(request, "Subject created successfully!")
             return redirect("teacher_dashboard")
     else:
@@ -112,12 +126,18 @@ def create_subject_view(request):
 
 @login_required
 def create_material_view(request):
-    if not request.user.is_teacher():
+    if not has_school_role(
+        request, SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN
+    ):
         messages.error(request, "Only teachers can add materials.")
         return redirect("home")
 
+    if request.school is None:
+        messages.error(request, "Select an active school before adding materials.")
+        return redirect("home")
+
     if request.method == "POST":
-        form = MaterialForm(request.POST, request.FILES)
+        form = MaterialForm(request.POST, request.FILES, school=request.school)
         if form.is_valid():
             material = form.save(commit=False)
             material.teacher = request.user
@@ -125,24 +145,26 @@ def create_material_view(request):
             messages.success(request, "Material added successfully!")
             return redirect("teacher_dashboard")
     else:
-        form = MaterialForm()
+        form = MaterialForm(school=request.school)
 
     return render(request, "courses/create_material.html", {"form": form})
 
 
 @login_required
 def study_documents_view(request):
-    if not request.user.is_student():
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
         messages.error(request, "This feature is only available to students.")
         return redirect("home")
 
-    documents = StudyDocument.objects.filter(student=request.user).order_by("-uploaded_at")
+    documents = StudyDocument.objects.filter(
+        student=request.user, school=request.school
+    ).order_by("-uploaded_at")
     return render(request, "courses/study_documents.html", {"documents": documents})
 
 
 @login_required
 def upload_study_document_view(request):
-    if not request.user.is_student():
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
         messages.error(request, "This feature is only available to students.")
         return redirect("home")
 
@@ -156,6 +178,7 @@ def upload_study_document_view(request):
 
         document = StudyDocument.objects.create(
             student=request.user,
+            school=request.school,
             title=title,
             file=uploaded_file,
         )
@@ -174,7 +197,9 @@ def upload_study_document_view(request):
 
 @login_required
 def study_document_detail_view(request, document_id):
-    document = get_object_or_404(StudyDocument, id=document_id, student=request.user)
+    document = get_object_or_404(
+        StudyDocument, id=document_id, student=request.user, school=request.school
+    )
     previous_questions = document.questions.all().order_by("asked_at")
 
     if request.method == "POST":
@@ -197,11 +222,11 @@ def study_document_detail_view(request, document_id):
 
 @login_required
 def unenroll_view(request, subject_id):
-    if not request.user.is_student():
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
         messages.error(request, "Only students can unenroll from subjects.")
         return redirect("home")
 
-    subject = get_object_or_404(Subject, id=subject_id)
+    subject = get_object_or_404(Subject, id=subject_id, school=request.school)
     enrollment = Enrollment.objects.filter(student=request.user, subject=subject).first()
 
     if enrollment:
@@ -215,12 +240,12 @@ def unenroll_view(request, subject_id):
 
 @login_required
 def transcript_view(request):
-    if not request.user.is_student():
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
         messages.error(request, "This feature is only available to students.")
         return redirect("home")
 
     submissions = Submission.objects.filter(
-        student=request.user
+        student=request.user, quiz__subject__school=request.school
     ).select_related("quiz", "quiz__subject").order_by("quiz__subject__name", "-submitted_at")
 
     subjects_data = {}
@@ -252,12 +277,12 @@ def transcript_view(request):
 
 @login_required
 def download_transcript_pdf(request):
-    if not request.user.is_student():
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
         messages.error(request, "This feature is only available to students.")
         return redirect("home")
 
     submissions = Submission.objects.filter(
-        student=request.user
+        student=request.user, quiz__subject__school=request.school
     ).select_related("quiz", "quiz__subject").order_by("quiz__subject__name", "-submitted_at")
 
     subjects_data = {}

@@ -3,9 +3,15 @@ from django.conf import settings
 
 
 class Subject(models.Model):
+    school = models.ForeignKey(
+        "schools.School", on_delete=models.CASCADE, related_name="subjects"
+    )
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["school", "name"], name="subject_school_name_idx")]
 
     def __str__(self):
         return self.name
@@ -50,6 +56,9 @@ class Enrollment(models.Model):
 
 
 class StudyDocument(models.Model):
+    school = models.ForeignKey(
+        "schools.School", on_delete=models.CASCADE, related_name="study_documents"
+    )
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="study_documents"
     )

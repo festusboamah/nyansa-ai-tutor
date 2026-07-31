@@ -9,6 +9,7 @@ from accounts.models import User
 from courses.models import Enrollment, Material, StudyDocument, Subject
 from dashboard.models import LessonNote
 from quizzes.models import Assignment, AssignmentSubmission, Quiz, Submission
+from schools.models import School, SchoolMembership
 
 
 class Command(BaseCommand):
@@ -37,6 +38,8 @@ class Command(BaseCommand):
             "assignments": Assignment.objects.count(),
             "assignment_submissions": AssignmentSubmission.objects.count(),
             "lesson_notes": LessonNote.objects.count(),
+            "schools": School.objects.count(),
+            "school_memberships": SchoolMembership.objects.count(),
         }
         risks = {
             "users_with_unknown_role": User.objects.exclude(
@@ -49,6 +52,10 @@ class Command(BaseCommand):
             "quiz_submissions_without_score": Submission.objects.filter(score__isnull=True).count(),
             "lesson_notes_without_generated_content": LessonNote.objects.filter(
                 generated_content=""
+            ).count(),
+            "users_without_active_membership": User.objects.exclude(
+                school_memberships__status=SchoolMembership.Status.ACTIVE,
+                school_memberships__school__status=School.Status.ACTIVE,
             ).count(),
         }
         media_root = Path(settings.MEDIA_ROOT)
