@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Revise Lesson Note - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading"><div><p class="eyebrow">Next version</p><h1>Revise {{ note.strand_topic }}</h1><p>Save a new immutable version before submitting it for review.</p></div></div>
+<div class="card form-card"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn-small" type="submit">Save new version</button><a class="btn-small btn-secondary" href="{% url 'lesson_note_detail' note.id %}">Cancel</a></form></div>
+{% endblock %}

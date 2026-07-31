@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Lesson Review - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading"><div><p class="eyebrow">Academic oversight</p><h1>Lesson-plan review</h1><p>Review submitted plans and reopen approved plans only when a controlled revision is required.</p></div></div>
+<div class="gradebook-table-wrap"><table class="student-table gradebook-table"><thead><tr><th>Teacher</th><th>Subject</th><th>Class / week</th><th>Topic</th><th>Version</th><th>Status</th><th>Action</th></tr></thead><tbody>
+{% for note in notes %}<tr><td>{{ note.teacher.get_full_name|default:note.teacher.username }}</td><td>{{ note.subject.name }}</td><td>{{ note.class_level }} / {{ note.week_ending }}</td><td>{{ note.strand_topic }}</td><td>{{ note.current_version }}</td><td><span class="status-pill status-{{ note.status|lower }}">{{ note.get_status_display }}</span></td><td><a class="btn-small" href="{% url 'lesson_review_detail' note.id %}">Review</a></td></tr>{% empty %}<tr><td colspan="7">No submitted or approved lesson plans.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

@@ -79,6 +79,8 @@ Exit criteria:
 - Permission and transition tests cover every workflow edge.
 - Approved content cannot be silently changed.
 
+Current status: Phase 3 is complete. Lesson plans move through Draft, Pending Review, Sent Back, and Approved states; only authors revise or submit; school administrators approve, return, or explicitly reopen approved content; immutable versions and workflow events preserve history; and tenant-scoped in-app notifications connect authors and reviewers.
+
 ## Phase 4 — Attendance and school calendar
 
 **Goal:** Provide fast daily attendance and accurate instructional-day calculations.

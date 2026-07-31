@@ -7,6 +7,7 @@ from accounts.models import User
 from .ai_reports import generate_student_report
 from .models import LessonNote
 from .forms import LessonNoteForm
+from .forms import LessonCommentForm, LessonNoteRevisionForm
 from .lesson_ai import generate_lesson_note
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -15,6 +16,16 @@ import markdown as md
 from .email_utils import send_report_email
 from schools.models import SchoolMembership
 from schools.services import has_school_role
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.utils import timezone
+from .lesson_workflow import (
+    add_lesson_comment,
+    record_initial_lesson_version,
+    revise_lesson_note,
+    review_lesson_note,
+    submit_lesson_note,
+)
+from .models import LessonNoteNotification
 
 
 @login_required
@@ -129,6 +140,7 @@ def create_lesson_note_view(request):
             if not lesson_note.resources:
                 lesson_note.resources = result.get("resources", "")
             lesson_note.save()
+            record_initial_lesson_version(note=lesson_note, actor=request.school_membership)
 
             messages.success(request, "Lesson note generated successfully!")
             return redirect("lesson_note_detail", note_id=lesson_note.id)
@@ -148,7 +160,161 @@ def lesson_note_detail_view(request, note_id):
         lesson_data = json.loads(note.generated_content)
     except (json.JSONDecodeError, TypeError):
         lesson_data = None
-    return render(request, "dashboard/lesson_note_detail.html", {"note": note, "lesson_data": lesson_data})
+    return render(request, "dashboard/lesson_note_detail.html", {
+        "note": note,
+        "lesson_data": lesson_data,
+        "events": note.events.select_related("actor__user"),
+        "versions": note.versions.select_related("created_by__user"),
+        "comment_form": LessonCommentForm(),
+    })
+
+
+@login_required
+def edit_lesson_note_view(request, note_id):
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
+        messages.error(request, "This feature is only available to teachers.")
+        return redirect("home")
+    note = get_object_or_404(
+        LessonNote, pk=note_id, teacher=request.user, subject__school=request.school
+    )
+    if note.status not in {LessonNote.Status.DRAFT, LessonNote.Status.SENT_BACK}:
+        messages.error(request, "Only draft or returned lesson notes can be revised.")
+        return redirect("lesson_note_detail", note_id=note.pk)
+    form = LessonNoteRevisionForm(request.POST or None, instance=note, school=request.school)
+    if request.method == "POST" and form.is_valid():
+        import json
+        values = {field: form.cleaned_data[field] for field in LessonNoteForm.Meta.fields}
+        values["generated_content"] = json.dumps(form.cleaned_data["generated_content"])
+        try:
+            revise_lesson_note(
+                note=note,
+                actor=request.school_membership,
+                values=values,
+                reason=form.cleaned_data["revision_reason"],
+            )
+        except (ValidationError, PermissionDenied) as error:
+            form.add_error(None, str(error))
+        else:
+            messages.success(request, "Lesson note revision saved.")
+            return redirect("lesson_note_detail", note_id=note.pk)
+    return render(request, "dashboard/edit_lesson_note.html", {"note": note, "form": form})
+
+
+@login_required
+def submit_lesson_note_view(request, note_id):
+    note = get_object_or_404(
+        LessonNote, pk=note_id, teacher=request.user, subject__school=request.school
+    )
+    if request.method == "POST":
+        try:
+            submit_lesson_note(
+                note=note,
+                actor=request.school_membership,
+                message=request.POST.get("message", ""),
+            )
+        except (ValidationError, PermissionDenied) as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request, "Lesson note submitted for review.")
+    return redirect("lesson_note_detail", note_id=note.pk)
+
+
+@login_required
+def comment_lesson_note_view(request, note_id):
+    note = get_object_or_404(LessonNote, pk=note_id, subject__school=request.school)
+    if request.method == "POST":
+        form = LessonCommentForm(request.POST)
+        if form.is_valid():
+            try:
+                add_lesson_comment(
+                    note=note, actor=request.school_membership, message=form.cleaned_data["message"]
+                )
+            except (ValidationError, PermissionDenied) as error:
+                messages.error(request, str(error))
+            else:
+                messages.success(request, "Comment added.")
+    if has_school_role(request, SchoolMembership.Role.SCHOOL_ADMIN):
+        return redirect("lesson_review_detail", note_id=note.pk)
+    return redirect("lesson_note_detail", note_id=note.pk)
+
+
+@login_required
+def lesson_review_queue_view(request):
+    if not has_school_role(request, SchoolMembership.Role.SCHOOL_ADMIN):
+        messages.error(request, "This page is only available to school administrators.")
+        return redirect("home")
+    notes = LessonNote.objects.filter(
+        subject__school=request.school,
+        status__in=[LessonNote.Status.PENDING_REVIEW, LessonNote.Status.APPROVED],
+    ).select_related("teacher", "subject", "reviewed_by__user")
+    return render(request, "dashboard/lesson_review_queue.html", {"notes": notes})
+
+
+@login_required
+def lesson_review_detail_view(request, note_id):
+    if not has_school_role(request, SchoolMembership.Role.SCHOOL_ADMIN):
+        messages.error(request, "This page is only available to school administrators.")
+        return redirect("home")
+    note = get_object_or_404(
+        LessonNote.objects.select_related("teacher", "subject").prefetch_related(
+            "events__actor__user", "versions__created_by__user"
+        ),
+        pk=note_id,
+        subject__school=request.school,
+    )
+    import json
+    try:
+        lesson_data = json.loads(note.generated_content)
+    except (json.JSONDecodeError, TypeError):
+        lesson_data = None
+    return render(request, "dashboard/lesson_review_detail.html", {
+        "note": note,
+        "lesson_data": lesson_data,
+        "events": note.events.all(),
+        "versions": note.versions.all(),
+        "comment_form": LessonCommentForm(),
+    })
+
+
+@login_required
+def review_lesson_note_view(request, note_id):
+    if not has_school_role(request, SchoolMembership.Role.SCHOOL_ADMIN):
+        messages.error(request, "This page is only available to school administrators.")
+        return redirect("home")
+    note = get_object_or_404(LessonNote, pk=note_id, subject__school=request.school)
+    if request.method == "POST":
+        try:
+            review_lesson_note(
+                note=note,
+                actor=request.school_membership,
+                action=request.POST.get("action", ""),
+                message=request.POST.get("message", ""),
+            )
+        except (ValidationError, PermissionDenied) as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request, "Lesson-note review recorded.")
+    return redirect("lesson_review_detail", note_id=note.pk)
+
+
+@login_required
+def lesson_notifications_view(request):
+    notifications = LessonNoteNotification.objects.filter(
+        recipient=request.school_membership
+    ).select_related("lesson_note") if request.school_membership else LessonNoteNotification.objects.none()
+    return render(request, "dashboard/lesson_notifications.html", {"notifications": notifications})
+
+
+@login_required
+def read_lesson_notification_view(request, notification_id):
+    if request.method == "POST" and request.school_membership:
+        notification = get_object_or_404(
+            LessonNoteNotification, pk=notification_id, recipient=request.school_membership
+        )
+        if notification.read_at is None:
+            notification.read_at = timezone.now()
+            notification.save(update_fields=["read_at"])
+    return redirect("lesson_notifications")
 
 @login_required
 def download_lesson_note_pdf(request, note_id):

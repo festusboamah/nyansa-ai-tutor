@@ -12,6 +12,7 @@
         <h2>{{ note.subject.name }} - {{ note.strand_topic }}</h2>
         <p class="submission-date">{{ note.class_level }} | Week Ending {{ note.week_ending|date:"M d, Y" }}</p>
         <p>{{ note.num_days }} day{{ note.num_days|pluralize }} plan</p>
+        <span class="status-pill status-{{ note.status|lower }}">{{ note.get_status_display }}</span>
     </a>
     {% empty %}
     <p>You haven't created any lesson notes yet.</p>

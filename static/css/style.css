@@ -1048,5 +1048,15 @@ h2 {
 .status-not_reviewed { background:#e2e8f0; color:#475569; }
 .review-form { display:grid; grid-template-columns:minmax(12rem,1fr) auto auto; gap:.4rem; }
 .review-form input { padding:.45rem; border:1px solid var(--border); border-radius:6px; }
+.status-pending_review { background:#fef3c7; color:#92400e; }
+.status-sent_back { background:#fee2e2; color:#991b1b; }
+.lesson-workflow-summary { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; margin:1rem 0; color:var(--text-muted); }
+.workflow-panel { margin-top:2rem; padding:1.25rem; background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow); }
+.workflow-timeline article { border-left:3px solid var(--border); padding:.7rem 0 .7rem 1rem; margin:.6rem 0; }
+.workflow-timeline time { color:var(--text-muted); font-size:.8rem; margin-left:.5rem; }
+.workflow-timeline p { margin:.4rem 0 0; }
+.review-decision-form { display:grid; gap:.75rem; margin:1rem 0 1.5rem; padding:1rem; background:var(--card-bg); border-radius:var(--radius); }
+.review-decision-form textarea { width:100%; padding:.7rem; border:1px solid var(--border); border-radius:6px; }
+.notification-unread { border-left:4px solid var(--secondary); }
 @media (max-width:650px) { .gradebook-actions { align-items:stretch; flex-direction:column; } .gradebook-actions .btn { width:100%; } }
 @media (max-width:650px) { .import-summary { grid-template-columns:1fr; } }
