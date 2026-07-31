@@ -90,6 +90,13 @@ class ClassEnrollment(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=["school_class", "student"], name="unique_student_class_enrollment")]
 
+    def clean(self):
+        if self.school_class_id and (
+            self.student.school_id != self.school_class.school_id
+            or self.student.role != "STUDENT"
+        ):
+            raise ValidationError("Student must have a student membership in the class school.")
+
 
 class SubjectOffering(models.Model):
     school = models.ForeignKey("schools.School", on_delete=models.CASCADE, related_name="subject_offerings")
@@ -113,3 +120,10 @@ class TeacherAssignment(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["offering", "teacher"], name="unique_teacher_offering")]
+
+    def clean(self):
+        if self.offering_id and (
+            self.teacher.school_id != self.offering.school_id
+            or self.teacher.role != "TEACHER"
+        ):
+            raise ValidationError("Teacher must have a teacher membership in the offering school.")

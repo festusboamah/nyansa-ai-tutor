@@ -1011,3 +1011,10 @@ h2 {
     margin-top: 0.5rem;
     color: var(--primary);
 }
+
+.admin-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem; }
+.eyebrow { text-transform:uppercase; letter-spacing:.08em; font-size:.78rem; font-weight:700; color:var(--primary); margin-bottom:.25rem; }
+.admin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1.5rem; }
+.admin-row { display:flex; justify-content:space-between; gap:1rem; padding:.8rem 0; border-bottom:1px solid var(--border); }
+.admin-row span { color:var(--text-muted); text-align:right; }
+@media (max-width: 650px) { .navbar { padding:1rem; align-items:flex-start; } .navbar-links { flex-wrap:wrap; justify-content:flex-end; gap:.35rem; } .main-content { padding:1.5rem 1rem; } .admin-heading, .admin-row { align-items:flex-start; flex-direction:column; } .admin-row span { text-align:left; } }

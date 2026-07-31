@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Nyansa{% endblock %}
+{% block content %}
+<div class="card form-card">
+  <h1>{{ title }}</h1>
+  <form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Save</button></form>
+  <p><a href="{% url 'school_admin_dashboard' %}">Back to school administration</a></p>
+</div>
+{% endblock %}
