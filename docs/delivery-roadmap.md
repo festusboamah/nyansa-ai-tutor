@@ -135,6 +135,8 @@ Exit criteria:
 - Failed messages can be retried without duplicate business events.
 - Message content follows the privacy policy.
 
+Current status: Phase 6 is complete. Administrators authorize and revoke explicit guardian-student links with school-held verification references; guardians see only actively linked children and their published reports and attendance; preferences independently control email and SMS; publication and attendance events create idempotent outbox intents; a worker records immutable delivery attempts and schedules bounded retries; Django email and Arkesel SMS gateways are replaceable adapters; and event and future balance templates share the same privacy-aware queue.
+
 ## Phase 7 — Fees and Mobile Money
 
 **Goal:** Provide a trustworthy student ledger and locally relevant payment path.

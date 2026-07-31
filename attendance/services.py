@@ -100,6 +100,19 @@ def submit_attendance(*, school_class, term, attendance_date, actor, statuses):
         )
         record.full_clean()
         record.save()
+    from communications.models import MessageTemplate
+    from communications.services import enqueue_guardian_event
+
+    for enrollment in roster:
+        if normalized[enrollment.student_id] in {
+            AttendanceRecord.Status.ABSENT, AttendanceRecord.Status.EXCUSED
+        }:
+            enqueue_guardian_event(
+                student=enrollment.student,
+                event_type=MessageTemplate.EventType.ATTENDANCE,
+                business_reference=f"attendance:{session.pk}:student:{enrollment.student_id}",
+                context={},
+            )
     return session
 
 

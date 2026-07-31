@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}School Event Message - Nyansa{% endblock %}
+{% block content %}<div class="admin-heading"><div><p class="eyebrow">Family communication</p><h1>School event</h1><p>Queue an email notice for selected verified guardians.</p></div></div><form method="post" class="card narrow-form">{% csrf_token %}<input type="hidden" name="event_key" value="{% now 'U' %}">{{ form.as_p }}<button class="btn-small" type="submit">Queue messages</button></form>{% endblock %}

@@ -18,13 +18,13 @@
         </div>
         <div class="navbar-links">
             {% if user.is_authenticated %}
-    {% if user.role == "STUDENT" %}
+    {% if request.school_membership.role == "STUDENT" %}
     <a href="{% url 'dashboard' %}">Dashboard</a>
     <a href="{% url 'browse_subjects' %}">Browse Subjects</a>
     <a href="{% url 'study_documents' %}">Study Hub</a>
     <a href="{% url 'transcript' %}">Transcript</a>
 {% endif %}
-    {% if user.role == "TEACHER" %}
+    {% if request.school_membership.role == "TEACHER" %}
         <a href="{% url 'teacher_dashboard' %}">Dashboard</a>
         {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'gradebook_offerings' %}">Gradebook</a>{% endif %}
         {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'attendance_dashboard' %}">Attendance</a>{% endif %}
@@ -36,6 +36,12 @@
         <a href="{% url 'lesson_review_queue' %}">Lesson Review</a>
         <a href="{% url 'attendance_dashboard' %}">Attendance</a>
         <a href="{% url 'term_report_dashboard' %}">Term Reports</a>
+        <a href="{% url 'guardian_links' %}">Guardians</a>
+        <a href="{% url 'communications_dashboard' %}">Messages</a>
+    {% endif %}
+    {% if request.school_membership.role == "PARENT" %}
+        <a href="{% url 'guardian_portal' %}">My Children</a>
+        <a href="{% url 'communication_preferences' %}">Message Preferences</a>
     {% endif %}
     {% if request.school_membership %}<a href="{% url 'lesson_notifications' %}">Notifications</a>{% endif %}
     <a href="{% url 'profile' %}" class="welcome-text">Hi, {{ user.username }} ({{ user.role|title }})</a>

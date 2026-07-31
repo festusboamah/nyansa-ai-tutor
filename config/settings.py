@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     'gradebook',
     'attendance',
     'reports',
+    'guardians',
+    'communications',
 ]
 
 MIDDLEWARE = [
@@ -106,6 +108,9 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Nyansa <noreply@nyansa.com>")
+ARKESEL_API_KEY = os.getenv("ARKESEL_API_KEY", "")
+ARKESEL_SENDER_ID = os.getenv("ARKESEL_SENDER_ID", "Nyansa")
+ARKESEL_SMS_ENDPOINT = os.getenv("ARKESEL_SMS_ENDPOINT", "https://sms.arkesel.com/api/v2/sms/send")
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

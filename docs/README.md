@@ -46,3 +46,4 @@ The source roadmap is `Nyansa Future Roadmap.docx`, prepared in 2026. Product de
 
 Update the relevant document in the same pull request whenever a change affects domain terminology, user-visible behavior, tenancy rules, integrations, or a recorded architecture decision. Requirements should use stable IDs so tests and pull requests can refer to them.
 - [Phase 5 term reports](phase-5-term-reports.md)
+- [Phase 6 guardian portal and communications](phase-6-guardian-communications.md)

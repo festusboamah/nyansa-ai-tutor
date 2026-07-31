@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Message Template - Nyansa{% endblock %}
+{% block content %}<div class="admin-heading"><div><p class="eyebrow">Communication content</p><h1>{% if template %}Edit{% else %}New{% endif %} template</h1><p>Supported placeholders vary by event. SMS must never include grades, balances, or other sensitive details.</p></div></div><form method="post" class="card narrow-form">{% csrf_token %}{{ form.as_p }}<button class="btn-small" type="submit">Save template</button></form>{% endblock %}

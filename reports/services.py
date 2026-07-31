@@ -238,4 +238,14 @@ def transition_report(*, report, actor, action, note=""):
         report=report, action=event_actions[action], from_status=previous,
         to_status=target, note=note.strip(), actor=actor,
     )
+    if action == "publish":
+        from communications.models import MessageTemplate
+        from communications.services import enqueue_guardian_event
+
+        enqueue_guardian_event(
+            student=report.student,
+            event_type=MessageTemplate.EventType.REPORT,
+            business_reference=f"term-report:{report.pk}:version:{report.version}",
+            context={},
+        )
     return report

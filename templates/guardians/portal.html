@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Guardian Portal - Nyansa{% endblock %}
+{% block content %}<div class="admin-heading"><div><p class="eyebrow">Secure family access</p><h1>My children</h1><p>Only students explicitly verified by the school appear here.</p></div></div><div class="guardian-grid">{% for student in students %}<a class="card guardian-child" href="{% url 'guardian_student_detail' student.id %}"><h2>{{ student.user.get_full_name|default:student.user.username }}</h2><p>{{ student.identifier|default:"Student record" }}</p><span>View reports and attendance →</span></a>{% empty %}<div class="card"><h2>No verified links</h2><p>Ask your school administrator to verify your relationship with a student.</p></div>{% endfor %}</div>{% endblock %}
