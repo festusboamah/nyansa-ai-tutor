@@ -30,6 +30,7 @@
     {% endif %}
     {% if request.school_membership.role == "SCHOOL_ADMIN" %}
         <a href="{% url 'school_admin_dashboard' %}">School Admin</a>
+        <a href="{% url 'gradebook_review_queue' %}">Grade Review</a>
     {% endif %}
     <a href="{% url 'profile' %}" class="welcome-text">Hi, {{ user.username }} ({{ user.role|title }})</a>
     <form method="post" action="{% url 'logout' %}" class="inline-form">

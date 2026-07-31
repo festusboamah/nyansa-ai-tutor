@@ -13,10 +13,12 @@ from academics.models import ClassEnrollment, SubjectOffering
 from schools.models import SchoolMembership
 from schools.services import has_school_role
 
-from .forms import AssessmentForm, GradeWorkbookUploadForm
+from .forms import AssessmentForm, GradeCorrectionForm, GradeWorkbookUploadForm
+from .history import record_grade_entry, review_grade_entry
 from .imports import confirm_grade_import
-from .models import Assessment, GradeEntry, GradeImportBatch, GradeImportRow
+from .models import Assessment, GradeEntry, GradeImportBatch, GradeImportRow, GradeReviewDecision
 from .spreadsheets import WorkbookValidationError, build_grade_template, parse_grade_template
+from .sync import sync_legacy_assessment
 
 
 def teacher_required(view):
@@ -25,6 +27,18 @@ def teacher_required(view):
     def wrapped(request, *args, **kwargs):
         if not has_school_role(request, SchoolMembership.Role.TEACHER):
             messages.error(request, "This page is only available to teachers.")
+            return redirect("home")
+        return view(request, *args, **kwargs)
+
+    return wrapped
+
+
+def school_admin_required(view):
+    @wraps(view)
+    @login_required
+    def wrapped(request, *args, **kwargs):
+        if not has_school_role(request, SchoolMembership.Role.SCHOOL_ADMIN):
+            messages.error(request, "This page is only available to school administrators.")
             return redirect("home")
         return view(request, *args, **kwargs)
 
@@ -91,7 +105,7 @@ def assessment_list(request, offering_id):
 @teacher_required
 def create_assessment(request, offering_id):
     offering = _assigned_offering(request, offering_id)
-    form = AssessmentForm(request.POST or None, offering=offering)
+    form = AssessmentForm(request.POST or None, offering=offering, teacher_user=request.user)
     if request.method == "POST" and form.is_valid():
         assessment = form.save(commit=False)
         try:
@@ -137,7 +151,16 @@ def grade_roster(request, assessment_id):
             if not score.is_finite():
                 errors[enrollment.student_id] = "Enter a finite number."
                 continue
-            entry = existing.get(enrollment.student_id) or GradeEntry(
+            existing_entry = existing.get(enrollment.student_id)
+            if existing_entry and existing_entry.review_status == GradeEntry.ReviewStatus.APPROVED:
+                errors[enrollment.student_id] = "Approved grade must be returned before correction."
+            elif existing_entry and existing_entry.status == GradeEntry.Status.PUBLISHED and (
+                existing_entry.score != score
+                or existing_entry.status != target_status
+                or existing_entry.source != GradeEntry.Source.MANUAL
+            ):
+                errors[enrollment.student_id] = "Use the correction page to change a published grade."
+            entry = existing_entry or GradeEntry(
                 school=request.school, assessment=assessment, student=enrollment.student
             )
             entry.score = score
@@ -153,7 +176,16 @@ def grade_roster(request, assessment_id):
         if not errors:
             with transaction.atomic():
                 for entry in pending:
-                    entry.save()
+                    record_grade_entry(
+                        school=request.school,
+                        assessment=assessment,
+                        student=entry.student,
+                        actor=request.school_membership,
+                        score=entry.score,
+                        source=GradeEntry.Source.MANUAL,
+                        status=entry.status,
+                        reason="Manual roster entry" if entry.pk is None else "Updated draft roster entry",
+                    )
             verb = "published" if target_status == GradeEntry.Status.PUBLISHED else "saved as draft"
             noun = "entry" if len(pending) == 1 else "entries"
             messages.success(request, f"{len(pending)} grade {noun} {verb}.")
@@ -169,6 +201,58 @@ def grade_roster(request, assessment_id):
             "error": errors.get(enrollment.student_id),
         })
     return render(request, "gradebook/grade_roster.html", {"assessment": assessment, "rows": rows})
+
+
+@teacher_required
+def correct_grade(request, entry_id):
+    entry = get_object_or_404(
+        GradeEntry.objects.select_related("assessment__offering", "student__user").prefetch_related(
+            "revisions__changed_by__user", "review_decisions__reviewed_by__user"
+        ),
+        pk=entry_id,
+        school=request.school,
+        assessment__offering__teacher_assignments__teacher=request.school_membership,
+    )
+    form = GradeCorrectionForm(
+        request.POST or None,
+        entry=entry,
+        initial={"score": entry.score, "status": entry.status},
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            record_grade_entry(
+                school=request.school,
+                assessment=entry.assessment,
+                student=entry.student,
+                actor=request.school_membership,
+                score=form.cleaned_data["score"],
+                source=GradeEntry.Source.MANUAL,
+                status=form.cleaned_data["status"],
+                reason=form.cleaned_data["reason"],
+            )
+        except ValidationError as error:
+            form.add_error(None, error)
+        else:
+            messages.success(request, "Grade corrected and revision history recorded.")
+            return redirect("gradebook_roster", assessment_id=entry.assessment_id)
+    return render(request, "gradebook/grade_correction.html", {"entry": entry, "form": form})
+
+
+@teacher_required
+def sync_assessment(request, assessment_id):
+    assessment = _assigned_assessment(request, assessment_id)
+    if request.method != "POST":
+        return redirect("gradebook_roster", assessment_id=assessment.pk)
+    try:
+        result = sync_legacy_assessment(assessment=assessment, actor=request.school_membership)
+    except ValidationError as error:
+        messages.error(request, "; ".join(error.messages))
+    else:
+        messages.success(
+            request,
+            f"Found {result['found']} legacy result(s): {result['changed']} synchronized and {result['unchanged']} unchanged.",
+        )
+    return redirect("gradebook_roster", assessment_id=assessment.pk)
 
 
 @teacher_required
@@ -255,3 +339,29 @@ def confirm_import(request, batch_id):
         return redirect("gradebook_import_preview", batch_id=batch.pk)
     messages.success(request, f"Import confirmed. {imported_count} grade entries were saved.")
     return redirect("gradebook_roster", assessment_id=batch.assessment_id)
+
+
+@school_admin_required
+def grade_review_queue(request):
+    entries = GradeEntry.objects.filter(
+        school=request.school, status=GradeEntry.Status.PUBLISHED
+    ).select_related(
+        "student__user", "assessment__offering__subject", "assessment__offering__school_class", "recorded_by__user"
+    ).order_by("review_status", "assessment__offering__school_class__name", "student__user__username")
+    return render(request, "gradebook/review_queue.html", {"entries": entries})
+
+
+@school_admin_required
+def review_grade(request, entry_id):
+    entry = get_object_or_404(GradeEntry, pk=entry_id, school=request.school)
+    if request.method != "POST":
+        return redirect("gradebook_review_queue")
+    decision = request.POST.get("decision", "")
+    note = request.POST.get("note", "")
+    try:
+        review_grade_entry(entry=entry, reviewer=request.school_membership, decision=decision, note=note)
+    except ValidationError as error:
+        messages.error(request, "; ".join(error.messages))
+    else:
+        messages.success(request, f"Grade {decision.lower()}.")
+    return redirect("gradebook_review_queue")

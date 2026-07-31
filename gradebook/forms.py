@@ -1,15 +1,15 @@
 from django import forms
 
-from .models import Assessment, AssessmentCategory, GradeScheme
+from .models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
 
 
 class AssessmentForm(forms.ModelForm):
     class Meta:
         model = Assessment
-        fields = ["category", "title", "max_score", "due_at", "status"]
+        fields = ["category", "title", "max_score", "due_at", "status", "legacy_quiz", "legacy_assignment"]
         widgets = {"due_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}
 
-    def __init__(self, *args, offering, **kwargs):
+    def __init__(self, *args, offering, teacher_user=None, **kwargs):
         self.offering = offering
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = AssessmentCategory.objects.filter(
@@ -17,6 +17,15 @@ class AssessmentForm(forms.ModelForm):
             scheme__academic_year=offering.term.academic_year,
             scheme__status=GradeScheme.Status.ACTIVE,
         ).select_related("scheme")
+        self.fields["legacy_quiz"].queryset = self.fields["legacy_quiz"].queryset.filter(
+            subject=offering.subject
+        )
+        self.fields["legacy_assignment"].queryset = self.fields["legacy_assignment"].queryset.filter(
+            subject=offering.subject
+        )
+        if teacher_user is not None:
+            self.fields["legacy_quiz"].queryset = self.fields["legacy_quiz"].queryset.filter(teacher=teacher_user)
+            self.fields["legacy_assignment"].queryset = self.fields["legacy_assignment"].queryset.filter(teacher=teacher_user)
         self.instance.school = offering.school
         self.instance.offering = offering
 
@@ -33,3 +42,21 @@ class GradeWorkbookUploadForm(forms.Form):
         if workbook.size > 2 * 1024 * 1024:
             raise forms.ValidationError("Workbook must be 2 MB or smaller.")
         return workbook
+
+
+class GradeCorrectionForm(forms.Form):
+    score = forms.DecimalField(min_value=0, decimal_places=2, max_digits=8)
+    status = forms.ChoiceField(choices=GradeEntry.Status.choices)
+    reason = forms.CharField(
+        min_length=5,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Explain why this grade is changing. This note becomes permanent history.",
+    )
+
+    def __init__(self, *args, entry, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.entry = entry
+        self.fields["score"].max_value = entry.assessment.max_score
+        self.fields["score"].widget.attrs["max"] = entry.assessment.max_score
+        self.fields["score"].widget.attrs["step"] = "0.01"

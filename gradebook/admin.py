@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Assessment, AssessmentCategory, GradeEntry, GradeImportBatch, GradeImportRow, GradeScheme
+from .models import Assessment, AssessmentCategory, GradeEntry, GradeEntryRevision, GradeImportBatch, GradeImportRow, GradeReviewDecision, GradeScheme
 
 
 class AssessmentCategoryInline(admin.TabularInline):
@@ -23,8 +23,35 @@ class AssessmentAdmin(admin.ModelAdmin):
 
 @admin.register(GradeEntry)
 class GradeEntryAdmin(admin.ModelAdmin):
-    list_display = ("assessment", "student", "score", "source", "status", "recorded_by")
-    list_filter = ("source", "status", "school")
+    list_display = ("assessment", "student", "score", "source", "status", "review_status", "recorded_by")
+    list_filter = ("source", "status", "review_status", "school")
+
+
+@admin.register(GradeEntryRevision)
+class GradeEntryRevisionAdmin(admin.ModelAdmin):
+    list_display = ("entry", "change_type", "previous_score", "new_score", "changed_by", "changed_at")
+    readonly_fields = (
+        "entry", "change_type", "previous_score", "new_score", "previous_status", "new_status",
+        "previous_source", "new_source", "reason", "changed_by", "changed_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(GradeReviewDecision)
+class GradeReviewDecisionAdmin(admin.ModelAdmin):
+    list_display = ("entry", "decision", "reviewed_by", "reviewed_at")
+    readonly_fields = ("entry", "decision", "note", "reviewed_by", "reviewed_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 class GradeImportRowInline(admin.TabularInline):

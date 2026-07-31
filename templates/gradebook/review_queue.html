@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Grade Review - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading"><div><p class="eyebrow">School administration</p><h1>Grade review</h1><p>Approve published evidence or return it to the teacher with a required note.</p></div></div>
+<div class="gradebook-table-wrap"><table class="student-table gradebook-table review-table">
+<thead><tr><th>Student</th><th>Class / subject</th><th>Assessment</th><th>Score</th><th>Review state</th><th>Decision</th></tr></thead>
+<tbody>{% for entry in entries %}<tr>
+<td>{{ entry.student.user.get_full_name|default:entry.student.user.username }}</td>
+<td>{{ entry.assessment.offering.school_class.name }} / {{ entry.assessment.offering.subject.name }}</td>
+<td>{{ entry.assessment.title }}</td><td>{{ entry.score }} / {{ entry.assessment.max_score }}</td>
+<td><span class="status-pill status-{{ entry.review_status|lower }}">{{ entry.get_review_status_display }}</span>{% if entry.review_note %}<span class="field-error">{{ entry.review_note }}</span>{% endif %}</td>
+<td><form method="post" action="{% url 'gradebook_review' entry.id %}" class="review-form">{% csrf_token %}<input name="note" maxlength="500" placeholder="Note (required to return)"><button class="btn-small" name="decision" value="APPROVED">Approve</button><button class="btn-small btn-secondary" name="decision" value="RETURNED">Return</button></form></td>
+</tr>{% empty %}<tr><td colspan="6">No published grades are available for review.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

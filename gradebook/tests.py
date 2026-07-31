@@ -3,6 +3,7 @@ from decimal import Decimal
 from io import BytesIO
 
 from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied
 from django.test import TestCase
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -13,8 +14,11 @@ from accounts.models import User
 from courses.models import Subject
 from schools.models import School, SchoolMembership
 
-from .models import Assessment, AssessmentCategory, GradeEntry, GradeImportBatch, GradeImportRow, GradeScheme
+from quizzes.models import Assignment, AssignmentSubmission, Quiz, Submission
+from .history import record_grade_entry, review_grade_entry
+from .models import Assessment, AssessmentCategory, GradeEntry, GradeEntryRevision, GradeImportBatch, GradeImportRow, GradeReviewDecision, GradeScheme
 from .services import activate_grade_scheme, calculate_weighted_result
+from .sync import sync_legacy_assessment
 
 
 class GradebookTests(TestCase):
@@ -453,3 +457,202 @@ class TeacherGradebookWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "different school or assessment")
         self.assertFalse(GradeImportBatch.objects.exists())
+
+    def test_manual_grade_records_immutable_revision_history(self):
+        entry, changed = record_grade_entry(
+            school=self.school,
+            assessment=self.assessment,
+            student=self.student_memberships[0],
+            actor=self.teacher,
+            score=Decimal("17"),
+            source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.PUBLISHED,
+            reason="Initial teacher entry",
+        )
+        self.assertTrue(changed)
+        self.assertEqual(entry.review_status, GradeEntry.ReviewStatus.PENDING)
+        revision = entry.revisions.get()
+        self.assertEqual(revision.change_type, GradeEntryRevision.ChangeType.CREATED)
+        self.assertEqual(revision.new_score, Decimal("17"))
+        revision.reason = "Changed history"
+        with self.assertRaisesMessage(ValidationError, "immutable"):
+            revision.save()
+
+    def test_grade_change_requires_reason(self):
+        with self.assertRaisesMessage(ValidationError, "reason is required"):
+            record_grade_entry(
+                school=self.school,
+                assessment=self.assessment,
+                student=self.student_memberships[0],
+                actor=self.teacher,
+                score=Decimal("17"),
+                source=GradeEntry.Source.MANUAL,
+                status=GradeEntry.Status.DRAFT,
+                reason="",
+            )
+
+    def test_admin_review_locks_and_return_unlocks_grade_correction(self):
+        entry, _ = record_grade_entry(
+            school=self.school,
+            assessment=self.assessment,
+            student=self.student_memberships[0],
+            actor=self.teacher,
+            score=Decimal("17"),
+            source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.PUBLISHED,
+            reason="Ready for review",
+        )
+        admin_user = User.objects.create_user(username="school-admin", password="test-password")
+        administrator = SchoolMembership.objects.create(
+            school=self.school, user=admin_user, role=SchoolMembership.Role.SCHOOL_ADMIN
+        )
+        review_grade_entry(
+            entry=entry,
+            reviewer=administrator,
+            decision=GradeReviewDecision.Decision.APPROVED,
+            note="Checked against source sheet.",
+        )
+        with self.assertRaisesMessage(ValidationError, "must be returned"):
+            record_grade_entry(
+                school=self.school,
+                assessment=self.assessment,
+                student=self.student_memberships[0],
+                actor=self.teacher,
+                score=Decimal("18"),
+                source=GradeEntry.Source.MANUAL,
+                status=GradeEntry.Status.PUBLISHED,
+                reason="Teacher correction",
+            )
+        review_grade_entry(
+            entry=entry,
+            reviewer=administrator,
+            decision=GradeReviewDecision.Decision.RETURNED,
+            note="Please correct the source total.",
+        )
+        corrected, changed = record_grade_entry(
+            school=self.school,
+            assessment=self.assessment,
+            student=self.student_memberships[0],
+            actor=self.teacher,
+            score=Decimal("18"),
+            source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.PUBLISHED,
+            reason="Corrected source total",
+        )
+        self.assertTrue(changed)
+        self.assertEqual(corrected.review_status, GradeEntry.ReviewStatus.PENDING)
+        self.assertEqual(corrected.revisions.count(), 2)
+        self.assertEqual(corrected.review_decisions.count(), 2)
+
+    def test_teacher_cannot_review_grade(self):
+        entry, _ = record_grade_entry(
+            school=self.school,
+            assessment=self.assessment,
+            student=self.student_memberships[0],
+            actor=self.teacher,
+            score=Decimal("12"),
+            source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.PUBLISHED,
+            reason="Teacher entry",
+        )
+        with self.assertRaises(PermissionDenied):
+            review_grade_entry(
+                entry=entry,
+                reviewer=self.teacher,
+                decision=GradeReviewDecision.Decision.APPROVED,
+            )
+
+    def test_teacher_cannot_open_administrator_review_queue(self):
+        self.client.force_login(self.teacher_user)
+        response = self.client.get(reverse("gradebook_review_queue"), secure=True)
+        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
+
+    def test_administrator_can_approve_grade_through_review_queue(self):
+        entry, _ = record_grade_entry(
+            school=self.school,
+            assessment=self.assessment,
+            student=self.student_memberships[0],
+            actor=self.teacher,
+            score=Decimal("13"),
+            source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.PUBLISHED,
+            reason="Submit for administrator review",
+        )
+        admin_user = User.objects.create_user(username="review-admin", password="test-password")
+        administrator = SchoolMembership.objects.create(
+            school=self.school, user=admin_user, role=SchoolMembership.Role.SCHOOL_ADMIN
+        )
+        self.client.force_login(admin_user)
+        response = self.client.post(
+            reverse("gradebook_review", args=[entry.pk]),
+            {"decision": GradeReviewDecision.Decision.APPROVED, "note": "Verified"},
+            secure=True,
+        )
+        self.assertRedirects(response, reverse("gradebook_review_queue"), fetch_redirect_response=False)
+        entry.refresh_from_db()
+        self.assertEqual(entry.review_status, GradeEntry.ReviewStatus.APPROVED)
+        self.assertEqual(entry.reviewed_by, administrator)
+
+    def test_unassigned_teacher_cannot_open_grade_correction(self):
+        entry, _ = record_grade_entry(
+            school=self.school,
+            assessment=self.assessment,
+            student=self.student_memberships[0],
+            actor=self.teacher,
+            score=Decimal("11"),
+            source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.DRAFT,
+            reason="Initial draft",
+        )
+        self.client.force_login(self.other_teacher_user)
+        response = self.client.get(reverse("gradebook_correct", args=[entry.pk]), secure=True)
+        self.assertEqual(response.status_code, 404)
+
+    def test_quiz_sync_averages_attempts_and_is_idempotent(self):
+        quiz = Quiz.objects.create(
+            subject=self.subject, teacher=self.teacher_user, title="Legacy quiz"
+        )
+        first, second = self.student_memberships
+        Submission.objects.create(quiz=quiz, student=first.user, score=80)
+        Submission.objects.create(quiz=quiz, student=first.user, score=100)
+        Submission.objects.create(quiz=quiz, student=second.user, score=60)
+        self.assessment.legacy_quiz = quiz
+        self.assessment.save(update_fields=["legacy_quiz"])
+        first_result = sync_legacy_assessment(assessment=self.assessment, actor=self.teacher)
+        second_result = sync_legacy_assessment(assessment=self.assessment, actor=self.teacher)
+        self.assertEqual(first_result, {"source": "quiz 'Legacy quiz'", "found": 2, "changed": 2, "unchanged": 0})
+        self.assertEqual(second_result["changed"], 0)
+        self.assertEqual(second_result["unchanged"], 2)
+        self.assertEqual(
+            GradeEntry.objects.get(assessment=self.assessment, student=first).score,
+            Decimal("18.00"),
+        )
+        self.assertEqual(GradeEntryRevision.objects.filter(entry__assessment=self.assessment).count(), 2)
+
+    def test_assignment_sync_uses_latest_finalized_submission(self):
+        assignment = Assignment.objects.create(
+            subject=self.subject, teacher=self.teacher_user, title="Legacy assignment"
+        )
+        student = self.student_memberships[0]
+        AssignmentSubmission.objects.create(
+            assignment=assignment,
+            student=student.user,
+            file="assignment_submissions/first.pdf",
+            final_score=50,
+            max_score=100,
+        )
+        AssignmentSubmission.objects.create(
+            assignment=assignment,
+            student=student.user,
+            file="assignment_submissions/latest.pdf",
+            final_score=80,
+            max_score=100,
+        )
+        self.assessment.legacy_assignment = assignment
+        self.assessment.save(update_fields=["legacy_assignment"])
+        result = sync_legacy_assessment(assessment=self.assessment, actor=self.teacher)
+        self.assertEqual(result["changed"], 1)
+        self.assertEqual(
+            GradeEntry.objects.get(assessment=self.assessment, student=student).score,
+            Decimal("16.00"),
+        )

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Correct Grade - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">Permanent grade history</p>
+        <h1>Correct {{ entry.student.user.get_full_name|default:entry.student.user.username }}'s grade</h1>
+        <p>{{ entry.assessment.title }} · Current score {{ entry.score }} / {{ entry.assessment.max_score }}</p>
+    </div>
+</div>
+{% if entry.review_status == "APPROVED" %}
+<div class="alert alert-error">This grade is approved and locked. A school administrator must return it before correction.</div>
+{% else %}
+<div class="form-container">
+    <form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn" type="submit">Record correction</button></form>
+</div>
+{% endif %}
+<h2>Revision history</h2>
+<div class="gradebook-table-wrap"><table class="student-table gradebook-table">
+<thead><tr><th>When</th><th>Change</th><th>Before</th><th>After</th><th>Reason</th><th>By</th></tr></thead>
+<tbody>{% for revision in entry.revisions.all %}<tr><td>{{ revision.changed_at }}</td><td>{{ revision.get_change_type_display }}</td><td>{{ revision.previous_score|default:"—" }} {{ revision.previous_status }}</td><td>{{ revision.new_score }} {{ revision.new_status }}</td><td>{{ revision.reason }}</td><td>{{ revision.changed_by.user.username }}</td></tr>{% empty %}<tr><td colspan="6">No revisions recorded.</td></tr>{% endfor %}</tbody>
+</table></div>
+<h2>Review history</h2>
+<div class="gradebook-table-wrap"><table class="student-table gradebook-table">
+<thead><tr><th>When</th><th>Decision</th><th>Note</th><th>By</th></tr></thead>
+<tbody>{% for review in entry.review_decisions.all %}<tr><td>{{ review.reviewed_at }}</td><td>{{ review.get_decision_display }}</td><td>{{ review.note|default:"—" }}</td><td>{{ review.reviewed_by.user.username }}</td></tr>{% empty %}<tr><td colspan="4">No review decisions recorded.</td></tr>{% endfor %}</tbody>
+</table></div>
+<p><a href="{% url 'gradebook_roster' entry.assessment.id %}">← Back to roster</a></p>
+{% endblock %}

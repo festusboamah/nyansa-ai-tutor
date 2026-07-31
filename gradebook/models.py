@@ -76,6 +76,12 @@ class Assessment(models.Model):
     category = models.ForeignKey(
         AssessmentCategory, on_delete=models.PROTECT, related_name="assessments"
     )
+    legacy_quiz = models.OneToOneField(
+        "quizzes.Quiz", null=True, blank=True, on_delete=models.SET_NULL, related_name="gradebook_assessment"
+    )
+    legacy_assignment = models.OneToOneField(
+        "quizzes.Assignment", null=True, blank=True, on_delete=models.SET_NULL, related_name="gradebook_assessment"
+    )
     title = models.CharField(max_length=150)
     max_score = models.DecimalField(
         max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]
@@ -103,6 +109,12 @@ class Assessment(models.Model):
                 errors["category"] = "Assessment category must belong to the same school."
             elif self.offering_id and scheme.academic_year_id != self.offering.term.academic_year_id:
                 errors["category"] = "Assessment category must belong to the offering's academic year."
+        if self.legacy_quiz_id and self.legacy_assignment_id:
+            errors["legacy_quiz"] = "Link either a legacy quiz or assignment, not both."
+        if self.legacy_quiz_id and self.offering_id and self.legacy_quiz.subject_id != self.offering.subject_id:
+            errors["legacy_quiz"] = "Linked quiz must belong to the offering subject."
+        if self.legacy_assignment_id and self.offering_id and self.legacy_assignment.subject_id != self.offering.subject_id:
+            errors["legacy_assignment"] = "Linked assignment must belong to the offering subject."
         if errors:
             raise ValidationError(errors)
 
@@ -119,6 +131,12 @@ class GradeEntry(models.Model):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Draft"
         PUBLISHED = "PUBLISHED", "Published"
+
+    class ReviewStatus(models.TextChoices):
+        NOT_REVIEWED = "NOT_REVIEWED", "Not submitted"
+        PENDING = "PENDING", "Pending review"
+        APPROVED = "APPROVED", "Approved"
+        RETURNED = "RETURNED", "Returned"
 
     school = models.ForeignKey("schools.School", on_delete=models.CASCADE, related_name="grade_entries")
     assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE, related_name="grade_entries")
@@ -137,6 +155,18 @@ class GradeEntry(models.Model):
     )
     source = models.CharField(max_length=10, choices=Source.choices, default=Source.MANUAL)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    review_status = models.CharField(
+        max_length=12, choices=ReviewStatus.choices, default=ReviewStatus.NOT_REVIEWED
+    )
+    reviewed_by = models.ForeignKey(
+        "schools.SchoolMembership",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="reviewed_grade_entries",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.CharField(max_length=500, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -165,6 +195,11 @@ class GradeEntry(models.Model):
             or self.recorded_by.role not in {SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN}
         ):
             errors["recorded_by"] = "Recorder must be a teacher or administrator in the same school."
+        if self.reviewed_by_id and (
+            self.reviewed_by.school_id != self.school_id
+            or self.reviewed_by.role != SchoolMembership.Role.SCHOOL_ADMIN
+        ):
+            errors["reviewed_by"] = "Reviewer must be a school administrator in the same school."
         if self.assessment_id and self.score is not None and self.score > self.assessment.max_score:
             errors["score"] = "Score cannot exceed the assessment maximum."
         if self.assessment_id and self.student_id and self.student.school_id == self.school_id:
@@ -183,6 +218,64 @@ class GradeEntry(models.Model):
         if not self.assessment_id or not self.assessment.max_score:
             return None
         return (self.score / self.assessment.max_score * Decimal("100")).quantize(Decimal("0.01"))
+
+
+class GradeEntryRevision(models.Model):
+    class ChangeType(models.TextChoices):
+        CREATED = "CREATED", "Created"
+        CORRECTED = "CORRECTED", "Corrected"
+        IMPORTED = "IMPORTED", "Imported"
+        SYNCED = "SYNCED", "Legacy synchronization"
+
+    entry = models.ForeignKey(GradeEntry, on_delete=models.PROTECT, related_name="revisions")
+    change_type = models.CharField(max_length=10, choices=ChangeType.choices)
+    previous_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    new_score = models.DecimalField(max_digits=8, decimal_places=2)
+    previous_status = models.CharField(max_length=10, choices=GradeEntry.Status.choices, blank=True)
+    new_status = models.CharField(max_length=10, choices=GradeEntry.Status.choices)
+    previous_source = models.CharField(max_length=10, choices=GradeEntry.Source.choices, blank=True)
+    new_source = models.CharField(max_length=10, choices=GradeEntry.Source.choices)
+    reason = models.CharField(max_length=500)
+    changed_by = models.ForeignKey(
+        "schools.SchoolMembership", on_delete=models.PROTECT, related_name="grade_entry_revisions"
+    )
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-changed_at", "-id"]
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValidationError("Grade revision history is immutable.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Grade revision history is immutable.")
+
+
+class GradeReviewDecision(models.Model):
+    class Decision(models.TextChoices):
+        APPROVED = "APPROVED", "Approved"
+        RETURNED = "RETURNED", "Returned"
+
+    entry = models.ForeignKey(GradeEntry, on_delete=models.PROTECT, related_name="review_decisions")
+    decision = models.CharField(max_length=10, choices=Decision.choices)
+    note = models.CharField(max_length=500, blank=True)
+    reviewed_by = models.ForeignKey(
+        "schools.SchoolMembership", on_delete=models.PROTECT, related_name="grade_review_decisions"
+    )
+    reviewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-reviewed_at", "-id"]
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValidationError("Grade review history is immutable.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Grade review history is immutable.")
 
 
 class GradeImportBatch(models.Model):

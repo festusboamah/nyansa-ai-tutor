@@ -61,7 +61,7 @@ Exit criteria:
 - Invalid workbooks cannot partially publish results.
 - Existing weighted grading results have regression coverage.
 
-Current status: Phases 2A through 2C have delivered the generalized gradebook domain, calculation foundation, teacher-facing manual entry, and Excel roster import. Teachers can download assessment-bound templates, preview row validation, and atomically confirm grades as draft or published entries. Import batches and rows retain source, operator, outcome, and confirmation history. Grade correction history, administrator review, and legacy activity adapters remain for later Phase 2 slices.
+Current status: Phases 2A through 2D have delivered the generalized gradebook domain, calculation foundation, manual and Excel entry, immutable grade revisions, administrator review decisions, and explicit adapters for legacy quizzes and assignments. Teachers can correct returned grades with permanent reasons; approved grades lock against modification; and repeat legacy synchronization is idempotent. Broader publication queues and learner-facing migration remain later work.
 
 ## Phase 3 — Lesson-plan approval
 

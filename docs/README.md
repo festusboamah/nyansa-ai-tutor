@@ -19,6 +19,7 @@ This directory is the implementation guide for Nyansa's evolution from an AI tut
 12. [Phase 2A Gradebook Foundation](phase-2a-gradebook-foundation.md) — configurable weights, common assessments, grade sources, and publication-aware results.
 13. [Phase 2B Teacher Gradebook](phase-2b-teacher-gradebook.md) — assigned-offering assessment management and atomic roster grade entry.
 14. [Phase 2C Spreadsheet Grade Import](phase-2c-spreadsheet-import.md) — protected roster templates, validation previews, atomic confirmation, and import audit records.
+15. [Phase 2D Grade Review and Legacy Sync](phase-2d-grade-review-sync.md) — immutable correction history, administrator decisions, and idempotent legacy adapters.
 
 ## Document status
 

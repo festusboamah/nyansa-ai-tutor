@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from .history import record_grade_entry
 from .models import Assessment, GradeEntry, GradeImportBatch, GradeImportRow
 
 
@@ -18,22 +19,19 @@ def confirm_grade_import(*, batch, confirmed_by, publish=False):
     if not rows:
         raise ValidationError("The workbook does not contain any scores to import.")
     target_status = GradeEntry.Status.PUBLISHED if publish else GradeEntry.Status.DRAFT
-    entries = []
+    changed_count = 0
     for row in rows:
-        entry = GradeEntry.objects.select_for_update().filter(
-            assessment=batch.assessment, student=row.student
-        ).first()
-        entry = entry or GradeEntry(
-            school=batch.school, assessment=batch.assessment, student=row.student
+        _, changed = record_grade_entry(
+            school=batch.school,
+            assessment=batch.assessment,
+            student=row.student,
+            actor=confirmed_by,
+            score=row.score,
+            source=GradeEntry.Source.IMPORT,
+            status=target_status,
+            reason=f"Confirmed spreadsheet import '{batch.original_filename}'.",
         )
-        entry.score = row.score
-        entry.recorded_by = confirmed_by
-        entry.source = GradeEntry.Source.IMPORT
-        entry.status = target_status
-        entry.full_clean()
-        entries.append(entry)
-    for entry in entries:
-        entry.save()
+        changed_count += int(changed)
     for row in rows:
         row.status = GradeImportRow.Status.IMPORTED
     GradeImportRow.objects.bulk_update(rows, ["status"])
@@ -42,4 +40,4 @@ def confirm_grade_import(*, batch, confirmed_by, publish=False):
     batch.confirmed_at = timezone.now()
     batch.full_clean()
     batch.save(update_fields=["status", "confirmed_by", "confirmed_at"])
-    return batch, len(entries)
+    return batch, changed_count

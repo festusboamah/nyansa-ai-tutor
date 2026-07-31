@@ -8,6 +8,11 @@
         <p>{{ assessment.category.name }} · Maximum {{ assessment.max_score }} · {{ assessment.get_status_display }}</p>
     </div>
     <div class="dashboard-actions">
+        {% if assessment.legacy_quiz or assessment.legacy_assignment %}
+        <form method="post" action="{% url 'gradebook_sync' assessment.id %}" class="inline-form">
+            {% csrf_token %}<button class="btn-small btn-secondary" type="submit">Sync online results</button>
+        </form>
+        {% endif %}
         <a class="btn-small btn-secondary" href="{% url 'gradebook_template' assessment.id %}">Download Excel template</a>
         {% if assessment.status != "CLOSED" %}<a class="btn-small" href="{% url 'gradebook_import' assessment.id %}">Upload grades</a>{% endif %}
     </div>
@@ -17,7 +22,7 @@
     {% csrf_token %}
     <div class="gradebook-table-wrap">
     <table class="student-table gradebook-table roster-table">
-        <thead><tr><th>Student</th><th>Identifier</th><th>Score / {{ assessment.max_score }}</th><th>State</th></tr></thead>
+        <thead><tr><th>Student</th><th>Identifier</th><th>Score / {{ assessment.max_score }}</th><th>State</th><th>Review</th><th>History</th></tr></thead>
         <tbody>
         {% for row in rows %}
             <tr>
@@ -28,9 +33,11 @@
                     {% if row.error %}<span class="field-error">{{ row.error }}</span>{% endif %}
                 </td>
                 <td>{% if row.entry %}<span class="status-pill status-{{ row.entry.status|lower }}">{{ row.entry.get_status_display }}</span>{% else %}Not entered{% endif %}</td>
+                <td>{% if row.entry %}<span class="status-pill status-{{ row.entry.review_status|lower }}">{{ row.entry.get_review_status_display }}</span>{% else %}—{% endif %}</td>
+                <td>{% if row.entry %}<a href="{% url 'gradebook_correct' row.entry.id %}">Correct / history</a>{% else %}—{% endif %}</td>
             </tr>
         {% empty %}
-            <tr><td colspan="4">No active students are enrolled in this class.</td></tr>
+            <tr><td colspan="6">No active students are enrolled in this class.</td></tr>
         {% endfor %}
         </tbody>
     </table>

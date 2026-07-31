@@ -1042,5 +1042,11 @@ h2 {
 .status-valid, .status-imported { background:#dcfce7; color:#166534; }
 .status-error { background:#fee2e2; color:#991b1b; }
 .status-skipped { background:#e2e8f0; color:#475569; }
+.status-pending { background:#fef3c7; color:#92400e; }
+.status-approved { background:#dcfce7; color:#166534; }
+.status-returned { background:#fee2e2; color:#991b1b; }
+.status-not_reviewed { background:#e2e8f0; color:#475569; }
+.review-form { display:grid; grid-template-columns:minmax(12rem,1fr) auto auto; gap:.4rem; }
+.review-form input { padding:.45rem; border:1px solid var(--border); border-radius:6px; }
 @media (max-width:650px) { .gradebook-actions { align-items:stretch; flex-direction:column; } .gradebook-actions .btn { width:100%; } }
 @media (max-width:650px) { .import-summary { grid-template-columns:1fr; } }
