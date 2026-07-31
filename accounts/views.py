@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from .forms import StudentSignUpForm
+from schools.models import SchoolMembership
+from schools.services import has_school_role
 
 
 def home_view(request):
@@ -33,12 +35,16 @@ def profile_view(request):
         "date_joined": user.date_joined,
     }
 
-    if user.is_student():
+    if has_school_role(request, SchoolMembership.Role.STUDENT):
         from quizzes.models import Submission, Badge
-        submissions = Submission.objects.filter(student=user)
+        submissions = Submission.objects.filter(
+            student=user, quiz__subject__school=request.school
+        )
         scores = [s.score for s in submissions if s.score is not None]
         avg_score = round(sum(scores) / len(scores), 1) if scores else None
-        badges = Badge.objects.filter(student=user).select_related("submission__quiz")
+        badges = Badge.objects.filter(
+            student=user, submission__quiz__subject__school=request.school
+        ).select_related("submission__quiz")
 
         context.update({
             "quizzes_completed": submissions.count(),

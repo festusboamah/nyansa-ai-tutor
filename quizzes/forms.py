@@ -3,6 +3,14 @@ from .models import Quiz, Question, Choice
 
 
 class QuizForm(forms.ModelForm):
+    def __init__(self, *args, school=None, **kwargs):
+        from courses.models import Subject
+
+        super().__init__(*args, **kwargs)
+        self.fields["subject"].queryset = (
+            Subject.objects.filter(school=school) if school else Subject.objects.none()
+        )
+
     class Meta:
         model = Quiz
         fields = ["subject", "title", "description", "assessment_type", "time_limit_minutes", "max_attempts", "deadline"]
@@ -43,7 +51,9 @@ class AIQuizGenerationForm(forms.Form):
         ("hard", "Hard"),
     ])
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, school=None, **kwargs):
         from courses.models import Subject
         super().__init__(*args, **kwargs)
-        self.fields["subject"].queryset = Subject.objects.all()
+        self.fields["subject"].queryset = (
+            Subject.objects.filter(school=school) if school else Subject.objects.none()
+        )

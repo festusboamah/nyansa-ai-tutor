@@ -41,6 +41,8 @@ Exit criteria:
 - School A cannot access School B through any tested path.
 - Existing student and teacher workflows continue to operate for the migrated school.
 
+Current status: Phase 1A has delivered the School and SchoolMembership foundation, legacy-school backfill, required subject and study-document ownership, active-school request context, membership-scoped role checks, and tenant-aware filtering across existing workflows. Academic years, terms, classes, subject offerings, invitations, and the administrator dashboard remain for subsequent Phase 1 slices.
+
 ## Phase 2 — Generalized gradebook and offline entry
 
 **Goal:** Create one gradebook for online and offline assessment evidence.

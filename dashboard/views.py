@@ -13,17 +13,23 @@ from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 import markdown as md
 from .email_utils import send_report_email
+from schools.models import SchoolMembership
+from schools.services import has_school_role
 
 
 @login_required
 def teacher_dashboard_view(request):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "This page is only available to teachers.")
         return redirect("home")
 
-    subjects = Subject.objects.filter(materials__teacher=request.user).distinct()
+    subjects = Subject.objects.filter(
+        school=request.school, materials__teacher=request.user
+    ).distinct()
     if not subjects.exists():
-        subjects = Subject.objects.filter(quizzes__teacher=request.user).distinct()
+        subjects = Subject.objects.filter(
+            school=request.school, quizzes__teacher=request.user
+        ).distinct()
 
     subject_data = []
     for subject in subjects:
@@ -35,7 +41,9 @@ def teacher_dashboard_view(request):
         })
 
     from quizzes.models import Assignment
-    assignments = Assignment.objects.filter(teacher=request.user).select_related("subject").order_by("-created_at")
+    assignments = Assignment.objects.filter(
+        teacher=request.user, subject__school=request.school
+    ).select_related("subject").order_by("-created_at")
 
     return render(request, "dashboard/teacher_dashboard.html", {
         "subject_data": subject_data,
@@ -45,12 +53,12 @@ def teacher_dashboard_view(request):
 
 @login_required
 def student_report_view(request, student_id, subject_id):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "This page is only available to teachers.")
         return redirect("home")
 
     student = get_object_or_404(User, id=student_id)
-    subject = get_object_or_404(Subject, id=subject_id)
+    subject = get_object_or_404(Subject, id=subject_id, school=request.school)
 
     if not Enrollment.objects.filter(student=student, subject=subject).exists():
         messages.error(request, "This student is not enrolled in this subject.")
@@ -71,22 +79,24 @@ def student_report_view(request, student_id, subject_id):
 
 @login_required
 def lesson_notes_list_view(request):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "This feature is only available to teachers.")
         return redirect("home")
 
-    notes = LessonNote.objects.filter(teacher=request.user).order_by("-created_at")
+    notes = LessonNote.objects.filter(
+        teacher=request.user, subject__school=request.school
+    ).order_by("-created_at")
     return render(request, "dashboard/lesson_notes_list.html", {"notes": notes})
 
 
 @login_required
 def create_lesson_note_view(request):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "This feature is only available to teachers.")
         return redirect("home")
 
     if request.method == "POST":
-        form = LessonNoteForm(request.POST)
+        form = LessonNoteForm(request.POST, school=request.school)
         if form.is_valid():
             lesson_note = form.save(commit=False)
             lesson_note.teacher = request.user
@@ -123,14 +133,16 @@ def create_lesson_note_view(request):
             messages.success(request, "Lesson note generated successfully!")
             return redirect("lesson_note_detail", note_id=lesson_note.id)
     else:
-        form = LessonNoteForm()
+        form = LessonNoteForm(school=request.school)
 
     return render(request, "dashboard/create_lesson_note.html", {"form": form})
 
 
 @login_required
 def lesson_note_detail_view(request, note_id):
-    note = get_object_or_404(LessonNote, id=note_id, teacher=request.user)
+    note = get_object_or_404(
+        LessonNote, id=note_id, teacher=request.user, subject__school=request.school
+    )
     import json
     try:
         lesson_data = json.loads(note.generated_content)
@@ -140,7 +152,9 @@ def lesson_note_detail_view(request, note_id):
 
 @login_required
 def download_lesson_note_pdf(request, note_id):
-    note = get_object_or_404(LessonNote, id=note_id, teacher=request.user)
+    note = get_object_or_404(
+        LessonNote, id=note_id, teacher=request.user, subject__school=request.school
+    )
 
     import json
     try:
@@ -164,7 +178,7 @@ def download_lesson_note_pdf(request, note_id):
 
 @login_required
 def email_student_report_view(request, student_id, subject_id):
-    if not request.user.is_teacher():
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "This page is only available to teachers.")
         return redirect("home")
 
@@ -172,7 +186,7 @@ def email_student_report_view(request, student_id, subject_id):
         return redirect("student_report", student_id=student_id, subject_id=subject_id)
 
     student = get_object_or_404(User, id=student_id)
-    subject = get_object_or_404(Subject, id=subject_id)
+    subject = get_object_or_404(Subject, id=subject_id, school=request.school)
 
     if not Enrollment.objects.filter(student=student, subject=subject).exists():
         messages.error(request, "This student is not enrolled in this subject.")

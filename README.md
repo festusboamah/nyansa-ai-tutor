@@ -150,6 +150,7 @@ config/          Django settings, root URLs, ASGI, and WSGI configuration
 courses/         Subjects, enrolments, materials, study documents, transcripts
 dashboard/       Teacher dashboard, reports, email, and lesson notes
 quizzes/         Quizzes, exams, assignments, grading, and AI generation
+schools/         School tenants, memberships, active-school context, and isolation helpers
 static/          CSS and image assets
 templates/       Shared and app-specific Django templates
 manage.py        Django management entry point

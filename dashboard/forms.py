@@ -17,7 +17,9 @@ class LessonNoteForm(forms.ModelForm):
             "performance_indicator": forms.Textarea(attrs={"rows": 2}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, school=None, **kwargs):
         from courses.models import Subject
         super().__init__(*args, **kwargs)
-        self.fields["subject"].queryset = Subject.objects.all()
+        self.fields["subject"].queryset = (
+            Subject.objects.filter(school=school) if school else Subject.objects.none()
+        )

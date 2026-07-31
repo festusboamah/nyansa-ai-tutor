@@ -5,6 +5,7 @@ from django.urls import reverse
 
 from accounts.models import User
 from courses.models import Subject
+from schools.models import School, SchoolMembership
 
 from .models import LessonNote
 
@@ -18,7 +19,19 @@ class LessonNoteAccessBaselineTests(TestCase):
             username="other-teacher", password="test-password", role=User.Role.TEACHER
         )
         self.student = User.objects.create_user(username="student", password="test-password")
-        self.subject = Subject.objects.create(name="Integrated Science")
+        self.school = School.objects.create(name="Lesson School", slug="lesson-school")
+        SchoolMembership.objects.create(
+            school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER
+        )
+        SchoolMembership.objects.create(
+            school=self.school,
+            user=self.other_teacher,
+            role=SchoolMembership.Role.TEACHER,
+        )
+        SchoolMembership.objects.create(
+            school=self.school, user=self.student, role=SchoolMembership.Role.STUDENT
+        )
+        self.subject = Subject.objects.create(school=self.school, name="Integrated Science")
         self.note = LessonNote.objects.create(
             teacher=self.teacher,
             subject=self.subject,
