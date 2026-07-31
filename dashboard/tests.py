@@ -1,23 +1,59 @@
+from datetime import date
+
 from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import User
+from courses.models import Subject
+
+from .models import LessonNote
 
 
-class TeacherDashboardAccessTests(TestCase):
-    def test_student_is_redirected_from_teacher_dashboard(self):
-        student = User.objects.create_user(username="student", password="test-password")
-        self.client.force_login(student)
+class LessonNoteAccessBaselineTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username="teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.other_teacher = User.objects.create_user(
+            username="other-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.student = User.objects.create_user(username="student", password="test-password")
+        self.subject = Subject.objects.create(name="Integrated Science")
+        self.note = LessonNote.objects.create(
+            teacher=self.teacher,
+            subject=self.subject,
+            class_level="JHS 2",
+            week_ending=date(2026, 7, 31),
+            strand_topic="Reproduction",
+            learning_indicator="Describe the stages of reproduction.",
+        )
+
+    def test_student_cannot_open_teacher_dashboard(self):
+        self.client.force_login(self.student)
 
         response = self.client.get(reverse("teacher_dashboard"), secure=True)
 
         self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
 
-    def test_teacher_can_open_teacher_dashboard(self):
-        teacher = User.objects.create_user(
-            username="teacher", password="test-password", role=User.Role.TEACHER
+    def test_teacher_only_sees_own_lesson_note_list(self):
+        self.client.force_login(self.other_teacher)
+
+        response = self.client.get(reverse("lesson_notes_list"), secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.note.strand_topic)
+
+    def test_teacher_cannot_open_another_teachers_lesson_note(self):
+        self.client.force_login(self.other_teacher)
+
+        response = self.client.get(
+            reverse("lesson_note_detail", args=[self.note.id]), secure=True
         )
-        self.client.force_login(teacher)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_teacher_can_open_teacher_dashboard(self):
+        self.client.force_login(self.teacher)
 
         response = self.client.get(reverse("teacher_dashboard"), secure=True)
 
