@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}{{ school_class.name }} Attendance Summary - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading"><div><p class="eyebrow">{{ term.name }} · through {{ today }}</p><h1>{{ school_class.name }} attendance summary</h1><p>{{ days_open }} derived instructional day{{ days_open|pluralize }} through the displayed period.</p></div><a class="btn-small" href="{% url 'attendance_register' school_class.id term.id %}">Today's register</a></div>
+<div class="gradebook-table-wrap"><table class="student-table gradebook-table"><thead><tr><th>Student</th><th>Present</th><th>Absent</th><th>Excused</th><th>Days open</th><th>Attendance</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ row.student.user.get_full_name|default:row.student.user.username }}</td><td>{{ row.summary.present }}</td><td>{{ row.summary.absent }}</td><td>{{ row.summary.excused }}</td><td>{{ row.summary.days_open }}</td><td>{% if row.summary.percentage != None %}{{ row.summary.percentage }}%{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="6">No active students.</td></tr>{% endfor %}</tbody></table></div>
+<h2>Submitted registers</h2><div class="admin-grid">{% for session in sessions %}<article class="card"><h3>{{ session.attendance_date }}</h3><p>{{ session.records.count }} students · {{ session.submitted_by.user.username }}</p><a href="{% url 'attendance_register' school_class.id term.id %}?date={{ session.attendance_date|date:'Y-m-d' }}">Open register</a></article>{% empty %}<p>No registers submitted for this term.</p>{% endfor %}</div>
+<p><a href="{% url 'attendance_dashboard' %}">← Back to attendance</a></p>
+{% endblock %}

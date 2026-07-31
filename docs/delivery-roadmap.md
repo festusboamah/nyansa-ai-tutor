@@ -97,6 +97,8 @@ Exit criteria:
 - A teacher can mark a normal class quickly on a phone.
 - Days-open calculations update deterministically when the calendar changes.
 
+Current status: Phase 4 is complete. Schools configure instructional weekdays and term closure ranges; teachers quick-mark complete class rosters only for assigned classes and instructional dates; submitted registers require audited corrections; and student/class summaries calculate attendance percentages from derived days open.
+
 ## Phase 5 — Term reports
 
 **Goal:** Produce official, school-branded reports from approved source records.

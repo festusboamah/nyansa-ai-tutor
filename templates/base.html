@@ -27,11 +27,13 @@
     {% if user.role == "TEACHER" %}
         <a href="{% url 'teacher_dashboard' %}">Dashboard</a>
         {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'gradebook_offerings' %}">Gradebook</a>{% endif %}
+        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'attendance_dashboard' %}">Attendance</a>{% endif %}
     {% endif %}
     {% if request.school_membership.role == "SCHOOL_ADMIN" %}
         <a href="{% url 'school_admin_dashboard' %}">School Admin</a>
         <a href="{% url 'gradebook_review_queue' %}">Grade Review</a>
         <a href="{% url 'lesson_review_queue' %}">Lesson Review</a>
+        <a href="{% url 'attendance_dashboard' %}">Attendance</a>
     {% endif %}
     {% if request.school_membership %}<a href="{% url 'lesson_notifications' %}">Notifications</a>{% endif %}
     <a href="{% url 'profile' %}" class="welcome-text">Hi, {{ user.username }} ({{ user.role|title }})</a>

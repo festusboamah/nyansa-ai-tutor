@@ -34,6 +34,7 @@ Nyansa (Twi for "wisdom") is a Django learning management system built for an M.
 - Protected Excel roster templates with validated upload previews, atomic grade confirmation, and import audit records.
 - Immutable grade correction and administrator review history, plus idempotent synchronization from legacy quizzes and assignments.
 - Versioned lesson-plan approval with author revisions, administrator review, retained comments, notifications, and approved-content locking.
+- Configurable instructional calendars, mobile-first class attendance, immutable correction history, and derived attendance summaries.
 - SQLite database for local development and local media storage for uploaded documents.
 
 ## AI Use
@@ -158,6 +159,7 @@ quizzes/         Quizzes, exams, assignments, grading, and AI generation
 schools/         School tenants, memberships, active-school context, and isolation helpers
 academics/       Academic years, terms, classes, offerings, and teacher assignments
 gradebook/       Configurable grade schemes, assessments, grade entries, and weighted results
+attendance/      School calendars, daily registers, corrections, and derived summaries
 static/          CSS and image assets
 templates/       Shared and app-specific Django templates
 manage.py        Django management entry point

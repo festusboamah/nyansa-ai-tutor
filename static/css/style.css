@@ -1058,5 +1058,18 @@ h2 {
 .review-decision-form { display:grid; gap:.75rem; margin:1rem 0 1.5rem; padding:1rem; background:var(--card-bg); border-radius:var(--radius); }
 .review-decision-form textarea { width:100%; padding:.7rem; border:1px solid var(--border); border-radius:6px; }
 .notification-unread { border-left:4px solid var(--secondary); }
+.attendance-date-picker { display:flex; flex-wrap:wrap; align-items:end; gap:.6rem; margin:1rem 0; }
+.attendance-date-picker label { font-weight:700; }
+.attendance-date-picker input { padding:.55rem; border:1px solid var(--border); border-radius:6px; }
+.attendance-register { display:grid; gap:.65rem; }
+.attendance-student { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.85rem 1rem; background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow); }
+.attendance-student small { display:block; color:var(--text-muted); }
+.attendance-options { display:flex; flex-wrap:wrap; gap:.35rem; }
+.attendance-option { padding:.45rem .65rem; border-radius:999px; font-weight:700; font-size:.85rem; cursor:pointer; }
+.attendance-option input { margin-right:.3rem; }
+.attendance-present { background:#dcfce7; color:#166534; }
+.attendance-absent { background:#fee2e2; color:#991b1b; }
+.attendance-excused { background:#fef3c7; color:#92400e; }
+@media (max-width:650px) { .attendance-student { align-items:flex-start; flex-direction:column; } .attendance-options { width:100%; display:grid; grid-template-columns:repeat(3,1fr); } .attendance-option { text-align:center; } }
 @media (max-width:650px) { .gradebook-actions { align-items:stretch; flex-direction:column; } .gradebook-actions .btn { width:100%; } }
 @media (max-width:650px) { .import-summary { grid-template-columns:1fr; } }
