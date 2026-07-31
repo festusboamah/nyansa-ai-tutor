@@ -151,6 +151,7 @@ courses/         Subjects, enrolments, materials, study documents, transcripts
 dashboard/       Teacher dashboard, reports, email, and lesson notes
 quizzes/         Quizzes, exams, assignments, grading, and AI generation
 schools/         School tenants, memberships, active-school context, and isolation helpers
+academics/       Academic years, terms, classes, offerings, and teacher assignments
 static/          CSS and image assets
 templates/       Shared and app-specific Django templates
 manage.py        Django management entry point

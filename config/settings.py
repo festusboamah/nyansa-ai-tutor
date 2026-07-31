@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'quizzes',
     'dashboard',
     'schools',
+    'academics',
 ]
 
 MIDDLEWARE = [
