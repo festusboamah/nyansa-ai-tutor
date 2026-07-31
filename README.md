@@ -79,6 +79,10 @@ pip install -r requirements.txt
 # Apply the database schema.
 python manage.py migrate
 
+# Verify the current baseline.
+python manage.py test
+python manage.py baseline_audit
+
 # Create an administrator account (optional).
 python manage.py createsuperuser
 
@@ -151,6 +155,10 @@ templates/       Shared and app-specific Django templates
 manage.py        Django management entry point
 requirements.txt Python dependencies
 ```
+
+## Project Roadmap Documentation
+
+Nyansa's planned evolution into a multi-tenant school management system is documented in the [project documentation](docs/README.md). It covers the product vision, requirements, target architecture, domain model, tenancy and security rules, delivery phases, engineering workflow, and architecture decisions.
 
 ## Tests
 
