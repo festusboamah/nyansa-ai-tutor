@@ -187,3 +187,4 @@ python manage.py test
 ## License
 
 This project is available under the [MIT License](LICENSE).
+Term-report workflows generate school-branded, auditable PDF snapshots from approved grades and attendance, with optional positions, prior-term comparisons, remarks, promotion outcomes, and bulk class downloads.

@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Report Policy - Nyansa{% endblock %}
+{% block content %}<div class="admin-heading"><div><p class="eyebrow">{{ year.name }}</p><h1>Report policy</h1><p>Position is optional. Pass and promotion thresholds are captured in every generated snapshot.</p></div></div><form method="post" class="card narrow-form">{% csrf_token %}{{ form.as_p }}<button class="btn-small" type="submit">Save policy</button></form>{% endblock %}

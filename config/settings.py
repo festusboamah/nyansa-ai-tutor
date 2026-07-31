@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'academics',
     'gradebook',
     'attendance',
+    'reports',
 ]
 
 MIDDLEWARE = [

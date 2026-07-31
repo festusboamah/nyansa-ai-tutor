@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{ school_class.name }} Reports - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading"><div><p class="eyebrow">{{ term.academic_year.name }} · {{ term.name }}</p><h1>{{ school_class.name }} reports</h1><p>Generation refreshes only draft and returned reports. Reviewed and published snapshots stay locked.</p></div><a class="btn-small btn-secondary" href="{% url 'class_term_reports_zip' school_class.id term.id %}">Download published ZIP</a></div>
+<form method="post" class="card">{% csrf_token %}<button class="btn-small" type="submit">Generate or refresh class reports</button></form>
+<div class="card table-wrap"><table><thead><tr><th>Student</th><th>Average</th><th>Position</th><th>Status</th><th></th></tr></thead><tbody>{% for report in reports %}<tr><td>{{ report.student.user.get_full_name|default:report.student.user.username }}</td><td>{{ report.average_score|default:"—" }}</td><td>{{ report.position|default:"—" }}</td><td><span class="report-status report-{{ report.status|lower }}">{{ report.get_status_display }}</span></td><td><a href="{% url 'term_report_detail' report.id %}">Review</a></td></tr>{% empty %}<tr><td colspan="5">No reports generated yet.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

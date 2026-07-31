@@ -116,6 +116,8 @@ Exit criteria:
 - Published reports remain stable after later configuration changes.
 - Totals match documented calculations and source records.
 
+Current status: Phase 5 is complete. Staff generate class reports only from published, administrator-approved grade entries and derived attendance; configurable thresholds and optional class positions are frozen into immutable snapshots; prior-term comparisons, conduct, remarks, and promotion outcomes are included; administrators control review, return, approval, publication, and audited reopening; and individual PDFs plus published-class ZIP exports support printing.
+
 ## Phase 6 — Guardian portal and communications
 
 **Goal:** Give families secure, timely access through channels that work locally.

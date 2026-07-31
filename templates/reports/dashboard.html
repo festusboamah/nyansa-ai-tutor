@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Term Reports - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading"><div><p class="eyebrow">Official records</p><h1>Term reports</h1><p>Generate stable reports from approved grades and attendance.</p></div></div>
+<div class="admin-grid">{% for class in classes %}<article class="card"><h2>{{ class.name }}</h2><p>{{ class.academic_year.name }}</p>{% if request.school_membership.role == "SCHOOL_ADMIN" %}<p><a href="{% url 'term_report_policy' class.academic_year.id %}">Report policy</a></p>{% endif %}{% for term in class.academic_year.terms.all %}<div class="admin-row"><strong>{{ term.name }}</strong><a href="{% url 'class_term_reports' class.id term.id %}">Open reports</a></div>{% empty %}<p>No terms configured.</p>{% endfor %}</article>{% empty %}<p>No report classes are available.</p>{% endfor %}</div>
+{% endblock %}

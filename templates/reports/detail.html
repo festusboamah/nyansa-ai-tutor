@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ data.student.name }} Report - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading"><div><p class="eyebrow">{{ data.class }} · {{ data.term }}</p><h1>{{ data.student.name }}</h1><p>Version {{ report.version }} · {{ report.get_status_display }}</p></div><a class="btn-small btn-secondary" href="{% url 'term_report_pdf' report.id %}">Download PDF</a></div>
+<div class="report-summary"><div><span>Average</span><strong>{{ data.average|default:"—" }}</strong></div><div><span>Total</span><strong>{{ data.total }}</strong></div><div><span>Position</span><strong>{{ report.position|default:"Not shown" }}</strong></div><div><span>Attendance</span><strong>{{ data.attendance.present }}/{{ data.attendance.days_open }}</strong></div></div>
+{% if data.prior_term %}<p class="card">Compared with {{ data.prior_term.term }}: {{ data.prior_term.average }} (change {{ data.prior_term.change }}).</p>{% endif %}
+<div class="card table-wrap"><table><thead><tr><th>Subject</th><th>Score</th><th>Result</th></tr></thead><tbody>{% for subject in data.subjects %}<tr><td>{{ subject.subject }}</td><td>{{ subject.score|default:"—" }}</td><td>{{ subject.grade }}</td></tr>{% empty %}<tr><td colspan="3">No subject offerings.</td></tr>{% endfor %}</tbody></table></div>
+<div class="admin-grid"><form method="post" class="card">{% csrf_token %}<input type="hidden" name="form_type" value="details"><h2>Report details</h2>{{ details_form.as_p }}<button class="btn-small" type="submit">Save details</button></form><form method="post" class="card">{% csrf_token %}<input type="hidden" name="form_type" value="decision"><h2>Workflow</h2>{{ decision_form.as_p }}<button class="btn-small" type="submit">Apply action</button></form></div>
+<article class="card"><h2>Audit history</h2>{% for event in report.workflow_events.all %}<div class="admin-row"><span><strong>{{ event.get_action_display }}</strong> by {{ event.actor.user.username }}{% if event.note %}<br><small>{{ event.note }}</small>{% endif %}</span><time>{{ event.occurred_at }}</time></div>{% empty %}<p>No history.</p>{% endfor %}</article>
+{% endblock %}
