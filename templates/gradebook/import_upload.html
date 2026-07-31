@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Import Grades - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">{{ assessment.offering.school_class.name }} · {{ assessment.offering.subject.name }}</p>
+        <h1>Import {{ assessment.title }} grades</h1>
+        <p>Upload the completed template. Nyansa will show every row for review before saving any grade.</p>
+    </div>
+</div>
+<div class="card import-steps">
+    <h2>Before uploading</h2>
+    <ol>
+        <li><a href="{% url 'gradebook_template' assessment.id %}">Download a fresh roster template</a>.</li>
+        <li>Enter scores only in the blue Score column.</li>
+        <li>Save as `.xlsx`, then upload it below.</li>
+    </ol>
+</div>
+<div class="form-container">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Validate and preview</button>
+        <a class="btn btn-secondary" href="{% url 'gradebook_roster' assessment.id %}">Cancel</a>
+    </form>
+</div>
+{% endblock %}

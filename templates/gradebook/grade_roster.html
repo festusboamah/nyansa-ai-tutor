@@ -7,6 +7,10 @@
         <h1>{{ assessment.title }}</h1>
         <p>{{ assessment.category.name }} · Maximum {{ assessment.max_score }} · {{ assessment.get_status_display }}</p>
     </div>
+    <div class="dashboard-actions">
+        <a class="btn-small btn-secondary" href="{% url 'gradebook_template' assessment.id %}">Download Excel template</a>
+        {% if assessment.status != "CLOSED" %}<a class="btn-small" href="{% url 'gradebook_import' assessment.id %}">Upload grades</a>{% endif %}
+    </div>
 </div>
 {% if assessment.status == "CLOSED" %}<div class="alert alert-error">This assessment is closed. Scores are read-only.</div>{% endif %}
 <form method="post">

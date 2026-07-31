@@ -1030,4 +1030,17 @@ h2 {
 .field-error { display:block; margin-top:.3rem; color:var(--danger); font-size:.8rem; max-width:20rem; }
 .gradebook-actions { display:flex; gap:.75rem; justify-content:flex-end; margin:1rem 0 1.5rem; }
 .roster-table small { color:var(--text-muted); }
+.import-steps { margin-bottom:1.5rem; }
+.import-steps li { margin:.5rem 0; }
+.import-summary { display:grid; grid-template-columns:repeat(3,minmax(120px,1fr)); gap:1rem; margin:1rem 0 1.5rem; }
+.import-summary div { display:flex; flex-direction:column; padding:1rem; border-radius:var(--radius); background:#eef2f7; }
+.import-summary strong { font-size:1.6rem; color:var(--primary); }
+.import-summary span { color:var(--text-muted); font-size:.85rem; }
+.import-summary .summary-valid { background:#dcfce7; }
+.import-summary .summary-error { background:#fee2e2; }
+.import-row-error td { background:#fff7f7; }
+.status-valid, .status-imported { background:#dcfce7; color:#166534; }
+.status-error { background:#fee2e2; color:#991b1b; }
+.status-skipped { background:#e2e8f0; color:#475569; }
 @media (max-width:650px) { .gradebook-actions { align-items:stretch; flex-direction:column; } .gradebook-actions .btn { width:100%; } }
+@media (max-width:650px) { .import-summary { grid-template-columns:1fr; } }

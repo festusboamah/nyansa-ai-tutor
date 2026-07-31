@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Import Preview - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">Import preview</p>
+        <h1>{{ batch.assessment.title }}</h1>
+        <p>{{ batch.original_filename }} · Uploaded by {{ batch.uploaded_by.user.username }}</p>
+    </div>
+</div>
+<div class="import-summary">
+    <div><strong>{{ batch.row_count }}</strong><span>Roster rows</span></div>
+    <div class="summary-valid"><strong>{{ batch.valid_count }}</strong><span>Ready to import</span></div>
+    <div class="summary-error"><strong>{{ batch.error_count }}</strong><span>Errors</span></div>
+</div>
+{% if batch.error_count %}
+<div class="alert alert-error">Nothing has been imported. Correct the highlighted rows in Excel and upload the workbook again.</div>
+{% elif batch.status == "PREVIEW" and batch.valid_count %}
+<div class="alert alert-success">Validation passed. Confirm below to save all ready rows in one transaction.</div>
+{% elif batch.status == "PREVIEW" %}
+<div class="alert alert-error">No scores were entered. Add at least one score and upload the workbook again.</div>
+{% else %}
+<div class="alert alert-success">This batch was confirmed on {{ batch.confirmed_at }}.</div>
+{% endif %}
+<div class="gradebook-table-wrap">
+<table class="student-table gradebook-table">
+    <thead><tr><th>Excel row</th><th>Student</th><th>Submitted score</th><th>Result</th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+        <tr class="import-row-{{ row.status|lower }}">
+            <td>{{ row.row_number }}</td>
+            <td>{% if row.student %}{{ row.student.user.get_full_name|default:row.student.user.username }}{% else %}Record {{ row.raw_student_id|default:"—" }}{% endif %}</td>
+            <td>{{ row.raw_score|default:"—" }}</td>
+            <td><span class="status-pill status-{{ row.status|lower }}">{{ row.get_status_display }}</span>{% if row.error %}<span class="field-error">{{ row.error }}</span>{% endif %}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% if batch.status == "PREVIEW" and not batch.error_count and batch.valid_count %}
+<form method="post" action="{% url 'gradebook_import_confirm' batch.id %}" class="gradebook-actions">
+    {% csrf_token %}
+    <button class="btn btn-secondary" type="submit" name="action" value="draft">Import as draft</button>
+    <button class="btn" type="submit" name="action" value="publish">Import and publish</button>
+</form>
+{% endif %}
+<p><a href="{% url 'gradebook_import' batch.assessment.id %}">← Upload another workbook</a></p>
+{% endblock %}

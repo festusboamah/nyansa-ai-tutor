@@ -1,16 +1,19 @@
 from datetime import date
 from decimal import Decimal
+from io import BytesIO
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
+from openpyxl import load_workbook
 
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from accounts.models import User
 from courses.models import Subject
 from schools.models import School, SchoolMembership
 
-from .models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
+from .models import Assessment, AssessmentCategory, GradeEntry, GradeImportBatch, GradeImportRow, GradeScheme
 from .services import activate_grade_scheme, calculate_weighted_result
 
 
@@ -347,3 +350,106 @@ class TeacherGradebookWorkflowTests(TestCase):
             secure=True,
         )
         self.assertFalse(GradeEntry.objects.filter(assessment=self.assessment).exists())
+
+    def _download_workbook(self):
+        self.client.force_login(self.teacher_user)
+        response = self.client.get(reverse("gradebook_template", args=[self.assessment.pk]), secure=True)
+        self.assertEqual(response.status_code, 200)
+        return response
+
+    def _uploaded_workbook(self, scores, *, assessment_id=None):
+        response = self._download_workbook()
+        workbook = load_workbook(BytesIO(response.content))
+        if assessment_id is not None:
+            workbook["Instructions"]["B2"] = assessment_id
+        roster = workbook["Grade Roster"]
+        for row_number, score in enumerate(scores, start=2):
+            roster.cell(row_number, 4).value = score
+        output = BytesIO()
+        workbook.save(output)
+        return SimpleUploadedFile(
+            "completed-grades.xlsx",
+            output.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+    def test_downloaded_template_has_bound_metadata_and_editable_score_cells(self):
+        response = self._download_workbook()
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        workbook = load_workbook(BytesIO(response.content))
+        self.assertEqual(workbook.sheetnames, ["Instructions", "Grade Roster"])
+        self.assertEqual(workbook["Instructions"]["B2"].value, self.assessment.pk)
+        roster = workbook["Grade Roster"]
+        self.assertEqual(roster.freeze_panes, "A2")
+        self.assertTrue(roster.protection.sheet)
+        self.assertFalse(roster["D2"].protection.locked)
+        self.assertEqual(roster["A2"].value, self.student_memberships[0].pk)
+
+    def test_unassigned_teacher_cannot_download_template(self):
+        self.client.force_login(self.other_teacher_user)
+        response = self.client.get(reverse("gradebook_template", args=[self.assessment.pk]), secure=True)
+        self.assertEqual(response.status_code, 404)
+
+    def test_valid_workbook_previews_then_imports_atomically(self):
+        workbook = self._uploaded_workbook(["18", "16"])
+        response = self.client.post(
+            reverse("gradebook_import", args=[self.assessment.pk]),
+            {"workbook": workbook},
+            secure=True,
+        )
+        batch = GradeImportBatch.objects.get()
+        self.assertRedirects(response, reverse("gradebook_import_preview", args=[batch.pk]), fetch_redirect_response=False)
+        self.assertEqual(batch.valid_count, 2)
+        self.assertEqual(batch.error_count, 0)
+        self.assertFalse(GradeEntry.objects.exists())
+
+        response = self.client.post(
+            reverse("gradebook_import_confirm", args=[batch.pk]),
+            {"action": "publish"},
+            secure=True,
+        )
+        self.assertRedirects(response, reverse("gradebook_roster", args=[self.assessment.pk]), fetch_redirect_response=False)
+        batch.refresh_from_db()
+        self.assertEqual(batch.status, GradeImportBatch.Status.CONFIRMED)
+        self.assertEqual(batch.confirmed_by, self.teacher)
+        entries = GradeEntry.objects.filter(assessment=self.assessment)
+        self.assertEqual(entries.count(), 2)
+        self.assertEqual(set(entries.values_list("source", flat=True)), {GradeEntry.Source.IMPORT})
+        self.assertEqual(set(entries.values_list("status", flat=True)), {GradeEntry.Status.PUBLISHED})
+        self.assertEqual(
+            set(batch.rows.values_list("status", flat=True)), {GradeImportRow.Status.IMPORTED}
+        )
+
+    def test_invalid_workbook_creates_preview_but_cannot_partially_import(self):
+        workbook = self._uploaded_workbook(["18", "25"])
+        self.client.post(
+            reverse("gradebook_import", args=[self.assessment.pk]),
+            {"workbook": workbook},
+            secure=True,
+        )
+        batch = GradeImportBatch.objects.get()
+        self.assertEqual(batch.valid_count, 1)
+        self.assertEqual(batch.error_count, 1)
+        response = self.client.post(
+            reverse("gradebook_import_confirm", args=[batch.pk]),
+            {"action": "publish"},
+            secure=True,
+        )
+        self.assertRedirects(response, reverse("gradebook_import_preview", args=[batch.pk]), fetch_redirect_response=False)
+        self.assertFalse(GradeEntry.objects.exists())
+        batch.refresh_from_db()
+        self.assertEqual(batch.status, GradeImportBatch.Status.PREVIEW)
+
+    def test_workbook_for_different_assessment_is_rejected_before_batch_creation(self):
+        workbook = self._uploaded_workbook(["10", "12"], assessment_id=999999)
+        response = self.client.post(
+            reverse("gradebook_import", args=[self.assessment.pk]),
+            {"workbook": workbook},
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "different school or assessment")
+        self.assertFalse(GradeImportBatch.objects.exists())

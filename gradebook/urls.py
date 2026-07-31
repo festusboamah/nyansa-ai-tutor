@@ -8,4 +8,8 @@ urlpatterns = [
     path("offerings/<int:offering_id>/", views.assessment_list, name="gradebook_assessments"),
     path("offerings/<int:offering_id>/assessments/new/", views.create_assessment, name="gradebook_create_assessment"),
     path("assessments/<int:assessment_id>/roster/", views.grade_roster, name="gradebook_roster"),
+    path("assessments/<int:assessment_id>/template/", views.download_grade_template, name="gradebook_template"),
+    path("assessments/<int:assessment_id>/import/", views.upload_grade_workbook, name="gradebook_import"),
+    path("imports/<int:batch_id>/", views.import_preview, name="gradebook_import_preview"),
+    path("imports/<int:batch_id>/confirm/", views.confirm_import, name="gradebook_import_confirm"),
 ]

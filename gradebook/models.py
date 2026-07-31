@@ -158,6 +158,8 @@ class GradeEntry(models.Model):
             self.student.school_id != self.school_id or self.student.role != SchoolMembership.Role.STUDENT
         ):
             errors["student"] = "Student must have a student membership in the same school."
+        elif self.student_id and self.student.status != SchoolMembership.Status.ACTIVE:
+            errors["student"] = "Student membership must be active."
         if self.recorded_by_id and (
             self.recorded_by.school_id != self.school_id
             or self.recorded_by.role not in {SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN}
@@ -181,3 +183,80 @@ class GradeEntry(models.Model):
         if not self.assessment_id or not self.assessment.max_score:
             return None
         return (self.score / self.assessment.max_score * Decimal("100")).quantize(Decimal("0.01"))
+
+
+class GradeImportBatch(models.Model):
+    class Status(models.TextChoices):
+        PREVIEW = "PREVIEW", "Awaiting confirmation"
+        CONFIRMED = "CONFIRMED", "Confirmed"
+        CANCELLED = "CANCELLED", "Cancelled"
+
+    school = models.ForeignKey("schools.School", on_delete=models.CASCADE, related_name="grade_import_batches")
+    assessment = models.ForeignKey(Assessment, on_delete=models.PROTECT, related_name="import_batches")
+    uploaded_by = models.ForeignKey(
+        "schools.SchoolMembership", on_delete=models.PROTECT, related_name="uploaded_grade_imports"
+    )
+    confirmed_by = models.ForeignKey(
+        "schools.SchoolMembership",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="confirmed_grade_imports",
+    )
+    original_filename = models.CharField(max_length=255)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PREVIEW)
+    row_count = models.PositiveIntegerField(default=0)
+    valid_count = models.PositiveIntegerField(default=0)
+    error_count = models.PositiveIntegerField(default=0)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+        indexes = [models.Index(fields=["school", "status", "uploaded_at"], name="import_school_status_idx")]
+
+    def clean(self):
+        from schools.models import SchoolMembership
+
+        errors = {}
+        if self.assessment_id and self.assessment.school_id != self.school_id:
+            errors["assessment"] = "Import batch and assessment must belong to the same school."
+        for field in ("uploaded_by", "confirmed_by"):
+            membership = getattr(self, field, None)
+            if membership and (
+                membership.school_id != self.school_id
+                or membership.role not in {SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN}
+            ):
+                errors[field] = "Import operator must be a teacher or administrator in the same school."
+        if errors:
+            raise ValidationError(errors)
+
+
+class GradeImportRow(models.Model):
+    class Status(models.TextChoices):
+        VALID = "VALID", "Ready"
+        ERROR = "ERROR", "Error"
+        SKIPPED = "SKIPPED", "Blank score"
+        IMPORTED = "IMPORTED", "Imported"
+
+    batch = models.ForeignKey(GradeImportBatch, on_delete=models.CASCADE, related_name="rows")
+    row_number = models.PositiveIntegerField()
+    student = models.ForeignKey(
+        "schools.SchoolMembership", null=True, blank=True, on_delete=models.PROTECT, related_name="grade_import_rows"
+    )
+    raw_student_id = models.CharField(max_length=100, blank=True)
+    raw_score = models.CharField(max_length=100, blank=True)
+    score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices)
+    error = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        ordering = ["row_number"]
+        constraints = [
+            models.UniqueConstraint(fields=["batch", "row_number"], name="unique_import_batch_row"),
+            models.UniqueConstraint(
+                fields=["batch", "student"],
+                condition=models.Q(student__isnull=False),
+                name="unique_import_batch_student",
+            ),
+        ]
