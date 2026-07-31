@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'dashboard',
     'schools',
     'academics',
+    'gradebook',
 ]
 
 MIDDLEWARE = [

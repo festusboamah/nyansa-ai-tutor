@@ -16,6 +16,8 @@ This directory is the implementation guide for Nyansa's evolution from an AI tut
 10. [Phase 1A Multi-Tenancy](phase-1a-multitenancy.md) — delivered tenant models, compatibility strategy, and migration rehearsal.
 11. [Phase 1B Academic Structure](phase-1b-academic-structure.md) — academic years, terms, classes, offerings, and assignments.
 
+12. [Phase 2A Gradebook Foundation](phase-2a-gradebook-foundation.md) — configurable weights, common assessments, grade sources, and publication-aware results.
+
 ## Document status
 
 These documents describe the intended target system. They are not evidence that a feature has already been implemented. Each page distinguishes the current baseline from proposed work where relevant.

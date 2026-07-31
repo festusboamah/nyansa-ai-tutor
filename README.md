@@ -29,6 +29,7 @@ Nyansa (Twi for "wisdom") is a Django learning management system built for an M.
 - Custom Django user model with `STUDENT` and `TEACHER` roles.
 - Role-aware dashboards and routes.
 - Weighted subject grades: quizzes 20%, assignments 20%, and exams 60%.
+- A tenant-safe generalized gradebook foundation with configurable annual schemes, assessment categories, manual/online/import sources, and draft/published entries.
 - SQLite database for local development and local media storage for uploaded documents.
 
 ## AI Use
@@ -152,6 +153,7 @@ dashboard/       Teacher dashboard, reports, email, and lesson notes
 quizzes/         Quizzes, exams, assignments, grading, and AI generation
 schools/         School tenants, memberships, active-school context, and isolation helpers
 academics/       Academic years, terms, classes, offerings, and teacher assignments
+gradebook/       Configurable grade schemes, assessments, grade entries, and weighted results
 static/          CSS and image assets
 templates/       Shared and app-specific Django templates
 manage.py        Django management entry point

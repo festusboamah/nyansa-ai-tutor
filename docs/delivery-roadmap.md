@@ -41,7 +41,7 @@ Exit criteria:
 - School A cannot access School B through any tested path.
 - Existing student and teacher workflows continue to operate for the migrated school.
 
-Current status: Phase 1A has delivered the School and SchoolMembership foundation, legacy-school backfill, required subject and study-document ownership, active-school request context, membership-scoped role checks, and tenant-aware filtering across existing workflows. Academic years, terms, classes, subject offerings, invitations, and the administrator dashboard remain for subsequent Phase 1 slices.
+Current status: Phase 1 is complete. It delivered the School and SchoolMembership foundation, legacy-school backfill, tenant-aware filtering, academic years and terms, classes and enrollments, subject offerings and teacher assignments, school administration, invitations, and membership management.
 
 ## Phase 2 — Generalized gradebook and offline entry
 
@@ -60,6 +60,8 @@ Exit criteria:
 - A teacher can produce an official grade for a student without a student login.
 - Invalid workbooks cannot partially publish results.
 - Existing weighted grading results have regression coverage.
+
+Current status: Phase 2A has delivered the generalized gradebook domain and calculation foundation. School/year schemes support ordered weighted categories; common assessments and entries support online, manual, and import provenance; draft entries are excluded from published calculations; and tenant, roster, recorder, and score invariants are tested. Spreadsheet workflows, batch audit records, and teacher-facing review screens remain for later Phase 2 slices.
 
 ## Phase 3 — Lesson-plan approval
 
