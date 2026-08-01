@@ -62,4 +62,5 @@ class NavigationTests(TestCase):
         self.assertContains(response, "Academics")
         self.assertContains(response, "School Operations")
         self.assertContains(response, "School Admin")
+        self.assertContains(response, "js/navigation.js")
         self.assertNotContains(response, "(Teacher)")
