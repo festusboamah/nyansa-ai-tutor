@@ -12,6 +12,8 @@
 
 SQLite and `manage.py runserver` are development-only. Production startup fails unless `DJANGO_ENV=production`, debug is disabled, allowed hosts are set, and `DATABASE_URL` uses PostgreSQL.
 
+The Docker build runs `collectstatic` with production storage enabled and a non-connected placeholder PostgreSQL URL. This produces WhiteNoise's hashed static-file manifest inside the immutable image; runtime database credentials are never used during image construction.
+
 ## Required environment
 
 At minimum configure:

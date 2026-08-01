@@ -14,8 +14,12 @@ COPY requirements.txt ./
 RUN python -m pip install --upgrade pip && python -m pip install -r requirements.txt
 
 COPY . .
-RUN DJANGO_SECRET_KEY=build-only-not-for-runtime-123456789012345678901234567890 \
-    DJANGO_DEBUG=False python manage.py collectstatic --noinput
+RUN DJANGO_ENV=production \
+    DJANGO_DEBUG=False \
+    DJANGO_SECRET_KEY=build-only-not-for-runtime-123456789012345678901234567890 \
+    DJANGO_ALLOWED_HOSTS=localhost \
+    DATABASE_URL=postgresql://build:build@localhost:5432/build \
+    python manage.py collectstatic --noinput
 
 RUN useradd --create-home --uid 10001 nyansa && chown -R nyansa:nyansa /app
 USER nyansa
