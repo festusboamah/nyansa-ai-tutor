@@ -4,6 +4,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from config.settings import database_from_url
+from schools.models import School, SchoolMembership
 
 
 class DeploymentConfigurationTests(SimpleTestCase):
@@ -43,3 +44,22 @@ class HealthEndpointTests(TestCase):
     def test_readiness_returns_503_when_database_is_unavailable(self, cursor):
         response = self.client.get(reverse("health_ready"), secure=True)
         self.assertEqual(response.status_code, 503)
+
+
+class NavigationTests(TestCase):
+    def test_school_admin_navigation_is_grouped_and_uses_membership_role(self):
+        school = School.objects.create(name="Demo School", slug="demo-school")
+        user = school.memberships.model._meta.get_field("user").remote_field.model.objects.create_user(
+            username="admin-user", password="safe-test-password", role="TEACHER"
+        )
+        SchoolMembership.objects.create(
+            school=school, user=user, role=SchoolMembership.Role.SCHOOL_ADMIN
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("home"), secure=True)
+
+        self.assertContains(response, "Academics")
+        self.assertContains(response, "School Operations")
+        self.assertContains(response, "School Admin")
+        self.assertNotContains(response, "(Teacher)")

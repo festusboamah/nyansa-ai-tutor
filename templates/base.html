@@ -38,22 +38,35 @@
         {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'analytics_dashboard' %}">Analytics</a>{% endif %}
     {% endif %}
     {% if request.school_membership.role == "SCHOOL_ADMIN" %}
-        <a href="{% url 'school_admin_dashboard' %}">School Admin</a>
-        <a href="{% url 'gradebook_review_queue' %}">Grade Review</a>
-        <a href="{% url 'lesson_review_queue' %}">Lesson Review</a>
-        <a href="{% url 'attendance_dashboard' %}">Attendance</a>
-        <a href="{% url 'term_report_dashboard' %}">Term Reports</a>
-        <a href="{% url 'guardian_links' %}">Guardians</a>
-        <a href="{% url 'communications_dashboard' %}">Messages</a>
-        <a href="{% url 'finance_dashboard' %}">Finance</a>
-        <a href="{% url 'analytics_dashboard' %}">Analytics</a>
+        <a href="{% url 'school_admin_dashboard' %}">Overview</a>
+        <details class="nav-menu">
+            <summary>Academics</summary>
+            <div class="nav-menu-panel">
+                <a href="{% url 'gradebook_review_queue' %}">Grade Review</a>
+                <a href="{% url 'lesson_review_queue' %}">Lesson Review</a>
+                <a href="{% url 'attendance_dashboard' %}">Attendance</a>
+                <a href="{% url 'term_report_dashboard' %}">Term Reports</a>
+                <a href="{% url 'analytics_dashboard' %}">Analytics</a>
+            </div>
+        </details>
+        <details class="nav-menu">
+            <summary>School Operations</summary>
+            <div class="nav-menu-panel">
+                <a href="{% url 'guardian_links' %}">Guardians</a>
+                <a href="{% url 'communications_dashboard' %}">Messages</a>
+                <a href="{% url 'finance_dashboard' %}">Finance</a>
+            </div>
+        </details>
     {% endif %}
     {% if request.school_membership.role == "PARENT" %}
         <a href="{% url 'guardian_portal' %}">My Children</a>
         <a href="{% url 'communication_preferences' %}">Message Preferences</a>
     {% endif %}
     {% if request.school_membership %}<a href="{% url 'lesson_notifications' %}">Notifications</a>{% endif %}
-    <a href="{% url 'profile' %}" class="welcome-text">Hi, {{ user.username }} ({{ user.role|title }})</a>
+    <a href="{% url 'profile' %}" class="welcome-text">
+        <span>{{ user.username }}</span>
+        <small>{% if request.school_membership %}{{ request.school_membership.get_role_display }}{% else %}{{ user.get_role_display }}{% endif %}</small>
+    </a>
     <form method="post" action="{% url 'logout' %}" class="inline-form">
         {% csrf_token %}
         <button type="submit" class="link-button">Logout</button>

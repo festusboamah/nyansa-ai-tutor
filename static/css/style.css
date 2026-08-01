@@ -83,7 +83,7 @@ body {
 .navbar-links {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 0.45rem;
 }
 
 .navbar-links a {
@@ -101,6 +101,8 @@ body {
 }
 
 .welcome-text {
+    display: grid;
+    line-height: 1.15;
     color: var(--text);
     font-weight: 500;
     text-decoration: none;
@@ -143,6 +145,45 @@ body {
 .link-button:hover {
     color: var(--danger);
     background-color: #fef2f2;
+}
+
+@media (max-width: 1050px) {
+    .navbar {
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 0.9rem 1rem;
+    }
+
+    .navbar-links {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 720px) {
+    .navbar {
+        position: relative;
+        flex-direction: column;
+    }
+
+    .navbar-links {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .nav-menu {
+        width: 100%;
+    }
+
+    .nav-menu summary {
+        border: 1px solid var(--border);
+    }
+
+    .nav-menu-panel {
+        position: static;
+        margin-top: 0.35rem;
+        box-shadow: none;
+    }
 }
 
 /* ===== Layout ===== */
@@ -1083,4 +1124,64 @@ h2 {
     padding: 0.65rem 1rem;
     text-align: center;
     font-weight: 700;
+}
+
+.welcome-text small {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.nav-menu {
+    position: relative;
+}
+
+.nav-menu summary {
+    list-style: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.nav-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.nav-menu summary::after {
+    content: "▾";
+    display: inline-block;
+    font-size: 0.72rem;
+    margin-left: 0.4rem;
+    transition: transform 0.2s ease;
+}
+
+.nav-menu[open] summary,
+.nav-menu summary:hover {
+    color: var(--primary);
+    background: #eef2ff;
+}
+
+.nav-menu[open] summary::after {
+    transform: rotate(180deg);
+}
+
+.nav-menu-panel {
+    position: absolute;
+    top: calc(100% + 0.55rem);
+    left: 0;
+    min-width: 190px;
+    padding: 0.45rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.16);
+}
+
+.nav-menu-panel a {
+    display: block;
+    white-space: nowrap;
 }
