@@ -493,6 +493,20 @@ h2 {
     padding: 4.5rem 0;
 }
 
+.footer p {
+    margin: 0;
+}
+
+.footer-credit {
+    margin-top: 0.25rem !important;
+    font-size: 0.78rem;
+}
+
+.footer-credit strong {
+    color: var(--text);
+    letter-spacing: 0.05em;
+}
+
 .platform-kicker {
     margin-bottom: 0.8rem;
     color: var(--primary);
