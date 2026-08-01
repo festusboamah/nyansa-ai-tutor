@@ -1,6 +1,6 @@
 from django import forms
-from academics.models import AcademicYear, SchoolClass, SubjectOffering, TeacherAssignment, Term
-from .models import SchoolMembership
+from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
+from .models import School, SchoolMembership
 from .models import SchoolInvitation
 
 
@@ -19,6 +19,35 @@ class SchoolScopedFormMixin:
         super().__init__(*args, **kwargs)
         if hasattr(self.instance, "school_id"):
             self.instance.school = school
+
+
+class SchoolProfileForm(forms.ModelForm):
+    class Meta:
+        model = School
+        fields = ["name", "address", "phone", "email", "timezone", "logo", "official_stamp"]
+
+
+class SubjectSetupForm(SchoolScopedFormMixin, forms.ModelForm):
+    class Meta:
+        from courses.models import Subject
+        model = Subject
+        fields = ["name", "description"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 3})}
+
+
+class ClassEnrollmentForm(forms.ModelForm):
+    class Meta:
+        model = ClassEnrollment
+        fields = ["school_class", "student"]
+
+    def __init__(self, *args, school, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["school_class"].queryset = SchoolClass.objects.filter(school=school)
+        self.fields["student"].queryset = SchoolMembership.objects.filter(
+            school=school,
+            role=SchoolMembership.Role.STUDENT,
+            status=SchoolMembership.Status.ACTIVE,
+        ).select_related("user")
 
 
 class AcademicYearForm(SchoolScopedFormMixin, forms.ModelForm):

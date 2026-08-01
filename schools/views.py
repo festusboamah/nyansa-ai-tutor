@@ -5,8 +5,9 @@ from django.http import Http404
 from django.urls import reverse
 from django.core.mail import send_mail
 from django.conf import settings
-from academics.models import AcademicYear, SchoolClass, SubjectOffering, TeacherAssignment, Term
-from .forms import AcademicYearForm, SchoolClassForm, SchoolInvitationForm, SubjectOfferingForm, TeacherAssignmentForm, TermForm
+from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
+from courses.models import Subject
+from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
 from .models import SchoolInvitation, SchoolMembership
 from .services import accept_invitation, create_invitation, has_school_role
 
@@ -31,6 +32,119 @@ def school_admin_dashboard(request):
         "offerings": SubjectOffering.objects.filter(school=school).select_related("school_class", "subject", "term"),
         "assignments": TeacherAssignment.objects.filter(offering__school=school).select_related("teacher__user", "offering__subject"),
         "member_count": SchoolMembership.objects.filter(school=school).count(),
+    })
+
+
+ONBOARDING_STEPS = (
+    ("profile", "School profile"),
+    ("year", "Academic year"),
+    ("term", "Term"),
+    ("people", "Invite people"),
+    ("class", "Classes"),
+    ("subject", "Subjects"),
+    ("offering", "Subject offerings"),
+    ("assignment", "Assign teachers"),
+    ("enrollment", "Enrol students"),
+)
+
+
+def _onboarding_state(school):
+    active_roles = set(SchoolMembership.objects.filter(
+        school=school,
+        role__in=[SchoolMembership.Role.TEACHER, SchoolMembership.Role.STUDENT],
+        status=SchoolMembership.Status.ACTIVE,
+    ).values_list("role", flat=True))
+    invited_roles = set(SchoolInvitation.objects.filter(
+        school=school,
+        role__in=[SchoolMembership.Role.TEACHER, SchoolMembership.Role.STUDENT],
+        status=SchoolInvitation.Status.PENDING,
+    ).values_list("role", flat=True))
+    people_roles = active_roles | invited_roles
+    return {
+        "profile": bool(school.address and school.phone and school.email),
+        "year": AcademicYear.objects.filter(school=school).exists(),
+        "term": Term.objects.filter(academic_year__school=school).exists(),
+        "people": {
+            SchoolMembership.Role.TEACHER,
+            SchoolMembership.Role.STUDENT,
+        }.issubset(people_roles),
+        "class": SchoolClass.objects.filter(school=school).exists(),
+        "subject": Subject.objects.filter(school=school).exists(),
+        "offering": SubjectOffering.objects.filter(school=school).exists(),
+        "assignment": TeacherAssignment.objects.filter(offering__school=school).exists(),
+        "enrollment": ClassEnrollment.objects.filter(school_class__school=school).exists(),
+    }
+
+
+def _next_onboarding_step(state):
+    return next((key for key, _ in ONBOARDING_STEPS if not state[key]), "profile")
+
+
+@admin_required
+def school_onboarding(request):
+    state = _onboarding_state(request.school)
+    step_keys = {key for key, _ in ONBOARDING_STEPS}
+    step = request.POST.get("step") or request.GET.get("step") or _next_onboarding_step(state)
+    if step not in step_keys:
+        raise Http404
+
+    form_classes = {
+        "profile": SchoolProfileForm,
+        "year": AcademicYearForm,
+        "term": TermForm,
+        "people": SchoolInvitationForm,
+        "class": SchoolClassForm,
+        "subject": SubjectSetupForm,
+        "offering": SubjectOfferingForm,
+        "assignment": TeacherAssignmentForm,
+        "enrollment": ClassEnrollmentForm,
+    }
+    form_class = form_classes[step]
+    kwargs = {"data": request.POST or None, "files": request.FILES or None}
+    if step == "profile":
+        kwargs["instance"] = request.school
+    elif step not in {"people"}:
+        kwargs["school"] = request.school
+    form = form_class(**kwargs)
+
+    if request.method == "POST" and form.is_valid():
+        if step == "people":
+            invitation, token = create_invitation(
+                school=request.school,
+                email=form.cleaned_data["email"],
+                role=form.cleaned_data["role"],
+                invited_by=request.user,
+            )
+            invitation_url = request.build_absolute_uri(reverse("accept_school_invitation", args=[token]))
+            send_mail(
+                f"Invitation to join {request.school.name} on Nyansa",
+                f"You have been invited as {invitation.get_role_display()}. Accept here: {invitation_url}",
+                settings.DEFAULT_FROM_EMAIL,
+                [invitation.email],
+            )
+        else:
+            obj = form.save(commit=False)
+            if step in {"year", "class", "subject", "offering"}:
+                obj.school = request.school
+            obj.full_clean()
+            obj.save()
+        messages.success(request, f"{dict(ONBOARDING_STEPS)[step]} saved. Continue with the next setup step.")
+        updated_state = _onboarding_state(request.school)
+        return redirect(f"{reverse('school_onboarding')}?step={_next_onboarding_step(updated_state)}")
+
+    completed = sum(state.values())
+    display_steps = [
+        {"key": key, "label": label, "complete": state[key]}
+        for key, label in ONBOARDING_STEPS
+    ]
+    return render(request, "schools/onboarding.html", {
+        "form": form,
+        "steps": display_steps,
+        "state": state,
+        "current_step": step,
+        "current_label": dict(ONBOARDING_STEPS)[step],
+        "completed": completed,
+        "progress_percent": round(completed / len(ONBOARDING_STEPS) * 100),
     })
 
 

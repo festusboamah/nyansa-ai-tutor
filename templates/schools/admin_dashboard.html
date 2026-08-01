@@ -5,6 +5,7 @@
 {% include "communications/_notification_summary.html" %}
 {% include "communications/_admin_pending_work.html" %}
 <div class="dashboard-actions">
+  <a class="btn-small" href="{% url 'school_onboarding' %}">Guided school setup</a>
   <a class="btn-small" href="{% url 'people_directory' %}">Manage people</a>
   <a class="btn-small" href="{% url 'create_academic_year' %}">Add academic year</a>
   <a class="btn-small" href="{% url 'create_term' %}">Add term</a>

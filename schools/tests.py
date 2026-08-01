@@ -2,9 +2,11 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 from django.contrib.sessions.middleware import SessionMiddleware
 
 from courses.models import Subject
+from academics.models import AcademicYear, ClassEnrollment, SchoolClass
 
 from .models import School, SchoolMembership
 from .services import (
@@ -52,6 +54,47 @@ class SchoolMembershipTests(TestCase):
         )
 
         self.assertFalse(membership.is_active)
+
+
+class SchoolOnboardingTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Setup School", slug="setup-school")
+        self.admin_user = User.objects.create_user(username="setup-admin", password="test-password")
+        self.admin = SchoolMembership.objects.create(
+            school=self.school, user=self.admin_user, role=SchoolMembership.Role.SCHOOL_ADMIN
+        )
+        self.client.force_login(self.admin_user)
+
+    def test_admin_can_open_guided_setup(self):
+        response = self.client.get(reverse("school_onboarding"), secure=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Set up Setup School")
+        self.assertContains(response, "Enrol students")
+
+    def test_subject_step_creates_school_scoped_subject(self):
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "subject", "name": "Integrated Science", "description": "Core subject",
+        }, secure=True)
+        self.assertEqual(response.status_code, 302)
+        subject = Subject.objects.get(name="Integrated Science")
+        self.assertEqual(subject.school, self.school)
+
+    def test_enrollment_step_rejects_student_from_another_school(self):
+        year = AcademicYear.objects.create(
+            school=self.school, name="2026/27", start_date="2026-09-01", end_date="2027-07-31"
+        )
+        school_class = SchoolClass.objects.create(school=self.school, academic_year=year, name="Basic 5")
+        other_school = School.objects.create(name="Other Setup School", slug="other-setup-school")
+        other_user = User.objects.create_user(username="outside-student", password="test-password")
+        outside_student = SchoolMembership.objects.create(
+            school=other_school, user=other_user, role=SchoolMembership.Role.STUDENT
+        )
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "enrollment", "school_class": school_class.id, "student": outside_student.id,
+        }, secure=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Select a valid choice")
+        self.assertFalse(ClassEnrollment.objects.exists())
 
 
 class ActiveSchoolResolutionTests(TestCase):

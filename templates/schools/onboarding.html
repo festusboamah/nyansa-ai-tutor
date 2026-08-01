@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}School setup | Nyansa{% endblock %}
+{% block content %}
+<section class="onboarding-shell">
+  <div class="onboarding-heading">
+    <div><p class="eyebrow">Guided administration</p><h1>Set up {{ request.school.name }}</h1><p>Complete each step to prepare your school workspace.</p></div>
+    <div class="setup-progress"><strong>{{ completed }}/{{ steps|length }}</strong><span>steps complete</span></div>
+  </div>
+  <div class="progress-track" aria-label="{{ progress_percent }} percent complete"><span style="width: {{ progress_percent }}%"></span></div>
+  <div class="onboarding-layout">
+    <nav class="setup-steps" aria-label="School setup steps">
+      {% for item in steps %}
+      <a href="?step={{ item.key }}" class="{% if current_step == item.key %}active{% endif %}">
+        <span>{% if item.complete %}&#10003;{% else %}{{ forloop.counter }}{% endif %}</span>{{ item.label }}
+      </a>
+      {% endfor %}
+    </nav>
+    <section class="setup-form card">
+      <p class="eyebrow">Step {{ current_label }}</p><h2>{{ current_label }}</h2>
+      {% if current_step == "people" %}<p>Invite at least one teacher and one student. This step remains open until both roles have been added.</p>{% endif %}
+      {% if current_step == "offering" %}<p>Connect a subject to a class and term.</p>{% endif %}
+      {% if current_step == "enrollment" %}<p>Place an active student into one of this school's classes.</p>{% endif %}
+      <form method="post" enctype="multipart/form-data" class="setup-form-fields">
+        {% csrf_token %}<input type="hidden" name="step" value="{{ current_step }}">
+        {{ form.as_p }}
+        <button type="submit" class="btn-small">Save and continue</button>
+      </form>
+    </section>
+  </div>
+</section>
+{% endblock %}

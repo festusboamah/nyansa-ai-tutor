@@ -91,7 +91,7 @@ class ClassEnrollment(models.Model):
         constraints = [models.UniqueConstraint(fields=["school_class", "student"], name="unique_student_class_enrollment")]
 
     def clean(self):
-        if self.school_class_id and (
+        if self.school_class_id and self.student_id and (
             self.student.school_id != self.school_class.school_id
             or self.student.role != "STUDENT"
         ):
