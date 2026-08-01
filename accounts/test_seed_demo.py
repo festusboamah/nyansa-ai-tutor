@@ -5,8 +5,14 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 
-from academics.models import AcademicYear, SchoolClass, Term
+from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, Term
+from analytics.models import RiskSignal
+from attendance.models import AttendanceRecord
 from courses.models import Subject
+from finance.models import Charge
+from gradebook.models import GradeEntry
+from guardians.models import GuardianLink
+from reports.models import TermReport
 from schools.models import School, SchoolMembership
 
 
@@ -41,3 +47,12 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(Term.objects.count(), 1)
         self.assertEqual(SchoolClass.objects.count(), 1)
         self.assertEqual(Subject.objects.count(), 3)
+        self.assertEqual(SchoolMembership.objects.count(), 5)
+        self.assertEqual(ClassEnrollment.objects.count(), 2)
+        self.assertEqual(SubjectOffering.objects.count(), 3)
+        self.assertEqual(GradeEntry.objects.count(), 6)
+        self.assertEqual(AttendanceRecord.objects.count(), 6)
+        self.assertEqual(GuardianLink.objects.count(), 1)
+        self.assertEqual(TermReport.objects.count(), 1)
+        self.assertEqual(Charge.objects.count(), 2)
+        self.assertEqual(RiskSignal.objects.count(), 1)
