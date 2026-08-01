@@ -63,7 +63,9 @@
         <a href="{% url 'guardian_portal' %}">My Children</a>
         <a href="{% url 'communication_preferences' %}">Message Preferences</a>
     {% endif %}
-    {% if request.school_membership %}<a href="{% url 'lesson_notifications' %}">Notifications</a>{% endif %}
+    {% if request.school_membership.role == "TEACHER" or request.school_membership.role == "SCHOOL_ADMIN" %}
+        <a href="{% url 'lesson_notifications' %}">Lesson Updates</a>
+    {% endif %}
     <a href="{% url 'profile' %}" class="welcome-text">
         <span>{{ user.username }}</span>
         <small>{% if request.school_membership %}{{ request.school_membership.get_role_display }}{% else %}{{ user.get_role_display }}{% endif %}</small>

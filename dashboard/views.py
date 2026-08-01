@@ -299,15 +299,25 @@ def review_lesson_note_view(request, note_id):
 
 @login_required
 def lesson_notifications_view(request):
+    if not has_school_role(
+        request, SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN
+    ):
+        messages.error(request, "Lesson-plan updates are available only to teachers and school administrators.")
+        return redirect("home")
     notifications = LessonNoteNotification.objects.filter(
         recipient=request.school_membership
-    ).select_related("lesson_note") if request.school_membership else LessonNoteNotification.objects.none()
+    ).select_related("lesson_note")
     return render(request, "dashboard/lesson_notifications.html", {"notifications": notifications})
 
 
 @login_required
 def read_lesson_notification_view(request, notification_id):
-    if request.method == "POST" and request.school_membership:
+    if not has_school_role(
+        request, SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN
+    ):
+        messages.error(request, "Lesson-plan updates are available only to teachers and school administrators.")
+        return redirect("home")
+    if request.method == "POST":
         notification = get_object_or_404(
             LessonNoteNotification, pk=notification_id, recipient=request.school_membership
         )

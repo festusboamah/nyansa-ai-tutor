@@ -80,6 +80,24 @@ class LessonNoteAccessBaselineTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_student_has_no_lesson_updates_navigation_or_page_access(self):
+        self.client.force_login(self.student)
+
+        home = self.client.get(reverse("home"), secure=True)
+        notifications = self.client.get(reverse("lesson_notifications"), secure=True)
+
+        self.assertNotContains(home, "Lesson Updates")
+        self.assertRedirects(notifications, reverse("home"), fetch_redirect_response=False)
+
+    def test_teacher_has_lesson_updates_navigation_and_page_access(self):
+        self.client.force_login(self.teacher)
+
+        home = self.client.get(reverse("home"), secure=True)
+        notifications = self.client.get(reverse("lesson_notifications"), secure=True)
+
+        self.assertContains(home, "Lesson Updates")
+        self.assertEqual(notifications.status_code, 200)
+
 
 class LessonNoteApprovalWorkflowTests(TestCase):
     def setUp(self):
