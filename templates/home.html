@@ -1,58 +1,65 @@
 {% extends "base.html" %}
-{% block title %}Nyansa - AI-Powered Learning{% endblock %}
+{% block title %}Nyansa — School Intelligence for Ghana{% endblock %}
 {% block content %}
 
-<section class="hero">
-    <div class="hero-blob hero-blob-1"></div>
-    <div class="hero-blob hero-blob-2"></div>
-    <div class="hero-blob hero-blob-3"></div>
-    <div class="hero-text">
-        <h1 class="hero-title">Learn Smarter with <span class="hero-highlight">Nyansa</span></h1>
-        <p class="hero-subtitle">AI-powered tutoring that adapts to you — instant feedback, personalized reports, and quizzes that actually help you learn.</p>
-        {% if not user.is_authenticated %}
-        <div class="hero-actions">
-            <a href="{% url 'signup' %}" class="btn-hero-primary">Get Started Free</a>
-            <a href="{% url 'login' %}" class="btn-hero-secondary">Login</a>
-        </div>
-        {% else %}
-        <div class="hero-actions">
-            {% if user.role == "STUDENT" %}
-                <a href="{% url 'dashboard' %}" class="btn-hero-primary">Go to My Dashboard</a>
+<section class="platform-hero">
+    <div class="platform-hero-copy">
+        <p class="platform-kicker">School intelligence for Ghana</p>
+        <h1>Run your school with <span>clarity, connection, and confidence.</span></h1>
+        <p class="platform-lead">Nyansa brings academics, attendance, reporting, family communication, fees, and responsible AI into one secure school workspace.</p>
+        <div class="hero-actions platform-actions">
+            {% if not user.is_authenticated %}
+                <a href="{% url 'signup' %}" class="btn-hero-primary">Explore Nyansa</a>
+                <a href="{% url 'login' %}" class="btn-hero-secondary">Sign in</a>
+            {% elif request.school_membership.role == "SCHOOL_ADMIN" %}
+                <a href="{% url 'school_admin_dashboard' %}" class="btn-hero-primary">Open School Overview</a>
+            {% elif request.school_membership.role == "TEACHER" %}
+                <a href="{% url 'teacher_dashboard' %}" class="btn-hero-primary">Open Teacher Dashboard</a>
+            {% elif request.school_membership.role == "PARENT" %}
+                <a href="{% url 'guardian_portal' %}" class="btn-hero-primary">Open Guardian Portal</a>
             {% else %}
-                <a href="{% url 'teacher_dashboard' %}" class="btn-hero-primary">Go to My Dashboard</a>
+                <a href="{% url 'dashboard' %}" class="btn-hero-primary">Open Student Dashboard</a>
             {% endif %}
         </div>
-        {% endif %}
+        <div class="platform-trust" aria-label="Nyansa principles">
+            <span>School-scoped access</span>
+            <span>Auditable records</span>
+            <span>Human-reviewed AI</span>
+        </div>
+    </div>
+    <div class="platform-hero-visual" aria-label="Connected school operations">
+        <div class="platform-orbit platform-orbit-large"></div>
+        <div class="platform-orbit platform-orbit-small"></div>
+        <div class="platform-core"><strong>Nyansa</strong><span>One school workspace</span></div>
+        <div class="platform-node node-academics">Academics</div>
+        <div class="platform-node node-families">Families</div>
+        <div class="platform-node node-finance">Finance</div>
+        <div class="platform-node node-insight">Insight</div>
     </div>
 </section>
 
-<section class="features-section">
-    <div class="feature-card">
-        <div class="feature-icon">📚</div>
-        <h2>Learn Any Subject</h2>
-        <p>Browse subjects, watch curated materials, and study at your own pace.</p>
+<section class="platform-section" aria-labelledby="platform-heading">
+    <div class="section-heading">
+        <p class="platform-kicker">One connected system</p>
+        <h2 id="platform-heading">Built around the work schools do every day</h2>
+        <p>Each workflow shares the same trusted school, people, class, and term context—without scattered spreadsheets or duplicate records.</p>
     </div>
-    <div class="feature-card">
-        <div class="feature-icon">🤖</div>
-        <h2>AI-Graded Quizzes</h2>
-        <p>Get instant feedback on every answer, powered by Claude AI.</p>
-    </div>
-    <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h2>Smart Reports</h2>
-        <p>Teachers get AI-generated insights into every student's progress.</p>
+    <div class="platform-grid">
+        <article class="platform-card"><span>01</span><h3>Academic operations</h3><p>Manage classes, subjects, assessments, grade review, lesson approval, attendance, and term reports.</p></article>
+        <article class="platform-card"><span>02</span><h3>Guardian connection</h3><p>Give verified guardians secure access to published reports, attendance, balances, receipts, and notices.</p></article>
+        <article class="platform-card"><span>03</span><h3>Fees and payments</h3><p>Keep versioned fee structures, immutable ledgers, reconciled Mobile Money payments, and stable receipts.</p></article>
+        <article class="platform-card"><span>04</span><h3>School communication</h3><p>Coordinate privacy-aware portal, email, and SMS messages with delivery history and controlled retries.</p></article>
+        <article class="platform-card"><span>05</span><h3>Explainable analytics</h3><p>See sourced trends, early-warning signals, and intervention outcomes without hiding the evidence.</p></article>
+        <article class="platform-card"><span>06</span><h3>Responsible AI</h3><p>Support teaching, feedback, and reporting while educators retain approval and professional judgment.</p></article>
     </div>
 </section>
 
-<div class="floating-strip">
-    <div class="floating-item" style="--delay: 0s;">📘</div>
-    <div class="floating-item" style="--delay: 3s;">✏️</div>
-    <div class="floating-item" style="--delay: 6s;">🧮</div>
-    <div class="floating-item" style="--delay: 9s;">🔬</div>
-    <div class="floating-item" style="--delay: 12s;">🎓</div>
-    <div class="floating-item" style="--delay: 15s;">💡</div>
-    <div class="floating-item" style="--delay: 18s;">📐</div>
-    <div class="floating-item" style="--delay: 21s;">🌍</div>
-</div>
+<section class="platform-promise">
+    <div>
+        <p class="platform-kicker">Wisdom, not automation at any cost</p>
+        <h2>Technology should sharpen human judgment—not replace it.</h2>
+    </div>
+    <p>Nyansa means “wisdom” in Twi. Every important academic and administrative decision remains visible, accountable, and under the control of the school.</p>
+</section>
 
 {% endblock %}

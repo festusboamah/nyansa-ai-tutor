@@ -63,4 +63,15 @@ class NavigationTests(TestCase):
         self.assertContains(response, "School Operations")
         self.assertContains(response, "School Admin")
         self.assertContains(response, "js/navigation.js")
+        self.assertContains(response, "Open School Overview")
+        self.assertContains(response, "School intelligence, grounded in human judgment")
         self.assertNotContains(response, "(Teacher)")
+
+    def test_public_home_presents_the_school_platform_direction(self):
+        response = self.client.get(reverse("home"), secure=True)
+
+        self.assertContains(response, "School intelligence for Ghana")
+        self.assertContains(response, "Academic operations")
+        self.assertContains(response, "Guardian connection")
+        self.assertContains(response, "Fees and payments")
+        self.assertContains(response, "Responsible AI")
