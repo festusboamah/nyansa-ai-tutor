@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block title %}New Fee Structure - Nyansa{% endblock %}{% block content %}<div class="admin-heading"><div><p class="eyebrow">Configuration</p><h1>New fee structure</h1></div></div><form method="post" class="card narrow-form">{% csrf_token %}{{ form.as_p }}<button class="btn-small" type="submit">Create structure</button></form>{% endblock %}

@@ -154,6 +154,8 @@ Exit criteria:
 - No browser-only signal can mark a payment successful.
 - Every financial mutation is attributable.
 
+Current status: Phase 7 is complete. Administrators configure versioned class fee structures, post immutable charges, record attributed debit or credit adjustments, inspect balances and reconciliation exceptions, and send privacy-safe reminders. Verified guardians can view linked-student ledgers, initialize Paystack-hosted GHS Mobile Money checkout, and download stable receipts. HMAC-authenticated, idempotent provider events normalize success, failure, reversal, and exceptions; successful payments allocate oldest charges first; and browser callbacks never post value.
+
 ## Phase 8 — Analytics and intervention
 
 **Goal:** Turn operational data into actionable, explainable insight.

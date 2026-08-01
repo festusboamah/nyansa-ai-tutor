@@ -38,6 +38,7 @@
         <a href="{% url 'term_report_dashboard' %}">Term Reports</a>
         <a href="{% url 'guardian_links' %}">Guardians</a>
         <a href="{% url 'communications_dashboard' %}">Messages</a>
+        <a href="{% url 'finance_dashboard' %}">Finance</a>
     {% endif %}
     {% if request.school_membership.role == "PARENT" %}
         <a href="{% url 'guardian_portal' %}">My Children</a>

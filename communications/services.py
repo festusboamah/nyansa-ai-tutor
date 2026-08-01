@@ -20,6 +20,8 @@ DEFAULT_TEMPLATES = (
     ("attendance-sms", "Attendance SMS", "SMS", "ATTENDANCE", "", "{{school_name}} has posted an attendance update. Sign in to your secure Nyansa guardian portal."),
     ("school-event-email", "School event email", "EMAIL", "SCHOOL_EVENT", "{{school_name}}: {{event_title}}", "{{event_message}}"),
     ("balance-email", "Balance email", "EMAIL", "BALANCE", "{{school_name}} account notice", "A fee-account update for {{student_name}} is available in your secure portal."),
+    ("receipt-email", "Payment receipt email", "EMAIL", "BALANCE", "{{school_name}} payment receipt", "Receipt {{receipt_number}} for {{student_name}} is available in your secure Nyansa guardian portal."),
+    ("receipt-sms", "Payment receipt SMS", "SMS", "BALANCE", "", "{{school_name}} has posted a payment receipt. Sign in to your secure Nyansa guardian portal."),
 )
 
 

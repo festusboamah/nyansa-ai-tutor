@@ -129,6 +129,8 @@ To send email through SMTP, set `EMAIL_BACKEND=django.core.mail.backends.smtp.Em
 
 To process queued family notifications, run `python manage.py process_messages --limit 50` from a recurring worker. Configure `ARKESEL_API_KEY` and `ARKESEL_SENDER_ID` to enable the Ghana-focused SMS adapter. Without an SMS key, SMS attempts fail safely and remain retryable; email and portal access continue independently.
 
+For Mobile Money, configure `PAYSTACK_SECRET_KEY` and set the Paystack webhook URL to `https://YOUR_HOST/finance/webhooks/paystack/`. Checkout is initialized on the server with the `mobile_money` channel. The browser return page never posts payment; only a correctly signed provider webhook reconciles the ledger.
+
 The default local configuration uses SQLite (`db.sqlite3`) and writes uploaded PDFs to `media/`. Both are intentionally ignored by Git. Set `DJANGO_DEBUG=True` only for local development. For HTTPS deployments, `DJANGO_SECURE_SSL_REDIRECT` defaults to `True` and can be explicitly disabled only when TLS is terminated elsewhere.
 
 ## Accounts and Roles
@@ -191,3 +193,4 @@ python manage.py test
 This project is available under the [MIT License](LICENSE).
 Term-report workflows generate school-branded, auditable PDF snapshots from approved grades and attendance, with optional positions, prior-term comparisons, remarks, promotion outcomes, and bulk class downloads.
 Verified guardian links provide a responsive family portal for published reports and attendance. Email and Arkesel SMS notices use an idempotent outbox, guardian preferences, retryable delivery, privacy-safe SMS content, and immutable attempt history.
+Versioned fee structures, immutable student ledgers, reconciled payments, stable PDF receipts, balance reminders, and Paystack-hosted GHS Mobile Money checkout provide an auditable school-finance workflow.

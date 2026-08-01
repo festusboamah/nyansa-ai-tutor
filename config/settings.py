@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'reports',
     'guardians',
     'communications',
+    'finance',
 ]
 
 MIDDLEWARE = [
@@ -111,6 +112,7 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Nyansa <noreply@nyansa.com
 ARKESEL_API_KEY = os.getenv("ARKESEL_API_KEY", "")
 ARKESEL_SENDER_ID = os.getenv("ARKESEL_SENDER_ID", "Nyansa")
 ARKESEL_SMS_ENDPOINT = os.getenv("ARKESEL_SMS_ENDPOINT", "https://sms.arkesel.com/api/v2/sms/send")
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

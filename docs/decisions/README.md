@@ -55,3 +55,4 @@ Still required before the affected implementation phase:
 - Private file-storage provider and access pattern.
 - Gradebook integration strategy for existing Quiz and Assignment models.
 - SMS and payment provider selection after sandbox evaluation.
+- [ADR 0005: Paystack for the first Mobile Money adapter](0005-paystack-mobile-money.md)
