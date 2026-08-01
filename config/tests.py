@@ -66,7 +66,7 @@ class NavigationTests(TestCase):
         self.assertContains(response, "Open School Overview")
         self.assertContains(response, "&copy; 2026 Nyansa. School intelligence")
         self.assertContains(response, "Developed by")
-        self.assertContains(response, "NERDS IV")
+        self.assertContains(response, "NERDS IV Technologies")
         self.assertNotContains(response, "(Teacher)")
 
     def test_public_home_presents_the_school_platform_direction(self):
