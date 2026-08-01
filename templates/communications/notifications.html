@@ -14,6 +14,19 @@
         </form>
         {% endif %}
     </div>
+    <form method="get" class="notification-filters" aria-label="Filter notifications">
+        <label>Category
+            <select name="kind">
+                <option value="">All categories</option>
+                {% for value, label in notification_kinds %}
+                <option value="{{ value }}"{% if selected_kind == value %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="notification-checkbox"><input type="checkbox" name="unread" value="1"{% if unread_only %} checked{% endif %}> Unread only</label>
+        <button type="submit" class="btn-small">Apply filters</button>
+        {% if selected_kind or unread_only %}<a href="{% url 'notification_center' %}">Clear</a>{% endif %}
+    </form>
     <div class="notification-list">
         {% for notification in notifications %}
         <a class="notification-item{% if not notification.read_at %} unread{% endif %}" href="{% url 'notification_read' notification.id %}">
@@ -21,7 +34,7 @@
             <span>
                 <strong>{{ notification.title }}</strong>
                 <span>{{ notification.message }}</span>
-                <small>{{ notification.get_kind_display }} · {{ notification.created_at|timesince }} ago</small>
+                <small>{{ notification.get_kind_display }} &middot; {{ notification.created_at|date:"M j, Y, g:i a" }} &middot; {% if notification.read_at %}Read{% else %}Unread{% endif %}</small>
             </span>
         </a>
         {% empty %}

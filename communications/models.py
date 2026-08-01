@@ -21,6 +21,7 @@ class Notification(models.Model):
     target_url = models.CharField(max_length=300)
     deduplication_key = models.CharField(max_length=180)
     read_at = models.DateTimeField(null=True, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

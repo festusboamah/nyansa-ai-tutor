@@ -1423,3 +1423,12 @@ h2 {
 .notification-summary-row { display: grid; gap: .2rem; padding: .8rem 0; border-top: 1px solid #e4eaf2; color: #61708a; text-decoration: none; }
 .notification-summary-row strong { color: #17243b; }
 .notification-summary-row.unread strong::before { content: ""; display: inline-block; width: .5rem; height: .5rem; margin-right: .5rem; border-radius: 50%; background: #0699f5; }
+.notification-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; margin: 0 0 1.25rem; padding: 1rem; border: 1px solid #dce5f1; border-radius: 12px; background: white; }
+.notification-filters label { display: grid; gap: .3rem; font-weight: 700; color: #273650; }
+.notification-filters select { min-width: 190px; padding: .65rem; border: 1px solid #cdd8e7; border-radius: 8px; background: white; }
+.notification-filters .notification-checkbox { display: flex; align-items: center; gap: .45rem; padding-bottom: .65rem; }
+.pending-work { margin: 1.25rem 0; padding: 1.25rem; border-radius: 14px; background: #12213a; color: white; }
+.pending-work-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: 1rem; }
+.pending-work-grid a { display: grid; padding: 1rem; border-radius: 10px; background: rgba(255,255,255,.1); color: white; text-decoration: none; }
+.pending-work-grid strong { font-size: 1.8rem; color: #66c6ff; }
+@media (max-width: 700px) { .pending-work-grid { grid-template-columns: 1fr; } }

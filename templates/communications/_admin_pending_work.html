@@ -1,0 +1,10 @@
+{% if admin_pending_work %}
+<section class="pending-work" aria-labelledby="pending-work-title">
+  <div class="notification-summary-heading"><h2 id="pending-work-title">Pending approvals</h2><span>Needs attention</span></div>
+  <div class="pending-work-grid">
+    <a href="{% url 'lesson_review_queue' %}"><strong>{{ admin_pending_work.lessons }}</strong><span>Lesson notes</span></a>
+    <a href="{% url 'gradebook_review_queue' %}"><strong>{{ admin_pending_work.grades }}</strong><span>Grades</span></a>
+    <a href="{% url 'term_report_dashboard' %}"><strong>{{ admin_pending_work.reports }}</strong><span>Term reports</span></a>
+  </div>
+</section>
+{% endif %}

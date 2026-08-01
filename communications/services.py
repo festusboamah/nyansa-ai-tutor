@@ -1,5 +1,6 @@
 import hashlib
 from datetime import timedelta
+from datetime import timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -46,6 +47,17 @@ def notify_school_role(*, school, role, kind, title, message, target_url, dedupl
         )
         for recipient in recipients
     ]
+
+
+def archive_stale_notifications(*, recipient, days=90):
+    """Archive old, already-read inbox items without deleting audit history."""
+    cutoff = timezone.now() - timedelta(days=days)
+    return Notification.objects.filter(
+        recipient=recipient,
+        archived_at__isnull=True,
+        read_at__isnull=False,
+        created_at__lt=cutoff,
+    ).update(archived_at=timezone.now())
 
 
 DEFAULT_TEMPLATES = (

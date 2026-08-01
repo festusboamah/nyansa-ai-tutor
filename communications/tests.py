@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from datetime import timedelta
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -10,7 +11,7 @@ from guardians.models import GuardianLink
 from schools.models import School, SchoolMembership
 
 from .models import CommunicationPreference, DeliveryAttempt, MessageIntent, MessageTemplate, Notification
-from .services import create_notification, enqueue_guardian_event, enqueue_message, ensure_default_templates, process_queued_messages
+from .services import archive_stale_notifications, create_notification, enqueue_guardian_event, enqueue_message, ensure_default_templates, process_queued_messages
 
 
 class NotificationCenterTests(TestCase):
@@ -64,6 +65,39 @@ class NotificationCenterTests(TestCase):
         self.client.force_login(student_user)
         response = self.client.get(reverse("notification_center"), secure=True)
         self.assertEqual(response.status_code, 403)
+
+    def test_inbox_filters_by_category_and_unread_status(self):
+        lesson = create_notification(
+            recipient=self.teacher, kind=Notification.Kind.LESSON_REVIEW,
+            title="Lesson alert", message="Review update", target_url="/dashboard/",
+            deduplication_key="filter:lesson",
+        )
+        assignment = create_notification(
+            recipient=self.teacher, kind=Notification.Kind.ASSIGNMENT,
+            title="Assignment alert", message="New work", target_url="/dashboard/",
+            deduplication_key="filter:assignment",
+        )
+        assignment.read_at = timezone.now()
+        assignment.save(update_fields=["read_at"])
+        response = self.client.get(
+            reverse("notification_center"),
+            {"kind": Notification.Kind.LESSON_REVIEW, "unread": "1"}, secure=True,
+        )
+        self.assertContains(response, lesson.title)
+        self.assertNotContains(response, assignment.title)
+
+    def test_old_read_notifications_are_archived_not_deleted(self):
+        notification = create_notification(
+            recipient=self.teacher, kind=Notification.Kind.GRADE_REVIEW,
+            title="Old alert", message="Historical update", target_url="/gradebook/",
+            deduplication_key="old:grade",
+        )
+        old_time = timezone.now() - timedelta(days=100)
+        Notification.objects.filter(pk=notification.pk).update(created_at=old_time, read_at=old_time)
+        archive_stale_notifications(recipient=self.teacher)
+        notification.refresh_from_db()
+        self.assertIsNotNone(notification.archived_at)
+        self.assertTrue(Notification.objects.filter(pk=notification.pk).exists())
 
 
 class FakeGateway:

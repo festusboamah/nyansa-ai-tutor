@@ -10,7 +10,7 @@ from schools.services import has_school_role
 
 from .forms import CommunicationPreferenceForm, MessageTemplateForm, SchoolEventForm
 from .models import CommunicationPreference, MessageIntent, MessageTemplate, Notification
-from .services import enqueue_message, ensure_default_templates
+from .services import archive_stale_notifications, enqueue_message, ensure_default_templates
 
 
 def _require_staff_membership(request):
@@ -26,14 +26,30 @@ def _require_staff_membership(request):
 @login_required
 def notification_center(request):
     membership = _require_staff_membership(request)
-    notifications = Notification.objects.filter(recipient=membership)
-    return render(request, "communications/notifications.html", {"notifications": notifications})
+    archive_stale_notifications(recipient=membership)
+    notifications = Notification.objects.filter(recipient=membership, archived_at__isnull=True)
+    selected_kind = request.GET.get("kind", "")
+    unread_only = request.GET.get("unread") == "1"
+    if selected_kind in Notification.Kind.values:
+        notifications = notifications.filter(kind=selected_kind)
+    else:
+        selected_kind = ""
+    if unread_only:
+        notifications = notifications.filter(read_at__isnull=True)
+    return render(request, "communications/notifications.html", {
+        "notifications": notifications,
+        "notification_kinds": Notification.Kind.choices,
+        "selected_kind": selected_kind,
+        "unread_only": unread_only,
+    })
 
 
 @login_required
 def notification_read(request, notification_id):
     membership = _require_staff_membership(request)
-    notification = get_object_or_404(Notification, pk=notification_id, recipient=membership)
+    notification = get_object_or_404(
+        Notification, pk=notification_id, recipient=membership, archived_at__isnull=True
+    )
     if notification.read_at is None:
         notification.read_at = timezone.now()
         notification.save(update_fields=["read_at"])
@@ -44,7 +60,9 @@ def notification_read(request, notification_id):
 def notification_mark_all_read(request):
     membership = _require_staff_membership(request)
     if request.method == "POST":
-        Notification.objects.filter(recipient=membership, read_at__isnull=True).update(read_at=timezone.now())
+        Notification.objects.filter(
+            recipient=membership, archived_at__isnull=True, read_at__isnull=True
+        ).update(read_at=timezone.now())
     return redirect("notification_center")
 
 
