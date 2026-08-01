@@ -9,6 +9,7 @@ from academics.models import AcademicYear, ClassEnrollment, SchoolClass, Subject
 from analytics.models import RiskSignal
 from attendance.models import AttendanceRecord
 from courses.models import Subject
+from dashboard.models import LessonNote, LessonNoteEvent, LessonNoteNotification, LessonNoteVersion
 from finance.models import Charge
 from gradebook.models import GradeEntry
 from guardians.models import GuardianLink
@@ -56,3 +57,8 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(TermReport.objects.count(), 1)
         self.assertEqual(Charge.objects.count(), 2)
         self.assertEqual(RiskSignal.objects.count(), 1)
+        self.assertEqual(LessonNote.objects.count(), 1)
+        self.assertEqual(LessonNoteVersion.objects.count(), 1)
+        self.assertEqual(LessonNoteEvent.objects.count(), 1)
+        self.assertEqual(LessonNoteNotification.objects.count(), 1)
+        self.assertEqual(LessonNote.objects.get().status, LessonNote.Status.PENDING_REVIEW)

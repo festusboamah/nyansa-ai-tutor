@@ -13,6 +13,8 @@ from academics.models import AcademicYear, ClassEnrollment, SchoolClass, Subject
 from analytics.models import EarlyWarningPolicy, RiskSignal
 from attendance.models import AttendanceRecord, AttendanceSession
 from courses.models import Subject
+from dashboard.lesson_workflow import record_initial_lesson_version, submit_lesson_note
+from dashboard.models import LessonNote, LessonNoteEvent, LessonNoteNotification, LessonNoteVersion
 from finance.models import Charge, FeeItem, FeeStructure
 from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
 from guardians.models import GuardianLink
@@ -157,6 +159,30 @@ class Command(BaseCommand):
                               "review_status": GradeEntry.ReviewStatus.APPROVED, "reviewed_by": admin,
                               "reviewed_at": timezone.now(), "review_note": "Synthetic demonstration grade."},
                 )
+
+        lesson_note, lesson_created = LessonNote.objects.get_or_create(
+            teacher=teacher.user,
+            subject=subjects[2],
+            week_ending=date(current_year, 6, 5),
+            strand_topic="Living things and their environment",
+            defaults={
+                "class_level": school_class.name,
+                "content_standard": "Understand relationships between living things and their environment.",
+                "learning_indicator": "Classify living things and explain one habitat relationship.",
+                "performance_indicator": "Learners accurately classify examples and justify their choices.",
+                "reference": "Synthetic curriculum demonstration",
+                "resources": "Picture cards, leaves, and a school-environment checklist",
+                "num_days": 3,
+                "generated_content": '{"days":[{"day":"Monday","starter":"Observe school surroundings","main":"Classify living and non-living examples","reflection":"Explain one classification"},{"day":"Wednesday","starter":"Review classifications","main":"Map organisms to habitats","reflection":"Share one habitat relationship"},{"day":"Friday","starter":"Quick retrieval quiz","main":"Small-group environment audit","reflection":"Record one action to protect a habitat"}]}',
+            },
+        )
+        if lesson_created or lesson_note.current_version == 0:
+            record_initial_lesson_version(note=lesson_note, actor=teacher)
+            submit_lesson_note(
+                note=lesson_note,
+                actor=teacher,
+                message="Synthetic lesson plan ready for administrator review.",
+            )
 
         for offset, record_status in enumerate(("PRESENT", "PRESENT", "ABSENT"), start=1):
             attendance_date = date(current_year, 1, offset + 1)
