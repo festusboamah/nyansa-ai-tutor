@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: nyansa-ai-demo
+    runtime: docker
+    plan: free
+    branch: main
+    autoDeployTrigger: commit
+    healthCheckPath: /health/ready/
+    dockerCommand: sh -c "python manage.py migrate --noinput && python manage.py production_check && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile -"
+    envVars:
+      - key: DJANGO_ENV
+        value: production
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        value: https://*.onrender.com
+      - key: DJANGO_TRUST_PROXY_SSL_HEADER
+        value: "True"
+      - key: NYANSA_DEMO_MODE
+        value: "True"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nyansa-ai-demo-db
+          property: connectionString
+
+databases:
+  - name: nyansa-ai-demo-db
+    plan: free
+    databaseName: nyansa_demo
+    user: nyansa_demo
+

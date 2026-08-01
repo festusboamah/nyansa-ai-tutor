@@ -14,6 +14,7 @@ if not SECRET_KEY:
 DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in {"1", "true", "yes", "on"}
 ENVIRONMENT = os.getenv("DJANGO_ENV", "development").lower()
 IS_PRODUCTION = ENVIRONMENT == "production"
+NYANSA_DEMO_MODE = os.getenv("NYANSA_DEMO_MODE", "False").lower() in {"1", "true", "yes", "on"}
 
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if host.strip()]
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]
@@ -72,6 +73,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'config.context_processors.deployment_mode',
             ],
         },
     },

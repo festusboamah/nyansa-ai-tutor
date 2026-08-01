@@ -9,6 +9,12 @@
 </head>
 <body>
 
+    {% if nyansa_demo_mode %}
+    <div class="demo-banner" role="status">
+        Demo environment — use sample data only. Information stored here may be deleted.
+    </div>
+    {% endif %}
+
     <nav class="navbar">
         <div class="navbar-brand">
             <a href="{% url 'home' %}" class="brand-link">

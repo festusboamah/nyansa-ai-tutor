@@ -21,6 +21,12 @@ class DeploymentConfigurationTests(SimpleTestCase):
         with self.assertRaisesMessage(RuntimeError, "postgres"):
             database_from_url("mysql://user:password@localhost/database")
 
+    @override_settings(NYANSA_DEMO_MODE=True)
+    def test_demo_mode_is_visible_on_html_pages(self):
+        response = self.client.get(reverse("home"), secure=True)
+        self.assertContains(response, "Demo environment")
+        self.assertContains(response, "use sample data only")
+
 
 class HealthEndpointTests(TestCase):
     def test_liveness_does_not_require_authentication(self):

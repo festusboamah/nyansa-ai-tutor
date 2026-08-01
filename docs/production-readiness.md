@@ -100,3 +100,11 @@ After restoration, run `production_check`, compare record counts and ledger tota
 ## Remaining external gates
 
 Code readiness does not create production accounts or legal approval. Before a live pilot, select the host and PostgreSQL service, provision persistent private media storage, configure DNS/TLS, connect monitoring, approve Paystack/Arkesel accounts, complete Ghana privacy/legal review, seed administrator memberships, and perform school acceptance testing with synthetic data before importing real student records.
+
+## Temporary Render demo
+
+The repository includes `render.yaml` for a free Render Blueprint containing the web service and a free PostgreSQL database. Create it from Render's **New Blueprint Instance** screen and select this repository. Render generates the Django secret and connects the database automatically.
+
+This configuration sets `NYANSA_DEMO_MODE=True`, which displays a warning on every HTML page. Use synthetic sample records only. Render's free PostgreSQL database expires after 30 days and the service filesystem is ephemeral, so this Blueprint is not approved for real student, guardian, finance, attendance, or academic data. Upgrade PostgreSQL, configure external private media storage, validate backups, and complete the external gates above before a live school pilot.
+
+After Render assigns the service URL, keep the generated `.onrender.com` settings for the demo. If a custom domain is added, replace `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS` with that exact hostname and HTTPS origin.
