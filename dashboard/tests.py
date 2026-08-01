@@ -106,22 +106,22 @@ class LessonNoteAccessBaselineTests(TestCase):
         self.assertEqual(note.current_version, 1)
         self.assertIn("structured Integrated Science activity", note.generated_content)
 
-    def test_student_has_no_lesson_updates_navigation_or_page_access(self):
+    def test_student_has_no_staff_alerts_navigation_or_page_access(self):
         self.client.force_login(self.student)
 
         home = self.client.get(reverse("home"), secure=True)
-        notifications = self.client.get(reverse("lesson_notifications"), secure=True)
+        notifications = self.client.get(reverse("notification_center"), secure=True)
 
-        self.assertNotContains(home, "Lesson Updates")
-        self.assertRedirects(notifications, reverse("home"), fetch_redirect_response=False)
+        self.assertNotContains(home, "Alerts")
+        self.assertEqual(notifications.status_code, 403)
 
-    def test_teacher_has_lesson_updates_navigation_and_page_access(self):
+    def test_teacher_has_staff_alerts_navigation_and_page_access(self):
         self.client.force_login(self.teacher)
 
         home = self.client.get(reverse("home"), secure=True)
-        notifications = self.client.get(reverse("lesson_notifications"), secure=True)
+        notifications = self.client.get(reverse("notification_center"), secure=True)
 
-        self.assertContains(home, "Lesson Updates")
+        self.assertContains(home, "Alerts")
         self.assertEqual(notifications.status_code, 200)
 
 

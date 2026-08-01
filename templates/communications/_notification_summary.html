@@ -1,0 +1,13 @@
+<section class="card notification-summary">
+  <div class="notification-summary-heading">
+    <h2>Recent alerts{% if staff_notification_unread_count %} <span class="notification-badge">{{ staff_notification_unread_count }}</span>{% endif %}</h2>
+    <a href="{% url 'notification_center' %}">View all</a>
+  </div>
+  {% for notification in staff_notification_preview %}
+    <a href="{% url 'notification_read' notification.id %}" class="notification-summary-row{% if not notification.read_at %} unread{% endif %}">
+      <strong>{{ notification.title }}</strong><span>{{ notification.message|truncatechars:90 }}</span>
+    </a>
+  {% empty %}
+    <p>You are all caught up.</p>
+  {% endfor %}
+</section>

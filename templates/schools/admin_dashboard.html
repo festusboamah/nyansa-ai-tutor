@@ -2,6 +2,7 @@
 {% block title %}School Administration | Nyansa{% endblock %}
 {% block content %}
 <div class="admin-heading"><div><p class="eyebrow">School administration</p><h1>{{ school.name }}</h1></div><span class="badge-enrolled">{{ member_count }} members</span></div>
+{% include "communications/_notification_summary.html" %}
 <div class="dashboard-actions">
   <a class="btn-small" href="{% url 'people_directory' %}">Manage people</a>
   <a class="btn-small" href="{% url 'create_academic_year' %}">Add academic year</a>

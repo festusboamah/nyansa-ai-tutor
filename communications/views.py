@@ -2,14 +2,50 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from guardians.models import GuardianLink
 from schools.models import SchoolMembership
 from schools.services import has_school_role
 
 from .forms import CommunicationPreferenceForm, MessageTemplateForm, SchoolEventForm
-from .models import CommunicationPreference, MessageIntent, MessageTemplate
+from .models import CommunicationPreference, MessageIntent, MessageTemplate, Notification
 from .services import enqueue_message, ensure_default_templates
+
+
+def _require_staff_membership(request):
+    membership = getattr(request, "school_membership", None)
+    if not membership or membership.role not in {
+        SchoolMembership.Role.TEACHER,
+        SchoolMembership.Role.SCHOOL_ADMIN,
+    }:
+        raise PermissionDenied
+    return membership
+
+
+@login_required
+def notification_center(request):
+    membership = _require_staff_membership(request)
+    notifications = Notification.objects.filter(recipient=membership)
+    return render(request, "communications/notifications.html", {"notifications": notifications})
+
+
+@login_required
+def notification_read(request, notification_id):
+    membership = _require_staff_membership(request)
+    notification = get_object_or_404(Notification, pk=notification_id, recipient=membership)
+    if notification.read_at is None:
+        notification.read_at = timezone.now()
+        notification.save(update_fields=["read_at"])
+    return redirect(notification.target_url)
+
+
+@login_required
+def notification_mark_all_read(request):
+    membership = _require_staff_membership(request)
+    if request.method == "POST":
+        Notification.objects.filter(recipient=membership, read_at__isnull=True).update(read_at=timezone.now())
+    return redirect("notification_center")
 
 
 @login_required

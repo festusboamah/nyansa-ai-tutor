@@ -238,6 +238,29 @@ def transition_report(*, report, actor, action, note=""):
         report=report, action=event_actions[action], from_status=previous,
         to_status=target, note=note.strip(), actor=actor,
     )
+    from communications.models import Notification
+    from communications.services import create_notification, notify_school_role
+
+    report_url = f"/reports/{report.id}/"
+    if action == "submit":
+        notify_school_role(
+            school=report.school,
+            role=SchoolMembership.Role.SCHOOL_ADMIN,
+            kind=Notification.Kind.REPORT_REVIEW,
+            title="Term report awaiting review",
+            message=f"A report for {report.student.user.get_full_name() or report.student.user.username} was submitted.",
+            target_url=report_url,
+            deduplication_key=f"report:{report.id}:submitted:v{report.version}",
+        )
+    elif action in {"approve", "return", "publish", "reopen"}:
+        create_notification(
+            recipient=report.prepared_by,
+            kind=Notification.Kind.REPORT_REVIEW,
+            title="Term report updated",
+            message=f"The report for {report.student.user.get_full_name() or report.student.user.username} was {target.lower()}." + (f" {note.strip()}" if note.strip() else ""),
+            target_url=report_url,
+            deduplication_key=f"report:{report.id}:{action}:v{report.version}",
+        )
     if action == "publish":
         from communications.models import MessageTemplate
         from communications.services import enqueue_guardian_event

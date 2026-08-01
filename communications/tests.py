@@ -2,14 +2,68 @@ from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
 from guardians.models import GuardianLink
 from schools.models import School, SchoolMembership
 
-from .models import CommunicationPreference, DeliveryAttempt, MessageIntent, MessageTemplate
-from .services import enqueue_guardian_event, enqueue_message, ensure_default_templates, process_queued_messages
+from .models import CommunicationPreference, DeliveryAttempt, MessageIntent, MessageTemplate, Notification
+from .services import create_notification, enqueue_guardian_event, enqueue_message, ensure_default_templates, process_queued_messages
+
+
+class NotificationCenterTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Inbox School", slug="inbox-school")
+        user = User.objects.create_user(username="inbox-teacher", password="test-password")
+        self.teacher = SchoolMembership.objects.create(
+            school=self.school, user=user, role=SchoolMembership.Role.TEACHER
+        )
+        self.client.force_login(user)
+
+    def test_inbox_marks_owned_notification_read_and_redirects(self):
+        notification = create_notification(
+            recipient=self.teacher,
+            kind=Notification.Kind.ASSIGNMENT,
+            title="New submission",
+            message="A learner submitted an assignment.",
+            target_url="/dashboard/",
+            deduplication_key="submission:1",
+        )
+        response = self.client.get(reverse("notification_center"), secure=True)
+        self.assertContains(response, "New submission")
+        response = self.client.get(reverse("notification_read", args=[notification.id]), secure=True)
+        self.assertRedirects(response, "/dashboard/", fetch_redirect_response=False)
+        notification.refresh_from_db()
+        self.assertIsNotNone(notification.read_at)
+
+    def test_notification_cannot_be_read_by_another_school(self):
+        notification = create_notification(
+            recipient=self.teacher,
+            kind=Notification.Kind.LESSON_REVIEW,
+            title="Private alert",
+            message="School-scoped content",
+            target_url="/dashboard/",
+            deduplication_key="private:1",
+        )
+        other_school = School.objects.create(name="Other School", slug="other-school")
+        other_user = User.objects.create_user(username="other-admin", password="test-password")
+        SchoolMembership.objects.create(
+            school=other_school, user=other_user, role=SchoolMembership.Role.SCHOOL_ADMIN
+        )
+        self.client.force_login(other_user)
+        response = self.client.get(reverse("notification_read", args=[notification.id]), secure=True)
+        self.assertEqual(response.status_code, 404)
+
+    def test_students_cannot_open_staff_notification_center(self):
+        student_user = User.objects.create_user(username="inbox-student", password="test-password")
+        SchoolMembership.objects.create(
+            school=self.school, user=student_user, role=SchoolMembership.Role.STUDENT
+        )
+        self.client.force_login(student_user)
+        response = self.client.get(reverse("notification_center"), secure=True)
+        self.assertEqual(response.status_code, 403)
 
 
 class FakeGateway:

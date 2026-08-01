@@ -3,6 +3,7 @@
 {% block content %}
 <h1>Teacher Dashboard</h1>
 <p>Overview of your subjects and enrolled students.</p>
+{% include "communications/_notification_summary.html" %}
 
 <div class="dashboard-actions">
     <a href="{% url 'create_subject' %}" class="btn-small">+ Create Subject</a>

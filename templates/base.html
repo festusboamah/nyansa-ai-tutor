@@ -64,7 +64,10 @@
         <a href="{% url 'communication_preferences' %}">Message Preferences</a>
     {% endif %}
     {% if request.school_membership.role == "TEACHER" or request.school_membership.role == "SCHOOL_ADMIN" %}
-        <a href="{% url 'lesson_notifications' %}">Lesson Updates</a>
+        <a href="{% url 'notification_center' %}" class="notification-link" aria-label="Notifications">
+            <span aria-hidden="true">&#128276;</span> Alerts
+            {% if staff_notification_unread_count %}<span class="notification-badge">{{ staff_notification_unread_count }}</span>{% endif %}
+        </a>
     {% endif %}
     <a href="{% url 'profile' %}" class="welcome-text">
         <span>{{ user.username }}</span>

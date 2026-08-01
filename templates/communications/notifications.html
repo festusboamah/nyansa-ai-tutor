@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Notifications | Nyansa{% endblock %}
+{% block content %}
+<section class="page-shell notification-center">
+    <div class="section-heading notification-heading">
+        <div>
+            <p class="eyebrow">Your school inbox</p>
+            <h1>Notifications</h1>
+            <p>Lesson reviews, grades, submissions, reports, and school alerts in one place.</p>
+        </div>
+        {% if staff_notification_unread_count %}
+        <form method="post" action="{% url 'notification_mark_all_read' %}">
+            {% csrf_token %}<button type="submit" class="btn-secondary">Mark all as read</button>
+        </form>
+        {% endif %}
+    </div>
+    <div class="notification-list">
+        {% for notification in notifications %}
+        <a class="notification-item{% if not notification.read_at %} unread{% endif %}" href="{% url 'notification_read' notification.id %}">
+            <span class="notification-dot" aria-hidden="true"></span>
+            <span>
+                <strong>{{ notification.title }}</strong>
+                <span>{{ notification.message }}</span>
+                <small>{{ notification.get_kind_display }} · {{ notification.created_at|timesince }} ago</small>
+            </span>
+        </a>
+        {% empty %}
+        <div class="empty-state"><h2>You are all caught up</h2><p>New workflow alerts will appear here.</p></div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

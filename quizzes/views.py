@@ -325,6 +325,25 @@ def assignment_detail_view(request, assignment_id):
             submission.ai_suggested_feedback = ai_result["feedback"]
             submission.save()
 
+            from communications.models import Notification
+            from communications.services import create_notification
+
+            teacher_membership = SchoolMembership.objects.filter(
+                school=request.school,
+                user=assignment.teacher,
+                role=SchoolMembership.Role.TEACHER,
+                status=SchoolMembership.Status.ACTIVE,
+            ).first()
+            if teacher_membership:
+                create_notification(
+                    recipient=teacher_membership,
+                    kind=Notification.Kind.ASSIGNMENT,
+                    title="New assignment submission",
+                    message=f"{request.user.get_full_name() or request.user.username} submitted {assignment.title}.",
+                    target_url=f"/quizzes/assignments/{assignment.id}/submissions/",
+                    deduplication_key=f"assignment-submission:{submission.id}",
+                )
+
             messages.success(request, "Assignment submitted successfully!")
             return redirect("assignment_detail", assignment_id=assignment.id)
     else:

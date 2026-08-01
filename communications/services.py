@@ -10,7 +10,42 @@ from guardians.models import GuardianLink
 from schools.models import SchoolMembership
 
 from .gateways import gateway_for
-from .models import CommunicationPreference, DeliveryAttempt, MessageIntent, MessageTemplate
+from .models import CommunicationPreference, DeliveryAttempt, MessageIntent, MessageTemplate, Notification
+
+
+def create_notification(*, recipient, kind, title, message, target_url, deduplication_key):
+    """Create one durable, school-scoped inbox item for a business event."""
+    notification, _ = Notification.objects.get_or_create(
+        school=recipient.school,
+        recipient=recipient,
+        deduplication_key=deduplication_key[:180],
+        defaults={
+            "kind": kind,
+            "title": title[:160],
+            "message": message[:500],
+            "target_url": target_url[:300],
+        },
+    )
+    return notification
+
+
+def notify_school_role(*, school, role, kind, title, message, target_url, deduplication_key):
+    from schools.models import SchoolMembership
+
+    recipients = SchoolMembership.objects.filter(
+        school=school, role=role, status=SchoolMembership.Status.ACTIVE
+    )
+    return [
+        create_notification(
+            recipient=recipient,
+            kind=kind,
+            title=title,
+            message=message,
+            target_url=target_url,
+            deduplication_key=deduplication_key,
+        )
+        for recipient in recipients
+    ]
 
 
 DEFAULT_TEMPLATES = (

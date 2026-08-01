@@ -2,6 +2,44 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 
+class Notification(models.Model):
+    class Kind(models.TextChoices):
+        LESSON_REVIEW = "LESSON_REVIEW", "Lesson review"
+        GRADE_REVIEW = "GRADE_REVIEW", "Grade review"
+        ASSIGNMENT = "ASSIGNMENT", "Assignment submission"
+        REPORT_REVIEW = "REPORT_REVIEW", "Report review"
+        FINANCE = "FINANCE", "Finance alert"
+        ANALYTICS = "ANALYTICS", "Analytics alert"
+
+    school = models.ForeignKey("schools.School", on_delete=models.CASCADE, related_name="notifications")
+    recipient = models.ForeignKey(
+        "schools.SchoolMembership", on_delete=models.CASCADE, related_name="notifications"
+    )
+    kind = models.CharField(max_length=24, choices=Kind.choices)
+    title = models.CharField(max_length=160)
+    message = models.CharField(max_length=500)
+    target_url = models.CharField(max_length=300)
+    deduplication_key = models.CharField(max_length=180)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school", "recipient", "deduplication_key"],
+                name="unique_recipient_notification_event",
+            )
+        ]
+        indexes = [models.Index(fields=["recipient", "read_at", "created_at"], name="notification_inbox_idx")]
+
+    def clean(self):
+        if self.recipient_id and self.school_id != self.recipient.school_id:
+            raise ValidationError("Notification recipient must belong to the same school.")
+        if self.target_url and not self.target_url.startswith("/"):
+            raise ValidationError({"target_url": "Notification links must be local paths."})
+
+
 class MessageTemplate(models.Model):
     class Channel(models.TextChoices):
         EMAIL = "EMAIL", "Email"
