@@ -88,6 +88,8 @@ def review_grade_entry(*, entry, reviewer, decision, note=""):
         raise ValidationError("Only published grades can be reviewed.")
     if decision not in GradeReviewDecision.Decision.values:
         raise ValidationError("Unknown review decision.")
+    if entry.review_status == decision:
+        raise ValidationError(f"This grade is already {decision.lower()}.")
     note = note.strip()
     if decision == GradeReviewDecision.Decision.RETURNED and not note:
         raise ValidationError("A note is required when returning a grade.")

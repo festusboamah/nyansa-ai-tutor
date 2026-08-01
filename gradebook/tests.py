@@ -593,6 +593,16 @@ class TeacherGradebookWorkflowTests(TestCase):
         self.assertEqual(entry.review_status, GradeEntry.ReviewStatus.APPROVED)
         self.assertEqual(entry.reviewed_by, administrator)
 
+        queue = self.client.get(reverse("gradebook_review_queue"), secure=True)
+        self.assertContains(queue, "Approved and locked")
+        self.assertNotContains(queue, f'action="{reverse("gradebook_review", args=[entry.pk])}"')
+        with self.assertRaisesMessage(ValidationError, "already approved"):
+            review_grade_entry(
+                entry=entry,
+                reviewer=administrator,
+                decision=GradeReviewDecision.Decision.APPROVED,
+            )
+
     def test_unassigned_teacher_cannot_open_grade_correction(self):
         entry, _ = record_grade_entry(
             school=self.school,

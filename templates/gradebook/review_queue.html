@@ -9,7 +9,17 @@
 <td>{{ entry.assessment.offering.school_class.name }} / {{ entry.assessment.offering.subject.name }}</td>
 <td>{{ entry.assessment.title }}</td><td>{{ entry.score }} / {{ entry.assessment.max_score }}</td>
 <td><span class="status-pill status-{{ entry.review_status|lower }}">{{ entry.get_review_status_display }}</span>{% if entry.review_note %}<span class="field-error">{{ entry.review_note }}</span>{% endif %}</td>
-<td><form method="post" action="{% url 'gradebook_review' entry.id %}" class="review-form">{% csrf_token %}<input name="note" maxlength="500" placeholder="Note (required to return)"><button class="btn-small" name="decision" value="APPROVED">Approve</button><button class="btn-small btn-secondary" name="decision" value="RETURNED">Return</button></form></td>
+<td>
+{% if entry.review_status == "PENDING" %}
+<form method="post" action="{% url 'gradebook_review' entry.id %}" class="review-form">{% csrf_token %}<input name="note" maxlength="500" placeholder="Note (required to return)"><button class="btn-small" name="decision" value="APPROVED">Approve</button><button class="btn-small btn-secondary" name="decision" value="RETURNED">Return</button></form>
+{% elif entry.review_status == "APPROVED" %}
+<span class="review-locked">Approved and locked</span>
+{% elif entry.review_status == "RETURNED" %}
+<span class="review-waiting">Awaiting teacher correction</span>
+{% else %}
+<span class="review-waiting">Not submitted for review</span>
+{% endif %}
+</td>
 </tr>{% empty %}<tr><td colspan="6">No published grades are available for review.</td></tr>{% endfor %}</tbody>
 </table></div>
 {% endblock %}
