@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.conf import settings
 from courses.models import Subject, Enrollment
 from quizzes.models import Quiz, Submission
 from accounts.models import User
@@ -8,7 +9,7 @@ from .ai_reports import generate_student_report
 from .models import LessonNote
 from .forms import LessonNoteForm
 from .forms import LessonCommentForm, LessonNoteRevisionForm
-from .lesson_ai import generate_lesson_note
+from .lesson_ai import generate_demo_lesson_note, generate_lesson_note
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
@@ -126,8 +127,24 @@ def create_lesson_note_view(request):
                 num_days=lesson_note.num_days,
             )
 
+            used_demo_fallback = False
+            if result is None and settings.NYANSA_DEMO_MODE:
+                result = generate_demo_lesson_note(
+                    class_level=lesson_note.class_level,
+                    subject_name=lesson_note.subject.name,
+                    week_ending=lesson_note.week_ending,
+                    strand_topic=lesson_note.strand_topic,
+                    content_standard=lesson_note.content_standard,
+                    learning_indicator=lesson_note.learning_indicator,
+                    performance_indicator=lesson_note.performance_indicator,
+                    reference=lesson_note.reference,
+                    resources=lesson_note.resources,
+                    num_days=lesson_note.num_days,
+                )
+                used_demo_fallback = True
+
             if result is None:
-                messages.error(request, "AI generation failed. Please try again.")
+                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
                 lesson_note.delete()
                 return redirect("create_lesson_note")
 
@@ -142,7 +159,10 @@ def create_lesson_note_view(request):
             lesson_note.save()
             record_initial_lesson_version(note=lesson_note, actor=request.school_membership)
 
-            messages.success(request, "Lesson note generated successfully!")
+            if used_demo_fallback:
+                messages.warning(request, "Demo lesson template created without an external AI call. Review and edit it before submission.")
+            else:
+                messages.success(request, "Lesson note generated successfully!")
             return redirect("lesson_note_detail", note_id=lesson_note.id)
     else:
         form = LessonNoteForm(school=request.school)

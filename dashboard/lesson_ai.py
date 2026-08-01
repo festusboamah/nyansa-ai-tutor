@@ -5,6 +5,25 @@ from django.conf import settings
 client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 
+def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator, resources, num_days, **kwargs):
+    """Create a deterministic synthetic plan when the hosted demo has no AI credentials."""
+    day_names = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+    return {
+        "content_standard": f"Demonstrate understanding of {strand_topic} in {subject_name}.",
+        "performance_indicators": learning_indicator,
+        "resources": resources or "Chalkboard; learner notebooks; locally available teaching materials",
+        "days": [
+            {
+                "day": day_names[index % len(day_names)],
+                "starter": f"Review prior knowledge and introduce {strand_topic} with a familiar example.",
+                "main": f"Guide learners through a structured {subject_name} activity on {strand_topic}. Model the task, let learners practise in pairs, then discuss evidence of understanding as a class.",
+                "reflection": f"Ask learners to explain one idea about {strand_topic} and record what needs reinforcement.",
+            }
+            for index in range(num_days)
+        ],
+    }
+
+
 def generate_lesson_note(class_level, subject_name, week_ending, strand_topic,
                           content_standard, learning_indicator, performance_indicator,
                           reference, resources, num_days):

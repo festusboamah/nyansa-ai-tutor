@@ -3,7 +3,7 @@
 {% block content %}
 <div class="card form-card">
     <h1>📋 Create AI Lesson Note</h1>
-    <p>Fill in the details below, and Claude will generate a complete standards-based lesson plan.</p>
+    <p>Fill in the details below to create a standards-based lesson-plan draft. AI output must be reviewed by the teacher before submission.</p>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}

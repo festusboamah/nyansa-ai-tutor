@@ -1,6 +1,7 @@
 from datetime import date
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from unittest.mock import patch
 from django.urls import reverse
 from django.core.exceptions import PermissionDenied, ValidationError
 
@@ -79,6 +80,31 @@ class LessonNoteAccessBaselineTests(TestCase):
         response = self.client.get(reverse("teacher_dashboard"), secure=True)
 
         self.assertEqual(response.status_code, 200)
+
+    @override_settings(NYANSA_DEMO_MODE=True)
+    @patch("dashboard.views.generate_lesson_note", return_value=None)
+    def test_demo_can_create_reviewable_lesson_without_ai_credentials(self, generate):
+        self.client.force_login(self.teacher)
+        response = self.client.post(
+            reverse("create_lesson_note"),
+            {
+                "subject": self.subject.pk,
+                "class_level": "JHS 2",
+                "week_ending": "2026-08-07",
+                "strand_topic": "Habitats",
+                "content_standard": "",
+                "learning_indicator": "Explain a habitat relationship.",
+                "performance_indicator": "",
+                "reference": "",
+                "resources": "Picture cards",
+                "num_days": 3,
+            },
+            secure=True,
+        )
+        note = LessonNote.objects.exclude(pk=self.note.pk).get()
+        self.assertRedirects(response, reverse("lesson_note_detail", args=[note.pk]), fetch_redirect_response=False)
+        self.assertEqual(note.current_version, 1)
+        self.assertIn("structured Integrated Science activity", note.generated_content)
 
     def test_student_has_no_lesson_updates_navigation_or_page_access(self):
         self.client.force_login(self.student)
