@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'guardians',
     'communications',
     'finance',
+    'analytics',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +75,8 @@ DATABASES = {
 }
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+ANALYTICS_AI_NARRATIVES = os.getenv("ANALYTICS_AI_NARRATIVES", "False").lower() in {"1", "true", "yes", "on"}
+ANALYTICS_AI_MODEL = os.getenv("ANALYTICS_AI_MODEL", "claude-sonnet-4-5")
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

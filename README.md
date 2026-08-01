@@ -194,3 +194,4 @@ This project is available under the [MIT License](LICENSE).
 Term-report workflows generate school-branded, auditable PDF snapshots from approved grades and attendance, with optional positions, prior-term comparisons, remarks, promotion outcomes, and bulk class downloads.
 Verified guardian links provide a responsive family portal for published reports and attendance. Email and Arkesel SMS notices use an idempotent outbox, guardian preferences, retryable delivery, privacy-safe SMS content, and immutable attempt history.
 Versioned fee structures, immutable student ledgers, reconciled payments, stable PDF receipts, balance reminders, and Paystack-hosted GHS Mobile Money checkout provide an auditable school-finance workflow.
+Explainable analytics provide assignment-scoped teacher trends, school/class academic and attendance metrics, configurable early-warning signals, intervention outcomes, and review-gated grounded or optional Claude-assisted narratives.

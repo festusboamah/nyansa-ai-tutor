@@ -48,3 +48,4 @@ Update the relevant document in the same pull request whenever a change affects 
 - [Phase 5 term reports](phase-5-term-reports.md)
 - [Phase 6 guardian portal and communications](phase-6-guardian-communications.md)
 - [Phase 7 fees and Mobile Money](phase-7-fees-mobile-money.md)
+- [Phase 8 analytics and intervention](phase-8-analytics-intervention.md)

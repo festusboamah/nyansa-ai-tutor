@@ -172,6 +172,8 @@ Exit criteria:
 - Metrics state their period and source and agree with authoritative records.
 - Authorization and privacy tests cover every drill-down.
 
+Current status: Phase 8 is complete. Teachers see only assigned class and subject trends from published approved grades; administrators see school and class aggregates from published reports and submitted attendance; every metric states its academic period and authoritative source; configurable low-average, low-attendance, and missing-evidence rules create explainable student signals; staff record and complete interventions with outcomes; and grounded or optional Claude-assisted narrative drafts freeze their metrics and require administrator approval before sharing.
+
 ## Features held for later evaluation
 
 - Multilingual message-template library.

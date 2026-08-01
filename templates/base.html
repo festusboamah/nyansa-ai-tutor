@@ -29,6 +29,7 @@
         {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'gradebook_offerings' %}">Gradebook</a>{% endif %}
         {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'attendance_dashboard' %}">Attendance</a>{% endif %}
         {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'term_report_dashboard' %}">Reports</a>{% endif %}
+        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'analytics_dashboard' %}">Analytics</a>{% endif %}
     {% endif %}
     {% if request.school_membership.role == "SCHOOL_ADMIN" %}
         <a href="{% url 'school_admin_dashboard' %}">School Admin</a>
@@ -39,6 +40,7 @@
         <a href="{% url 'guardian_links' %}">Guardians</a>
         <a href="{% url 'communications_dashboard' %}">Messages</a>
         <a href="{% url 'finance_dashboard' %}">Finance</a>
+        <a href="{% url 'analytics_dashboard' %}">Analytics</a>
     {% endif %}
     {% if request.school_membership.role == "PARENT" %}
         <a href="{% url 'guardian_portal' %}">My Children</a>
