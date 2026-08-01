@@ -32,4 +32,3 @@ databases:
     plan: free
     databaseName: nyansa_demo
     user: nyansa_demo
-
