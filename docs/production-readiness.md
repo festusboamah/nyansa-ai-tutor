@@ -110,3 +110,5 @@ This configuration sets `NYANSA_DEMO_MODE=True`, which displays a warning on eve
 Render generates the demo's secret automatically. Demo mode accepts a generated secret of at least 32 characters; non-demo production retains the stricter minimum of 50 characters.
 
 After Render assigns the service URL, keep the generated `.onrender.com` settings for the demo. If a custom domain is added, replace `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS` with that exact hostname and HTTPS origin.
+
+To create the synthetic demonstration school, configure `DEMO_ADMIN_USERNAME`, `DEMO_ADMIN_PASSWORD`, and optionally `DEMO_ADMIN_EMAIL` as secret environment variables on the Render web service. Use a unique password of at least 12 characters. The startup command runs `seed_demo` after migrations; it safely creates or updates one demonstration school, its administrator membership, a demo academic year, term, class, and three subjects. It refuses to run outside demo mode and never stores credentials in GitHub.
