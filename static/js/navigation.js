@@ -1,10 +1,20 @@
 (() => {
     const menus = Array.from(document.querySelectorAll(".nav-menu"));
     const supportsHover = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const closeTimers = new WeakMap();
+
+    const cancelClose = (menu) => {
+        const timer = closeTimers.get(menu);
+        if (timer) window.clearTimeout(timer);
+        closeTimers.delete(menu);
+    };
 
     const closeOthers = (activeMenu) => {
         menus.forEach((menu) => {
-            if (menu !== activeMenu) menu.removeAttribute("open");
+            if (menu !== activeMenu) {
+                cancelClose(menu);
+                menu.removeAttribute("open");
+            }
         });
     };
 
@@ -22,12 +32,21 @@
 
         menu.addEventListener("mouseenter", () => {
             if (!supportsHover.matches) return;
+            cancelClose(menu);
             closeOthers(menu);
             menu.setAttribute("open", "");
         });
 
         menu.addEventListener("mouseleave", () => {
-            if (supportsHover.matches) menu.removeAttribute("open");
+            if (!supportsHover.matches) return;
+            cancelClose(menu);
+            closeTimers.set(
+                menu,
+                window.setTimeout(() => {
+                    menu.removeAttribute("open");
+                    closeTimers.delete(menu);
+                }, 220),
+            );
         });
     });
 

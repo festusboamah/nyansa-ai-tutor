@@ -1171,7 +1171,7 @@ h2 {
 
 .nav-menu-panel {
     position: absolute;
-    top: calc(100% + 0.55rem);
+    top: calc(100% - 0.1rem);
     left: 0;
     min-width: 190px;
     padding: 0.45rem;
