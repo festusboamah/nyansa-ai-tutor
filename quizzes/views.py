@@ -340,7 +340,7 @@ def assignment_detail_view(request, assignment_id):
                     kind=Notification.Kind.ASSIGNMENT,
                     title="New assignment submission",
                     message=f"{request.user.get_full_name() or request.user.username} submitted {assignment.title}.",
-                    target_url=f"/quizzes/assignments/{assignment.id}/submissions/",
+                    target_url="/dashboard/",
                     deduplication_key=f"assignment-submission:{submission.id}",
                 )
 

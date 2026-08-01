@@ -54,7 +54,7 @@ def _notify_reviewers(note, message):
         kind=Notification.Kind.LESSON_REVIEW,
         title="Lesson note awaiting review",
         message=message,
-        target_url=f"/dashboard/lesson-review/{note.id}/",
+        target_url="/dashboard/lesson-review/",
         deduplication_key=f"lesson:{note.id}:review:{note.current_version}:{note.status}",
     )
 
@@ -69,7 +69,7 @@ def _notify_author(note, message):
             kind=Notification.Kind.LESSON_REVIEW,
             title="Lesson note review update",
             message=message,
-            target_url=f"/dashboard/lesson-notes/{note.id}/",
+            target_url="/dashboard/lesson-notes/",
             deduplication_key=f"lesson:{note.id}:author:{note.current_version}:{note.status}",
         )
 

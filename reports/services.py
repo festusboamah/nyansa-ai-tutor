@@ -241,7 +241,8 @@ def transition_report(*, report, actor, action, note=""):
     from communications.models import Notification
     from communications.services import create_notification, notify_school_role
 
-    report_url = f"/reports/{report.id}/"
+    # Dashboard links remain valid even when disposable demo records are reseeded.
+    report_url = "/reports/"
     if action == "submit":
         notify_school_role(
             school=report.school,
