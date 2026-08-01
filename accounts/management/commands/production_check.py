@@ -18,8 +18,11 @@ class Command(BaseCommand):
             failures.append("The production database must be PostgreSQL.")
         if not settings.ALLOWED_HOSTS:
             failures.append("DJANGO_ALLOWED_HOSTS must not be empty.")
-        if len(settings.SECRET_KEY) < 50:
-            failures.append("DJANGO_SECRET_KEY must contain at least 50 characters.")
+        minimum_secret_length = 32 if settings.NYANSA_DEMO_MODE else 50
+        if len(settings.SECRET_KEY) < minimum_secret_length:
+            failures.append(
+                f"DJANGO_SECRET_KEY must contain at least {minimum_secret_length} characters."
+            )
         if not settings.CSRF_TRUSTED_ORIGINS:
             failures.append("DJANGO_CSRF_TRUSTED_ORIGINS must be configured.")
         if not settings.MEDIA_ROOT.is_absolute():
