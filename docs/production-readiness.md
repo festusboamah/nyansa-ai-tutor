@@ -103,7 +103,7 @@ Code readiness does not create production accounts or legal approval. Before a l
 
 ## Temporary Render demo
 
-The repository includes `render.yaml` for a free Render Blueprint containing the web service and a free PostgreSQL database. Create it from Render's **New Blueprint Instance** screen and select this repository. Render generates the Django secret and connects the database automatically.
+The repository includes `render.yaml` for a free Render Blueprint containing the web service and a free PostgreSQL database. Create it from Render's **New Blueprint Instance** screen and select this repository. Render generates the Django secret, connects the database automatically, and starts the service through `deploy/render_start.sh`.
 
 This configuration sets `NYANSA_DEMO_MODE=True`, which displays a warning on every HTML page. Use synthetic sample records only. Render's free PostgreSQL database expires after 30 days and the service filesystem is ephemeral, so this Blueprint is not approved for real student, guardian, finance, attendance, or academic data. Upgrade PostgreSQL, configure external private media storage, validate backups, and complete the external gates above before a live school pilot.
 

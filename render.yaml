@@ -6,7 +6,7 @@ services:
     branch: main
     autoDeployTrigger: commit
     healthCheckPath: /health/ready/
-    dockerCommand: sh -c "python manage.py migrate --noinput && python manage.py production_check && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile -"
+    dockerCommand: sh deploy/render_start.sh
     envVars:
       - key: DJANGO_ENV
         value: production
