@@ -12,6 +12,7 @@ from courses.models import Subject
 from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, StudentRosterUploadForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
 from .models import SchoolInvitation, SchoolMembership
 from .roster_import import import_student_roster, parse_student_roster
+from .curriculum import generate_ghana_curriculum
 from .services import accept_invitation, create_invitation, has_school_role
 
 
@@ -102,6 +103,19 @@ def school_onboarding(request):
     if step not in step_keys:
         raise Http404
 
+    if request.method == "POST" and request.POST.get("action") == "generate_curriculum":
+        created_subjects, created_offerings, unmatched = generate_ghana_curriculum(school=request.school)
+        if unmatched:
+            messages.warning(
+                request,
+                "Curriculum generated, but these class names were not recognised: " + ", ".join(unmatched) + ".",
+            )
+        messages.success(
+            request,
+            f"Curriculum ready: {created_subjects} subject(s) and {created_offerings} class-term offering(s) created.",
+        )
+        return redirect(f"{reverse('school_onboarding')}?step=assignment")
+
     completed = sum(state.values())
     display_steps = [
         {"key": key, "label": label, "complete": state[key]}
@@ -176,6 +190,7 @@ def school_onboarding(request):
         "current_label": dict(ONBOARDING_STEPS)[step],
         "completed": completed,
         "progress_percent": round(completed / len(ONBOARDING_STEPS) * 100),
+        "education_levels": request.school,
     })
 
 

@@ -9,7 +9,7 @@ from io import BytesIO
 from openpyxl import Workbook
 
 from courses.models import Subject
-from academics.models import AcademicYear, ClassEnrollment, SchoolClass
+from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, Term
 
 from .models import School, SchoolMembership, StudentProfile
 from .services import (
@@ -209,6 +209,45 @@ class SchoolOnboardingTests(TestCase):
             response, f"{reverse('school_onboarding')}?step=class", fetch_redirect_response=False
         )
         self.assertTrue(SchoolClass.objects.filter(school=self.school, name="JHS 1", capacity=45).exists())
+
+    def test_curriculum_generator_creates_jhs_subjects_and_term_offerings(self):
+        self.school.offers_primary = False
+        self.school.offers_jhs = True
+        self.school.save(update_fields=["offers_primary", "offers_jhs"])
+        year = AcademicYear.objects.create(
+            school=self.school, name="2029/2030", start_date="2029-09-01", end_date="2030-07-31"
+        )
+        school_class = SchoolClass.objects.create(school=self.school, academic_year=year, name="JHS 1")
+        for order, name, start, end in (
+            (1, "First Term", "2029-09-01", "2029-12-14"),
+            (2, "Second Term", "2030-01-08", "2030-04-05"),
+            (3, "Third Term", "2030-04-22", "2030-07-31"),
+        ):
+            Term.objects.create(academic_year=year, order=order, name=name, start_date=start, end_date=end)
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "subject", "action": "generate_curriculum",
+        }, secure=True)
+        self.assertRedirects(
+            response, f"{reverse('school_onboarding')}?step=assignment", fetch_redirect_response=False
+        )
+        self.assertTrue(Subject.objects.filter(school=self.school, name="Career Technology").exists())
+        self.assertEqual(SubjectOffering.objects.filter(school_class=school_class).count(), 33)
+
+    def test_upper_primary_receives_french_and_computing_but_lower_primary_does_not(self):
+        year = AcademicYear.objects.create(
+            school=self.school, name="2030/2031", start_date="2030-09-01", end_date="2031-07-31"
+        )
+        lower = SchoolClass.objects.create(school=self.school, academic_year=year, name="Basic 2")
+        upper = SchoolClass.objects.create(school=self.school, academic_year=year, name="Basic 5")
+        term = Term.objects.create(
+            academic_year=year, order=1, name="First Term", start_date="2030-09-01", end_date="2030-12-15"
+        )
+        self.client.post(reverse("school_onboarding"), {
+            "step": "subject", "action": "generate_curriculum",
+        }, secure=True)
+        computing = Subject.objects.get(school=self.school, name="Computing")
+        self.assertFalse(SubjectOffering.objects.filter(school_class=lower, subject=computing, term=term).exists())
+        self.assertTrue(SubjectOffering.objects.filter(school_class=upper, subject=computing, term=term).exists())
 
 
 class ActiveSchoolResolutionTests(TestCase):

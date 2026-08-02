@@ -24,7 +24,19 @@ class SchoolScopedFormMixin:
 class SchoolProfileForm(forms.ModelForm):
     class Meta:
         model = School
-        fields = ["name", "address", "phone", "email", "timezone", "student_access_mode", "logo", "official_stamp"]
+        fields = [
+            "name", "address", "phone", "email", "timezone", "student_access_mode",
+            "offers_kg", "offers_primary", "offers_jhs", "logo", "official_stamp",
+        ]
+        labels = {
+            "offers_kg": "Kindergarten (KG 1–2)",
+            "offers_primary": "Primary (Basic 1–6)",
+            "offers_jhs": "Junior High School (JHS 1–3)",
+        }
+        help_texts = {
+            "student_access_mode": "Choose how students will access Nyansa.",
+            "offers_kg": "Select every education level operated by this school.",
+        }
 
 
 class StudentRosterUploadForm(forms.Form):

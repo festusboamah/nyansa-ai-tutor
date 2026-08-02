@@ -46,6 +46,9 @@ class Command(BaseCommand):
                 "address": "Synthetic demonstration environment",
                 "email": "demo-school@example.com",
                 "status": School.Status.ACTIVE,
+                "offers_kg": True,
+                "offers_primary": True,
+                "offers_jhs": True,
             },
         )
 

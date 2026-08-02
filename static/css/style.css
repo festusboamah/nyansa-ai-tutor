@@ -1456,3 +1456,7 @@ h2 {
 .roster-errors { border-left: 4px solid #ef4444; }
 .roster-errors li { margin: .35rem 0 .35rem 1.25rem; color: #991b1b; }
 .setup-submit-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.curriculum-generator { margin: 1rem 0 1.25rem; padding: 1.2rem; border: 1px solid #9bd3fb; border-radius: 12px; background: #eff9ff; }
+.curriculum-generator p { margin: .5rem 0; }
+.manual-subject-entry { margin-top: 1rem; }
+.manual-subject-entry summary { cursor: pointer; color: #087fd4; font-weight: 800; }

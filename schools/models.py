@@ -40,6 +40,9 @@ class School(models.Model):
         choices=StudentAccessMode.choices,
         default=StudentAccessMode.STAFF_MANAGED,
     )
+    offers_kg = models.BooleanField(default=False)
+    offers_primary = models.BooleanField(default=True)
+    offers_jhs = models.BooleanField(default=False)
     logo = models.FileField(upload_to="schools/logos/", blank=True)
     official_stamp = models.FileField(upload_to="schools/stamps/", blank=True)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE)
