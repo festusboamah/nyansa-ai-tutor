@@ -210,6 +210,23 @@ class SchoolOnboardingTests(TestCase):
         )
         self.assertTrue(SchoolClass.objects.filter(school=self.school, name="JHS 1", capacity=45).exists())
 
+    def test_subject_offering_has_readable_assignment_label(self):
+        year = AcademicYear.objects.create(
+            school=self.school, name="2031/2032", start_date="2031-09-01", end_date="2032-07-31"
+        )
+        school_class = SchoolClass.objects.create(school=self.school, academic_year=year, name="JHS 2")
+        term = Term.objects.create(
+            academic_year=year, order=1, name="First Term", start_date="2031-09-01", end_date="2031-12-15"
+        )
+        subject = Subject.objects.create(school=self.school, name="Mathematics")
+        offering = SubjectOffering.objects.create(
+            school=self.school, school_class=school_class, subject=subject, term=term
+        )
+        self.assertEqual(str(offering), "JHS 2 — Mathematics — First Term")
+        response = self.client.get(f"{reverse('school_onboarding')}?step=assignment", secure=True)
+        self.assertContains(response, "JHS 2 — Mathematics — First Term")
+        self.assertContains(response, "Lead teacher for this subject")
+
     def test_curriculum_generator_creates_jhs_subjects_and_term_offerings(self):
         self.school.offers_primary = False
         self.school.offers_jhs = True

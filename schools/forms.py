@@ -151,8 +151,22 @@ class TeacherAssignmentForm(SchoolScopedFormMixin, forms.ModelForm):
     class Meta:
         model = TeacherAssignment
         fields = ["offering", "teacher", "is_lead"]
+        labels = {
+            "offering": "Class, subject and term",
+            "teacher": "Teacher",
+            "is_lead": "Lead teacher for this subject",
+        }
+        help_texts = {
+            "offering": "Choose the exact class, subject, and term this teacher will teach.",
+            "teacher": "Only active teachers in this school are shown.",
+            "is_lead": "Select this for the main teacher responsible when two or more teachers share the subject. For one teacher, you may select it.",
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["offering"].queryset = SubjectOffering.objects.filter(school=self.school)
+        self.fields["offering"].queryset = SubjectOffering.objects.filter(
+            school=self.school
+        ).select_related("school_class", "subject", "term").order_by(
+            "school_class__name", "subject__name", "term__order"
+        )
         self.fields["teacher"].queryset = SchoolMembership.objects.filter(school=self.school, role=SchoolMembership.Role.TEACHER, status=SchoolMembership.Status.ACTIVE)

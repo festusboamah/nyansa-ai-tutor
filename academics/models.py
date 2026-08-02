@@ -112,6 +112,9 @@ class SubjectOffering(models.Model):
         if len(school_ids) != 1:
             raise ValidationError("All offering records must belong to the same school.")
 
+    def __str__(self):
+        return f"{self.school_class.name} — {self.subject.name} — {self.term.name}"
+
 
 class TeacherAssignment(models.Model):
     offering = models.ForeignKey(SubjectOffering, on_delete=models.CASCADE, related_name="teacher_assignments")
@@ -127,3 +130,6 @@ class TeacherAssignment(models.Model):
             or self.teacher.role != "TEACHER"
         ):
             raise ValidationError("Teacher must have a teacher membership in the offering school.")
+
+    def __str__(self):
+        return f"{self.teacher.user.get_full_name() or self.teacher.user.username} — {self.offering}"
