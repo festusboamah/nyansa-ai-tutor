@@ -50,7 +50,15 @@
       </div>
       <details class="manual-subject-entry"><summary>Add a custom subject manually</summary>
       {% endif %}
-      {% if current_step == "offering" %}<p>Connect a subject to a class and term.</p>{% endif %}
+      {% if current_step == "offering" %}
+      <div class="curriculum-generator">
+        <h3>Standard offerings are assigned automatically</h3>
+        <p>Nyansa connects the required curriculum subjects to every recognised class and all three terms. Use the manual form only for an extra or custom subject.</p>
+        <p><strong>{{ generated_offering_count }}</strong> class-term subject offerings currently configured.</p>
+        <a href="?step=assignment" class="btn-small">Continue to assign teachers</a>
+      </div>
+      <details class="manual-subject-entry"><summary>Add a custom subject offering manually</summary>
+      {% endif %}
       {% if current_step == "assignment" %}<p>Choose a class–subject–term combination and the teacher responsible for it. Use “Lead teacher” only to identify the main teacher when a subject is shared.</p>{% endif %}
       {% if current_step == "enrollment" %}<p>Place an active student into one of this school's classes, or <a href="{% url 'bulk_student_import' %}">import an entire class roster from CSV/Excel</a>.</p>{% endif %}
       <form method="post" enctype="multipart/form-data" class="setup-form-fields">
@@ -65,6 +73,7 @@
       </form>
       {% if current_step == "class" %}</details>{% endif %}
       {% if current_step == "subject" %}</details>{% endif %}
+      {% if current_step == "offering" %}</details>{% endif %}
       {% endif %}
     </section>
   </div>

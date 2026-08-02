@@ -241,7 +241,7 @@ class SchoolOnboardingTests(TestCase):
             "step": "class", "action": "generate_classes",
         }, secure=True)
         self.assertRedirects(
-            response, f"{reverse('school_onboarding')}?step=subject", fetch_redirect_response=False
+            response, f"{reverse('school_onboarding')}?step=assignment", fetch_redirect_response=False
         )
         self.assertQuerySetEqual(
             SchoolClass.objects.filter(school=self.school, academic_year=year).order_by("name").values_list("name", flat=True),
@@ -266,6 +266,27 @@ class SchoolOnboardingTests(TestCase):
         self.assertTrue(classes.filter(name="KG 1").exists())
         self.assertTrue(classes.filter(name="Basic 6").exists())
         self.assertTrue(classes.filter(name="JHS 3").exists())
+
+    def test_class_generator_also_creates_standard_subject_offerings(self):
+        self.school.offers_primary = False
+        self.school.offers_jhs = True
+        self.school.save(update_fields=["offers_primary", "offers_jhs"])
+        year = AcademicYear.objects.create(
+            school=self.school, name="2034/2035", start_date="2034-09-01",
+            end_date="2035-07-31", is_current=True,
+        )
+        for order, name, start, end in (
+            (1, "First Term", "2034-09-01", "2034-12-15"),
+            (2, "Second Term", "2035-01-08", "2035-04-04"),
+            (3, "Third Term", "2035-04-22", "2035-07-31"),
+        ):
+            Term.objects.create(academic_year=year, order=order, name=name, start_date=start, end_date=end)
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "class", "action": "generate_classes",
+        }, secure=True)
+        self.assertIn("?step=assignment", response.url)
+        self.assertEqual(SchoolClass.objects.filter(school=self.school, academic_year=year).count(), 3)
+        self.assertEqual(SubjectOffering.objects.filter(school=self.school).count(), 99)
 
     def test_curriculum_generator_creates_jhs_subjects_and_term_offerings(self):
         self.school.offers_primary = False

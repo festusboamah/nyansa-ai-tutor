@@ -121,11 +121,15 @@ def school_onboarding(request):
         if academic_year is None:
             messages.error(request, "Create an academic year before generating classes.")
             return redirect(f"{reverse('school_onboarding')}?step=year")
+        created_subjects, created_offerings, unmatched = generate_ghana_curriculum(school=request.school)
         messages.success(
             request,
-            f"{created_count} class(es) created for {academic_year.name}. Existing classes were preserved.",
+            f"Setup generated for {academic_year.name}: {created_count} class(es), "
+            f"{created_subjects} subject(s), and {created_offerings} class-term offering(s).",
         )
-        return redirect(f"{reverse('school_onboarding')}?step=subject")
+        if unmatched:
+            messages.warning(request, "These custom class names need manual offerings: " + ", ".join(unmatched) + ".")
+        return redirect(f"{reverse('school_onboarding')}?step=assignment")
 
     completed = sum(state.values())
     display_steps = [
@@ -202,6 +206,7 @@ def school_onboarding(request):
         "completed": completed,
         "progress_percent": round(completed / len(ONBOARDING_STEPS) * 100),
         "education_levels": request.school,
+        "generated_offering_count": SubjectOffering.objects.filter(school=request.school).count(),
     })
 
 
