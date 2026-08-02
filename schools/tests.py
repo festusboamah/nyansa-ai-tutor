@@ -89,6 +89,48 @@ class SchoolOnboardingTests(TestCase):
             response, f"{reverse('school_onboarding')}?step=year", fetch_redirect_response=False
         )
 
+    def test_new_current_year_replaces_previous_current_year(self):
+        previous = AcademicYear.objects.create(
+            school=self.school, name="2025/2026", start_date="2025-09-01",
+            end_date="2026-07-31", is_current=True,
+        )
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "year", "name": "2026/2027", "start_date": "2026-09-01",
+            "end_date": "2027-07-31", "is_current": "on",
+        }, secure=True)
+        self.assertEqual(response.status_code, 302)
+        previous.refresh_from_db()
+        self.assertFalse(previous.is_current)
+        self.assertTrue(AcademicYear.objects.get(name="2026/2027").is_current)
+
+    def test_duplicate_year_shows_form_error_instead_of_server_error(self):
+        AcademicYear.objects.create(
+            school=self.school, name="2026/2027", start_date="2026-09-01", end_date="2027-07-31"
+        )
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "year", "name": "2026/2027", "start_date": "2026-09-01",
+            "end_date": "2027-07-31",
+        }, secure=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "already exists")
+
+    def test_term_step_stays_open_until_three_terms_exist(self):
+        year = AcademicYear.objects.create(
+            school=self.school, name="2026/2027", start_date="2026-09-01", end_date="2027-07-31"
+        )
+        term_dates = [
+            ("First Term", 1, "2026-09-01", "2026-12-18"),
+            ("Second Term", 2, "2027-01-11", "2027-04-09"),
+            ("Third Term", 3, "2027-04-26", "2027-07-31"),
+        ]
+        for index, (name, order, start, end) in enumerate(term_dates):
+            response = self.client.post(reverse("school_onboarding"), {
+                "step": "term", "academic_year": year.id, "name": name,
+                "order": order, "start_date": start, "end_date": end,
+            }, secure=True)
+            expected = "people" if index == 2 else "term"
+            self.assertIn(f"?step={expected}", response.url)
+
     def test_enrollment_step_rejects_student_from_another_school(self):
         year = AcademicYear.objects.create(
             school=self.school, name="2026/27", start_date="2026-09-01", end_date="2027-07-31"

@@ -5,6 +5,8 @@ from django.http import Http404
 from django.urls import reverse
 from django.core.mail import send_mail
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from courses.models import Subject
 from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
@@ -63,7 +65,7 @@ def _onboarding_state(school):
     return {
         "profile": bool(school.address and school.phone and school.email),
         "year": AcademicYear.objects.filter(school=school).exists(),
-        "term": Term.objects.filter(academic_year__school=school).exists(),
+        "term": Term.objects.filter(academic_year__school=school).count() >= 3,
         "people": {
             SchoolMembership.Role.TEACHER,
             SchoolMembership.Role.STUDENT,
@@ -84,6 +86,8 @@ def _step_after(current_step, state):
     """Advance in wizard order, keeping multi-entry people setup open until ready."""
     if current_step == "people" and not state["people"]:
         return "people"
+    if current_step == "term" and not state["term"]:
+        return "term"
     keys = [key for key, _ in ONBOARDING_STEPS]
     index = keys.index(current_step)
     return keys[index + 1] if index + 1 < len(keys) else "complete"
@@ -131,29 +135,36 @@ def school_onboarding(request):
     form = form_class(**kwargs)
 
     if request.method == "POST" and form.is_valid():
-        if step == "people":
-            invitation, token = create_invitation(
-                school=request.school,
-                email=form.cleaned_data["email"],
-                role=form.cleaned_data["role"],
-                invited_by=request.user,
-            )
-            invitation_url = request.build_absolute_uri(reverse("accept_school_invitation", args=[token]))
-            send_mail(
-                f"Invitation to join {request.school.name} on Nyansa",
-                f"You have been invited as {invitation.get_role_display()}. Accept here: {invitation_url}",
-                settings.DEFAULT_FROM_EMAIL,
-                [invitation.email],
-            )
+        try:
+            with transaction.atomic():
+                if step == "people":
+                    invitation, token = create_invitation(
+                        school=request.school,
+                        email=form.cleaned_data["email"],
+                        role=form.cleaned_data["role"],
+                        invited_by=request.user,
+                    )
+                    invitation_url = request.build_absolute_uri(reverse("accept_school_invitation", args=[token]))
+                    send_mail(
+                        f"Invitation to join {request.school.name} on Nyansa",
+                        f"You have been invited as {invitation.get_role_display()}. Accept here: {invitation_url}",
+                        settings.DEFAULT_FROM_EMAIL,
+                        [invitation.email],
+                    )
+                else:
+                    obj = form.save(commit=False)
+                    if step in {"year", "class", "subject", "offering"}:
+                        obj.school = request.school
+                    if step == "year" and obj.is_current:
+                        AcademicYear.objects.filter(school=request.school, is_current=True).exclude(pk=obj.pk).update(is_current=False)
+                    obj.full_clean()
+                    obj.save()
+        except ValidationError as error:
+            form.add_error(None, error)
         else:
-            obj = form.save(commit=False)
-            if step in {"year", "class", "subject", "offering"}:
-                obj.school = request.school
-            obj.full_clean()
-            obj.save()
-        messages.success(request, f"{dict(ONBOARDING_STEPS)[step]} saved. Continue with the next setup step.")
-        updated_state = _onboarding_state(request.school)
-        return redirect(f"{reverse('school_onboarding')}?step={_step_after(step, updated_state)}")
+            messages.success(request, f"{dict(ONBOARDING_STEPS)[step]} saved. Continue with the next setup step.")
+            updated_state = _onboarding_state(request.school)
+            return redirect(f"{reverse('school_onboarding')}?step={_step_after(step, updated_state)}")
 
     return render(request, "schools/onboarding.html", {
         "form": form,

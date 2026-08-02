@@ -27,6 +27,8 @@
       {% else %}
       <p class="eyebrow">Step {{ current_label }}</p><h2>{{ current_label }}</h2>
       {% if current_step == "people" %}<p>Invite at least one teacher and one student. This step remains open until both roles have been added.</p>{% endif %}
+      {% if current_step == "year" %}<p>An academic year covers the complete school year and contains all three terms.</p>{% endif %}
+      {% if current_step == "term" %}<p>Add First Term, Second Term, and Third Term separately. This step advances after all three have been created.</p>{% endif %}
       {% if current_step == "offering" %}<p>Connect a subject to a class and term.</p>{% endif %}
       {% if current_step == "enrollment" %}<p>Place an active student into one of this school's classes.</p>{% endif %}
       <form method="post" enctype="multipart/form-data" class="setup-form-fields">
