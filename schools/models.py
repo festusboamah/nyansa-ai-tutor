@@ -10,6 +10,11 @@ def default_invitation_expiry():
 
 
 class School(models.Model):
+    class StudentAccessMode(models.TextChoices):
+        STAFF_MANAGED = "STAFF_MANAGED", "Staff-managed records"
+        PORTAL = "PORTAL", "Student accounts and online learning"
+        HYBRID = "HYBRID", "Hybrid"
+
     class Status(models.TextChoices):
         ACTIVE = "ACTIVE", "Active"
         SUSPENDED = "SUSPENDED", "Suspended"
@@ -30,6 +35,11 @@ class School(models.Model):
     phone = models.CharField(max_length=30, blank=True)
     email = models.EmailField(blank=True)
     timezone = models.CharField(max_length=64, default="Africa/Accra")
+    student_access_mode = models.CharField(
+        max_length=16,
+        choices=StudentAccessMode.choices,
+        default=StudentAccessMode.STAFF_MANAGED,
+    )
     logo = models.FileField(upload_to="schools/logos/", blank=True)
     official_stamp = models.FileField(upload_to="schools/stamps/", blank=True)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE)
@@ -66,12 +76,18 @@ class SchoolMembership(models.Model):
         blank=True,
         help_text="Optional school-specific staff, student, or guardian identifier.",
     )
+    portal_access_enabled = models.BooleanField(default=True)
     joined_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["school", "user"], name="unique_school_user_membership")
+            models.UniqueConstraint(fields=["school", "user"], name="unique_school_user_membership"),
+            models.UniqueConstraint(
+                fields=["school", "identifier"],
+                condition=models.Q(identifier__gt=""),
+                name="unique_school_member_identifier",
+            ),
         ]
         indexes = [
             models.Index(fields=["school", "role", "status"], name="school_role_status_idx")
@@ -84,6 +100,26 @@ class SchoolMembership(models.Model):
     @property
     def is_active(self):
         return self.status == self.Status.ACTIVE and self.school.status == School.Status.ACTIVE
+
+
+class StudentProfile(models.Model):
+    class Gender(models.TextChoices):
+        FEMALE = "FEMALE", "Female"
+        MALE = "MALE", "Male"
+        OTHER = "OTHER", "Other / not specified"
+
+    membership = models.OneToOneField(
+        SchoolMembership, on_delete=models.CASCADE, related_name="student_profile"
+    )
+    gender = models.CharField(max_length=12, choices=Gender.choices, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    guardian_name = models.CharField(max_length=160, blank=True)
+    guardian_phone = models.CharField(max_length=30, blank=True)
+
+    def clean(self):
+        if self.membership_id and self.membership.role != SchoolMembership.Role.STUDENT:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Student profiles require a student membership.")
 
 
 class SchoolInvitation(models.Model):

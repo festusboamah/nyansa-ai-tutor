@@ -2,13 +2,16 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.test import RequestFactory, TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.contrib.sessions.middleware import SessionMiddleware
+from io import BytesIO
+from openpyxl import Workbook
 
 from courses.models import Subject
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass
 
-from .models import School, SchoolMembership
+from .models import School, SchoolMembership, StudentProfile
 from .services import (
     ACTIVE_SCHOOL_SESSION_KEY,
     resolve_active_membership,
@@ -84,6 +87,7 @@ class SchoolOnboardingTests(TestCase):
         response = self.client.post(reverse("school_onboarding"), {
             "step": "profile", "name": self.school.name, "address": "Accra",
             "phone": "0200000000", "email": "setup@example.com", "timezone": "Africa/Accra",
+            "student_access_mode": School.StudentAccessMode.STAFF_MANAGED,
         }, secure=True)
         self.assertRedirects(
             response, f"{reverse('school_onboarding')}?step=year", fetch_redirect_response=False
@@ -147,6 +151,51 @@ class SchoolOnboardingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Select a valid choice")
         self.assertFalse(ClassEnrollment.objects.exists())
+
+    def test_bulk_roster_creates_staff_managed_students_in_selected_class(self):
+        year = AcademicYear.objects.create(
+            school=self.school, name="2026/2027", start_date="2026-09-01", end_date="2027-07-31"
+        )
+        school_class = SchoolClass.objects.create(school=self.school, academic_year=year, name="Basic 5")
+        roster = SimpleUploadedFile(
+            "basic-5.csv",
+            b"student_id,first_name,last_name,gender,date_of_birth,guardian_name,guardian_phone\n"
+            b"STU-001,Ama,Mensah,Female,2014-05-12,Adwoa Mensah,0200000000\n",
+            content_type="text/csv",
+        )
+        preview = self.client.post(reverse("bulk_student_import"), {
+            "school_class": school_class.id, "roster_file": roster,
+        }, secure=True)
+        self.assertEqual(preview.status_code, 200)
+        self.assertContains(preview, "Ama Mensah")
+        confirmed = self.client.post(reverse("bulk_student_import"), {"action": "confirm"}, secure=True)
+        self.assertRedirects(confirmed, reverse("people_directory"), fetch_redirect_response=False)
+        student = SchoolMembership.objects.get(identifier="STU-001")
+        self.assertFalse(student.portal_access_enabled)
+        self.assertFalse(student.user.has_usable_password())
+        self.assertTrue(ClassEnrollment.objects.filter(school_class=school_class, student=student).exists())
+        self.assertEqual(StudentProfile.objects.get(membership=student).guardian_phone, "0200000000")
+
+    def test_excel_roster_can_be_previewed(self):
+        year = AcademicYear.objects.create(
+            school=self.school, name="2027/2028", start_date="2027-09-01", end_date="2028-07-31"
+        )
+        school_class = SchoolClass.objects.create(school=self.school, academic_year=year, name="Basic 6")
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.append(["student_id", "first_name", "last_name", "guardian_phone"])
+        sheet.append(["STU-002", "Kwame", "Asare", "0240000000"])
+        content = BytesIO()
+        workbook.save(content)
+        roster = SimpleUploadedFile(
+            "basic-6.xlsx", content.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response = self.client.post(reverse("bulk_student_import"), {
+            "school_class": school_class.id, "roster_file": roster,
+        }, secure=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kwame Asare")
 
 
 class ActiveSchoolResolutionTests(TestCase):

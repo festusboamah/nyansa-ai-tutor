@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.urls import reverse
 from django.core.mail import send_mail
 from django.conf import settings
@@ -9,8 +9,9 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from courses.models import Subject
-from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
+from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, StudentRosterUploadForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
 from .models import SchoolInvitation, SchoolMembership
+from .roster_import import import_student_roster, parse_student_roster
 from .services import accept_invitation, create_invitation, has_school_role
 
 
@@ -220,6 +221,49 @@ def people_directory(request):
         "memberships": SchoolMembership.objects.filter(school=request.school).select_related("user"),
         "invitations": SchoolInvitation.objects.filter(school=request.school)[:25],
     })
+
+
+@admin_required
+def bulk_student_import(request):
+    preview = request.session.get("student_roster_preview")
+    if request.method == "POST" and request.POST.get("action") == "confirm":
+        if not preview:
+            messages.error(request, "Upload and preview a roster before confirming.")
+            return redirect("bulk_student_import")
+        school_class = SchoolClass.objects.filter(
+            school=request.school, pk=preview.get("school_class_id")
+        ).first()
+        if not school_class:
+            raise Http404
+        created, updated = import_student_roster(school_class=school_class, records=preview["records"])
+        request.session.pop("student_roster_preview", None)
+        messages.success(request, f"Roster imported: {created} student(s) created and {updated} updated.")
+        return redirect("people_directory")
+
+    form = StudentRosterUploadForm(request.POST or None, request.FILES or None, school=request.school)
+    errors = []
+    if request.method == "POST" and form.is_valid():
+        try:
+            records, errors = parse_student_roster(form.cleaned_data["roster_file"])
+        except (ValidationError, ValueError, OSError) as error:
+            form.add_error("roster_file", error)
+        else:
+            if not errors:
+                school_class = form.cleaned_data["school_class"]
+                preview = {"school_class_id": school_class.id, "school_class_name": str(school_class), "records": records}
+                request.session["student_roster_preview"] = preview
+    return render(request, "schools/bulk_student_import.html", {"form": form, "preview": preview, "row_errors": errors})
+
+
+@admin_required
+def student_roster_template(request):
+    response = HttpResponse(
+        "student_id,first_name,last_name,gender,date_of_birth,guardian_name,guardian_phone\n"
+        "STU-001,Ama,Mensah,Female,2014-05-12,Adwoa Mensah,0200000000\n",
+        content_type="text/csv",
+    )
+    response["Content-Disposition"] = 'attachment; filename="nyansa-student-roster-template.csv"'
+    return response
 
 
 @admin_required

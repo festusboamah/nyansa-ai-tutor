@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Import student roster | Nyansa{% endblock %}
+{% block content %}
+<section class="onboarding-shell roster-import">
+  <div class="admin-heading"><div><p class="eyebrow">Staff-managed student records</p><h1>Import a class roster</h1><p>Students do not need email addresses, smartphones, or portal accounts.</p></div><a href="{% url 'student_roster_template' %}" class="btn-small btn-secondary">Download CSV template</a></div>
+  <section class="card">
+    <h2>1. Select one class and upload its file</h2>
+    <p>Required columns: <strong>student_id, first_name, last_name</strong>. Guardian and demographic columns are optional.</p>
+    <form method="post" enctype="multipart/form-data" class="setup-form-fields">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn-small">Preview roster</button></form>
+  </section>
+  {% if row_errors %}<section class="card roster-errors"><h2>Fix these rows</h2><ul>{% for error in row_errors %}<li>{{ error }}</li>{% endfor %}</ul></section>{% endif %}
+  {% if preview %}<section class="card">
+    <h2>2. Review {{ preview.school_class_name }}</h2>
+    <div class="table-scroll"><table class="student-table"><thead><tr><th>Student ID</th><th>Name</th><th>Gender</th><th>Guardian</th><th>Phone</th></tr></thead><tbody>
+    {% for row in preview.records %}<tr><td>{{ row.student_id }}</td><td>{{ row.first_name }} {{ row.last_name }}</td><td>{{ row.gender|default:"—" }}</td><td>{{ row.guardian_name|default:"—" }}</td><td>{{ row.guardian_phone|default:"—" }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="confirm"><button type="submit" class="btn-small">Confirm and create {{ preview.records|length }} students</button></form>
+  </section>{% endif %}
+</section>
+{% endblock %}

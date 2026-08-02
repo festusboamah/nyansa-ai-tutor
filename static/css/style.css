@@ -1451,3 +1451,7 @@ h2 {
 @media (max-width: 760px) { .onboarding-layout { grid-template-columns: 1fr; } .onboarding-heading { align-items: start; } }
 .setup-complete { display: grid; justify-items: start; gap: .8rem; padding: 1rem 0; }
 .setup-complete > span { width: 3.5rem; height: 3.5rem; display: grid; place-items: center; border-radius: 50%; background: #dcfce7; color: #15803d; font-size: 1.8rem; font-weight: 800; }
+.roster-import .card { margin-bottom: 1.25rem; }
+.table-scroll { overflow-x: auto; margin: 1rem 0; }
+.roster-errors { border-left: 4px solid #ef4444; }
+.roster-errors li { margin: .35rem 0 .35rem 1.25rem; color: #991b1b; }

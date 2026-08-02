@@ -24,7 +24,22 @@ class SchoolScopedFormMixin:
 class SchoolProfileForm(forms.ModelForm):
     class Meta:
         model = School
-        fields = ["name", "address", "phone", "email", "timezone", "logo", "official_stamp"]
+        fields = ["name", "address", "phone", "email", "timezone", "student_access_mode", "logo", "official_stamp"]
+
+
+class StudentRosterUploadForm(forms.Form):
+    school_class = forms.ModelChoiceField(queryset=SchoolClass.objects.none())
+    roster_file = forms.FileField(help_text="Upload a .csv or .xlsx file for one class.")
+
+    def __init__(self, *args, school, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["school_class"].queryset = SchoolClass.objects.filter(school=school)
+
+    def clean_roster_file(self):
+        roster_file = self.cleaned_data["roster_file"]
+        if not roster_file.name.lower().endswith((".csv", ".xlsx")):
+            raise forms.ValidationError("Upload a CSV or Excel (.xlsx) file.")
+        return roster_file
 
 
 class SubjectSetupForm(SchoolScopedFormMixin, forms.ModelForm):

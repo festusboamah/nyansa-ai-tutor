@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import School, SchoolInvitation, SchoolMembership
+from .models import School, SchoolInvitation, SchoolMembership, StudentProfile
 
 
 class SchoolMembershipInline(admin.TabularInline):
@@ -20,10 +20,16 @@ class SchoolAdmin(admin.ModelAdmin):
 
 @admin.register(SchoolMembership)
 class SchoolMembershipAdmin(admin.ModelAdmin):
-    list_display = ("user", "school", "role", "status", "identifier")
+    list_display = ("user", "school", "role", "status", "identifier", "portal_access_enabled")
     list_filter = ("school", "role", "status")
     search_fields = ("user__username", "user__email", "school__name", "identifier")
     autocomplete_fields = ("school", "user")
+
+
+@admin.register(StudentProfile)
+class StudentProfileAdmin(admin.ModelAdmin):
+    list_display = ("membership", "gender", "date_of_birth", "guardian_phone")
+    search_fields = ("membership__user__first_name", "membership__user__last_name", "membership__identifier", "guardian_name", "guardian_phone")
 
 
 @admin.register(SchoolInvitation)
