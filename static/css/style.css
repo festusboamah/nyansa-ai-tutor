@@ -1453,6 +1453,30 @@ h2 {
 .setup-complete > span { width: 3.5rem; height: 3.5rem; display: grid; place-items: center; border-radius: 50%; background: #dcfce7; color: #15803d; font-size: 1.8rem; font-weight: 800; }
 .roster-import .card { margin-bottom: 1.25rem; }
 .table-scroll { overflow-x: auto; margin: 1rem 0; }
+.class-roster-table { width: 100%; table-layout: fixed; min-width: 760px; }
+.class-roster-table th, .class-roster-table td { padding: 1rem; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--border); }
+.class-roster-table th:nth-child(1) { width: 23%; }
+.class-roster-table th:nth-child(2) { width: 15%; }
+.class-roster-table th:nth-child(3) { width: 22%; }
+.class-roster-table th:nth-child(4) { width: 40%; }
+.class-roster-table tbody tr:hover { background: #f8fbff; }
+.roster-actions { display: flex; align-items: center; gap: .65rem; }
+.roster-move-form { display: grid; grid-template-columns: minmax(185px, 1fr) auto; gap: .5rem; align-items: center; margin: 0; }
+.roster-move-form select { min-width: 0; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: 8px; background: white; }
+.btn-compact { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: .45rem .8rem; white-space: nowrap; }
+.btn-muted { background: #e8eef6; color: #28415f; }
+.promotion-panel { border-left: 4px solid #f59e0b; background: #fffdf7; }
+.promotion-panel select { min-width: min(100%, 320px); }
+@media (max-width: 720px) {
+    .roster-management .table-scroll { overflow: visible; }
+    .class-roster-table, .class-roster-table tbody, .class-roster-table tr, .class-roster-table td { display: block; min-width: 0; width: 100%; }
+    .class-roster-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .class-roster-table tr { margin-bottom: 1rem; padding: .7rem; border: 1px solid var(--border); border-radius: 10px; }
+    .class-roster-table td { display: grid; grid-template-columns: 90px 1fr; gap: .75rem; padding: .55rem; border: 0; }
+    .class-roster-table td::before { content: attr(data-label); color: var(--text-muted); font-weight: 700; }
+    .roster-actions { align-items: stretch; flex-direction: column; }
+    .roster-move-form { grid-template-columns: 1fr auto; }
+}
 .roster-errors { border-left: 4px solid #ef4444; }
 .roster-errors li { margin: .35rem 0 .35rem 1.25rem; color: #991b1b; }
 .setup-submit-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
