@@ -100,6 +100,22 @@ class SchoolClassForm(SchoolScopedFormMixin, forms.ModelForm):
     class Meta:
         model = SchoolClass
         fields = ["academic_year", "name", "capacity", "class_teacher"]
+        labels = {
+            "academic_year": "Academic year",
+            "name": "Class name",
+            "capacity": "Maximum number of students",
+            "class_teacher": "Class teacher (optional)",
+        }
+        help_texts = {
+            "academic_year": "Choose the school year in which this class will operate.",
+            "name": "Examples: Basic 1, Basic 6, JHS 1, JHS 2, or JHS 3.",
+            "capacity": "Enter the maximum class size, not the number currently enrolled. You may leave it blank.",
+            "class_teacher": "Choose the teacher responsible for this class. Subject teachers are assigned later.",
+        }
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "e.g. JHS 1"}),
+            "capacity": forms.NumberInput(attrs={"placeholder": "e.g. 45", "min": 1}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

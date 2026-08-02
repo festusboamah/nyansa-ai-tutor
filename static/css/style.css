@@ -1455,3 +1455,4 @@ h2 {
 .table-scroll { overflow-x: auto; margin: 1rem 0; }
 .roster-errors { border-left: 4px solid #ef4444; }
 .roster-errors li { margin: .35rem 0 .35rem 1.25rem; color: #991b1b; }
+.setup-submit-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }

@@ -197,6 +197,19 @@ class SchoolOnboardingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Kwame Asare")
 
+    def test_class_step_can_save_and_add_another(self):
+        year = AcademicYear.objects.create(
+            school=self.school, name="2028/2029", start_date="2028-09-01", end_date="2029-07-31"
+        )
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "class", "academic_year": year.id, "name": "JHS 1",
+            "capacity": 45, "class_teacher": "", "save_action": "add_another",
+        }, secure=True)
+        self.assertRedirects(
+            response, f"{reverse('school_onboarding')}?step=class", fetch_redirect_response=False
+        )
+        self.assertTrue(SchoolClass.objects.filter(school=self.school, name="JHS 1", capacity=45).exists())
+
 
 class ActiveSchoolResolutionTests(TestCase):
     def setUp(self):

@@ -165,7 +165,8 @@ def school_onboarding(request):
         else:
             messages.success(request, f"{dict(ONBOARDING_STEPS)[step]} saved. Continue with the next setup step.")
             updated_state = _onboarding_state(request.school)
-            return redirect(f"{reverse('school_onboarding')}?step={_step_after(step, updated_state)}")
+            next_step = step if request.POST.get("save_action") == "add_another" else _step_after(step, updated_state)
+            return redirect(f"{reverse('school_onboarding')}?step={next_step}")
 
     return render(request, "schools/onboarding.html", {
         "form": form,
