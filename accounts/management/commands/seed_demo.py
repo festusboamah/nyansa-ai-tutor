@@ -74,13 +74,18 @@ class Command(BaseCommand):
         )
 
         current_year = date.today().year
+        demo_year_name = f"{current_year}/{current_year + 1} Demo"
+        has_administrator_current_year = AcademicYear.objects.filter(
+            school=school, is_current=True
+        ).exclude(name=demo_year_name).exists()
         academic_year, _ = AcademicYear.objects.update_or_create(
             school=school,
-            name=f"{current_year}/{current_year + 1} Demo",
+            name=demo_year_name,
             defaults={
                 "start_date": date(current_year, 1, 1),
                 "end_date": date(current_year, 12, 31),
-                "is_current": True,
+                # Demo seeding must never override a year selected by the administrator.
+                "is_current": not has_administrator_current_year,
             },
         )
         term, _ = Term.objects.update_or_create(

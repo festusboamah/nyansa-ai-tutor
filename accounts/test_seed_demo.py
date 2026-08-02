@@ -62,3 +62,29 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(LessonNoteEvent.objects.count(), 1)
         self.assertEqual(LessonNoteNotification.objects.count(), 1)
         self.assertEqual(LessonNote.objects.get().status, LessonNote.Status.PENDING_REVIEW)
+
+    @override_settings(NYANSA_DEMO_MODE=True)
+    @patch.dict(
+        "os.environ",
+        {
+            "DEMO_ADMIN_USERNAME": "demo-admin",
+            "DEMO_ADMIN_PASSWORD": "safe-demo-password",
+            "DEMO_ADMIN_EMAIL": "demo@example.com",
+        },
+    )
+    def test_command_preserves_an_administrator_selected_current_year(self):
+        school = School.objects.create(name="Demo School", slug="nyansa-demo-school")
+        selected_year = AcademicYear.objects.create(
+            school=school,
+            name="Administrator Year",
+            start_date="2026-09-01",
+            end_date="2027-07-31",
+            is_current=True,
+        )
+
+        call_command("seed_demo")
+
+        selected_year.refresh_from_db()
+        self.assertTrue(selected_year.is_current)
+        demo_year = AcademicYear.objects.exclude(pk=selected_year.pk).get(school=school)
+        self.assertFalse(demo_year.is_current)
