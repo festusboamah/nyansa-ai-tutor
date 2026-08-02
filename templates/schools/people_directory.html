@@ -8,6 +8,9 @@
     <a class="btn-small" href="{% url 'invite_member' %}">Invite portal user</a>
   </div>
 </div>
+<section class="card"><h2>Class rosters</h2>
+{% for class in classes %}<div class="admin-row"><div><strong>{{ class.name }}</strong><p>{{ class.academic_year.name }} &middot; {{ class.active_student_count }} active student{{ class.active_student_count|pluralize }}</p></div><a class="btn-small" href="{% url 'class_roster' class.id %}">Manage roster</a></div>{% empty %}<p>No classes configured.</p>{% endfor %}
+</section>
 <section class="card"><h2>Members</h2>
 {% for membership in memberships %}
 <div class="admin-row"><div>

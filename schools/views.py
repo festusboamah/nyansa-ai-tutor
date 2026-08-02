@@ -7,9 +7,10 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db import models
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from courses.models import Subject
-from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, StudentRosterUploadForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
+from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, StudentRecordForm, StudentRosterUploadForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
 from .models import SchoolInvitation, SchoolMembership
 from .roster_import import import_student_roster, parse_student_roster
 from .curriculum import generate_ghana_curriculum, generate_school_classes
@@ -252,7 +253,132 @@ def people_directory(request):
     return render(request, "schools/people_directory.html", {
         "memberships": SchoolMembership.objects.filter(school=request.school).select_related("user"),
         "invitations": SchoolInvitation.objects.filter(school=request.school)[:25],
+        "classes": SchoolClass.objects.filter(school=request.school).select_related("academic_year").annotate(
+            active_student_count=models.Count(
+                "student_enrollments",
+                filter=models.Q(student_enrollments__status=ClassEnrollment.Status.ACTIVE),
+            )
+        ),
     })
+
+
+def _school_class_or_404(request, class_id):
+    school_class = SchoolClass.objects.filter(
+        school=request.school, pk=class_id
+    ).select_related("academic_year", "class_teacher__user").first()
+    if not school_class:
+        raise Http404
+    return school_class
+
+
+@admin_required
+def class_roster(request, class_id):
+    school_class = _school_class_or_404(request, class_id)
+    enrollments = ClassEnrollment.objects.filter(
+        school_class=school_class, status=ClassEnrollment.Status.ACTIVE
+    ).select_related("student__user", "student__student_profile").order_by(
+        "student__user__last_name", "student__user__first_name", "student__identifier"
+    )
+    transfer_classes = SchoolClass.objects.filter(school=request.school).exclude(pk=school_class.pk).select_related("academic_year")
+    promotion_classes = transfer_classes.filter(academic_year__start_date__gt=school_class.academic_year.start_date)
+    return render(request, "schools/class_roster.html", {
+        "school_class": school_class,
+        "enrollments": enrollments,
+        "transfer_classes": transfer_classes,
+        "promotion_classes": promotion_classes,
+    })
+
+
+@admin_required
+def edit_student_record(request, membership_id):
+    membership = SchoolMembership.objects.filter(
+        school=request.school, pk=membership_id, role=SchoolMembership.Role.STUDENT
+    ).select_related("user").first()
+    if not membership:
+        raise Http404
+    form = StudentRecordForm(request.POST or None, membership=membership)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Student record updated.")
+        class_id = request.POST.get("return_class")
+        if class_id and SchoolClass.objects.filter(school=request.school, pk=class_id).exists():
+            return redirect("class_roster", class_id=class_id)
+        return redirect("people_directory")
+    return render(request, "schools/student_record_form.html", {"form": form, "membership": membership})
+
+
+@admin_required
+@transaction.atomic
+def transfer_student(request, class_id, enrollment_id):
+    if request.method != "POST":
+        return redirect("class_roster", class_id=class_id)
+    source = _school_class_or_404(request, class_id)
+    enrollment = ClassEnrollment.objects.filter(
+        pk=enrollment_id, school_class=source, status=ClassEnrollment.Status.ACTIVE
+    ).select_related("student").first()
+    target = SchoolClass.objects.filter(school=request.school, pk=request.POST.get("target_class")).first()
+    if not enrollment or not target or target.pk == source.pk:
+        raise Http404
+    enrollment.status = ClassEnrollment.Status.TRANSFERRED
+    enrollment.save(update_fields=["status"])
+    target_enrollment, _ = ClassEnrollment.objects.get_or_create(
+        school_class=target, student=enrollment.student,
+        defaults={"status": ClassEnrollment.Status.ACTIVE},
+    )
+    if target_enrollment.status != ClassEnrollment.Status.ACTIVE:
+        target_enrollment.status = ClassEnrollment.Status.ACTIVE
+        target_enrollment.save(update_fields=["status"])
+    messages.success(request, f"Student moved to {target.name}.")
+    return redirect("class_roster", class_id=source.pk)
+
+
+@admin_required
+@transaction.atomic
+def promote_class(request, class_id):
+    if request.method != "POST":
+        return redirect("class_roster", class_id=class_id)
+    source = _school_class_or_404(request, class_id)
+    target = SchoolClass.objects.filter(
+        school=request.school,
+        pk=request.POST.get("target_class"),
+        academic_year__start_date__gt=source.academic_year.start_date,
+    ).first()
+    if not target:
+        messages.error(request, "Choose a class in a later academic year.")
+        return redirect("class_roster", class_id=source.pk)
+    active = list(ClassEnrollment.objects.filter(school_class=source, status=ClassEnrollment.Status.ACTIVE))
+    for enrollment in active:
+        ClassEnrollment.objects.update_or_create(
+            school_class=target, student=enrollment.student,
+            defaults={"status": ClassEnrollment.Status.ACTIVE},
+        )
+    ClassEnrollment.objects.filter(pk__in=[item.pk for item in active]).update(status=ClassEnrollment.Status.COMPLETED)
+    messages.success(request, f"{len(active)} student(s) promoted to {target.name}.")
+    return redirect("class_roster", class_id=target.pk)
+
+
+@admin_required
+def export_class_roster(request, class_id):
+    import csv
+    school_class = _school_class_or_404(request, class_id)
+    response = HttpResponse(content_type="text/csv")
+    safe_name = "-".join(school_class.name.lower().split())
+    response["Content-Disposition"] = f'attachment; filename="{safe_name}-roster.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["student_id", "first_name", "last_name", "gender", "date_of_birth", "guardian_name", "guardian_phone"])
+    enrollments = ClassEnrollment.objects.filter(
+        school_class=school_class, status=ClassEnrollment.Status.ACTIVE
+    ).select_related("student__user", "student__student_profile")
+    for enrollment in enrollments:
+        student, user = enrollment.student, enrollment.student.user
+        profile = getattr(student, "student_profile", None)
+        writer.writerow([
+            student.identifier, user.first_name, user.last_name,
+            profile.get_gender_display() if profile else "",
+            profile.date_of_birth.isoformat() if profile and profile.date_of_birth else "",
+            profile.guardian_name if profile else "", profile.guardian_phone if profile else "",
+        ])
+    return response
 
 
 @admin_required

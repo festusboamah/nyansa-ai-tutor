@@ -1,6 +1,6 @@
 from django import forms
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
-from .models import School, SchoolMembership
+from .models import School, SchoolMembership, StudentProfile
 from .models import SchoolInvitation
 
 
@@ -54,6 +54,51 @@ class StudentRosterUploadForm(forms.Form):
         if not roster_file.name.lower().endswith((".csv", ".xlsx")):
             raise forms.ValidationError("Upload a CSV or Excel (.xlsx) file.")
         return roster_file
+
+
+class StudentRecordForm(forms.Form):
+    identifier = forms.CharField(label="Student ID", max_length=50)
+    first_name = forms.CharField(max_length=150)
+    last_name = forms.CharField(max_length=150)
+    gender = forms.ChoiceField(choices=[("", "Not specified"), *StudentProfile.Gender.choices], required=False)
+    date_of_birth = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}))
+    guardian_name = forms.CharField(max_length=160, required=False)
+    guardian_phone = forms.CharField(max_length=30, required=False)
+
+    def __init__(self, *args, membership, **kwargs):
+        self.membership = membership
+        profile, _ = StudentProfile.objects.get_or_create(membership=membership)
+        kwargs.setdefault("initial", {
+            "identifier": membership.identifier,
+            "first_name": membership.user.first_name,
+            "last_name": membership.user.last_name,
+            "gender": profile.gender,
+            "date_of_birth": profile.date_of_birth,
+            "guardian_name": profile.guardian_name,
+            "guardian_phone": profile.guardian_phone,
+        })
+        super().__init__(*args, **kwargs)
+
+    def clean_identifier(self):
+        identifier = self.cleaned_data["identifier"].strip()
+        if SchoolMembership.objects.filter(
+            school=self.membership.school, identifier=identifier
+        ).exclude(pk=self.membership.pk).exists():
+            raise forms.ValidationError("This student ID is already used in this school.")
+        return identifier
+
+    def save(self):
+        membership = self.membership
+        membership.identifier = self.cleaned_data["identifier"]
+        membership.save(update_fields=["identifier", "updated_at"])
+        membership.user.first_name = self.cleaned_data["first_name"].strip()
+        membership.user.last_name = self.cleaned_data["last_name"].strip()
+        membership.user.save(update_fields=["first_name", "last_name"])
+        profile, _ = StudentProfile.objects.get_or_create(membership=membership)
+        for field in ("gender", "date_of_birth", "guardian_name", "guardian_phone"):
+            setattr(profile, field, self.cleaned_data[field])
+        profile.save()
+        return membership
 
 
 class SubjectSetupForm(SchoolScopedFormMixin, forms.ModelForm):

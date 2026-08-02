@@ -15,7 +15,7 @@
 </div>
 <div class="admin-grid">
   <section class="card"><h2>Academic years</h2>{% for year in years %}<div class="admin-row"><strong>{{ year.name }}</strong><span>{{ year.terms.count }} terms{% if year.is_current %} · Current{% endif %}</span></div>{% empty %}<p>No academic years configured.</p>{% endfor %}</section>
-  <section class="card"><h2>Classes</h2>{% for class in classes %}<div class="admin-row"><strong>{{ class.name }}</strong><span>{{ class.academic_year.name }}</span></div>{% empty %}<p>No classes configured.</p>{% endfor %}</section>
+  <section class="card"><h2>Classes</h2>{% for class in classes %}<div class="admin-row"><a href="{% url 'class_roster' class.id %}"><strong>{{ class.name }}</strong></a><span>{{ class.academic_year.name }}</span></div>{% empty %}<p>No classes configured.</p>{% endfor %}</section>
   <section class="card"><h2>Subject offerings</h2>{% for offering in offerings %}<div class="admin-row"><strong>{{ offering.subject.name }}</strong><span>{{ offering.school_class.name }} · {{ offering.term.name }}</span></div>{% empty %}<p>No offerings configured.</p>{% endfor %}</section>
   <section class="card"><h2>Teacher assignments</h2>{% for item in assignments %}<div class="admin-row"><strong>{{ item.teacher.user.get_full_name|default:item.teacher.user.username }}</strong><span>{{ item.offering.subject.name }}</span></div>{% empty %}<p>No teachers assigned.</p>{% endfor %}</section>
 </div>

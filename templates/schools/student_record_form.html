@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block title %}Edit student | Nyansa{% endblock %}
+{% block content %}
+<section class="form-card"><p class="eyebrow">Student record</p><h1>Edit {{ membership.user.get_full_name|default:membership.user.username }}</h1><form method="post">{% csrf_token %}{{ form.as_p }}<input type="hidden" name="return_class" value="{{ request.GET.class }}"><button class="btn" type="submit">Save student</button></form></section>
+{% endblock %}
