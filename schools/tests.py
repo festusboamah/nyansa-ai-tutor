@@ -88,6 +88,7 @@ class SchoolOnboardingTests(TestCase):
             "step": "profile", "name": self.school.name, "address": "Accra",
             "phone": "0200000000", "email": "setup@example.com", "timezone": "Africa/Accra",
             "student_access_mode": School.StudentAccessMode.STAFF_MANAGED,
+            "stream_structure": School.StreamStructure.SINGLE,
         }, secure=True)
         self.assertRedirects(
             response, f"{reverse('school_onboarding')}?step=year", fetch_redirect_response=False
@@ -226,6 +227,45 @@ class SchoolOnboardingTests(TestCase):
         response = self.client.get(f"{reverse('school_onboarding')}?step=assignment", secure=True)
         self.assertContains(response, "JHS 2 — Mathematics — First Term")
         self.assertContains(response, "Lead teacher for this subject")
+
+    def test_double_stream_jhs_generator_creates_a_and_b_classes(self):
+        self.school.offers_primary = False
+        self.school.offers_jhs = True
+        self.school.stream_structure = School.StreamStructure.DOUBLE
+        self.school.save(update_fields=["offers_primary", "offers_jhs", "stream_structure"])
+        year = AcademicYear.objects.create(
+            school=self.school, name="2032/2033", start_date="2032-09-01",
+            end_date="2033-07-31", is_current=True,
+        )
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "class", "action": "generate_classes",
+        }, secure=True)
+        self.assertRedirects(
+            response, f"{reverse('school_onboarding')}?step=subject", fetch_redirect_response=False
+        )
+        self.assertQuerySetEqual(
+            SchoolClass.objects.filter(school=self.school, academic_year=year).order_by("name").values_list("name", flat=True),
+            ["JHS 1A", "JHS 1B", "JHS 2A", "JHS 2B", "JHS 3A", "JHS 3B"],
+        )
+
+    def test_single_stream_all_levels_generator_creates_eleven_classes(self):
+        self.school.offers_kg = True
+        self.school.offers_primary = True
+        self.school.offers_jhs = True
+        self.school.stream_structure = School.StreamStructure.SINGLE
+        self.school.save(update_fields=["offers_kg", "offers_primary", "offers_jhs", "stream_structure"])
+        year = AcademicYear.objects.create(
+            school=self.school, name="2033/2034", start_date="2033-09-01",
+            end_date="2034-07-31", is_current=True,
+        )
+        self.client.post(reverse("school_onboarding"), {
+            "step": "class", "action": "generate_classes",
+        }, secure=True)
+        classes = SchoolClass.objects.filter(school=self.school, academic_year=year)
+        self.assertEqual(classes.count(), 11)
+        self.assertTrue(classes.filter(name="KG 1").exists())
+        self.assertTrue(classes.filter(name="Basic 6").exists())
+        self.assertTrue(classes.filter(name="JHS 3").exists())
 
     def test_curriculum_generator_creates_jhs_subjects_and_term_offerings(self):
         self.school.offers_primary = False

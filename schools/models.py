@@ -15,6 +15,10 @@ class School(models.Model):
         PORTAL = "PORTAL", "Student accounts and online learning"
         HYBRID = "HYBRID", "Hybrid"
 
+    class StreamStructure(models.TextChoices):
+        SINGLE = "SINGLE", "Single stream"
+        DOUBLE = "DOUBLE", "Double stream (A and B)"
+
     class Status(models.TextChoices):
         ACTIVE = "ACTIVE", "Active"
         SUSPENDED = "SUSPENDED", "Suspended"
@@ -43,6 +47,9 @@ class School(models.Model):
     offers_kg = models.BooleanField(default=False)
     offers_primary = models.BooleanField(default=True)
     offers_jhs = models.BooleanField(default=False)
+    stream_structure = models.CharField(
+        max_length=8, choices=StreamStructure.choices, default=StreamStructure.SINGLE
+    )
     logo = models.FileField(upload_to="schools/logos/", blank=True)
     official_stamp = models.FileField(upload_to="schools/stamps/", blank=True)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE)

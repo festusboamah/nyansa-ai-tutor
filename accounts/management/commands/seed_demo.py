@@ -49,6 +49,7 @@ class Command(BaseCommand):
                 "offers_kg": True,
                 "offers_primary": True,
                 "offers_jhs": True,
+                "stream_structure": School.StreamStructure.SINGLE,
             },
         )
 

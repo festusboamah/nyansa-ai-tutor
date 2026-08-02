@@ -3,6 +3,7 @@ import re
 from django.db import transaction
 
 from academics.models import SubjectOffering, Term
+from academics.models import AcademicYear, SchoolClass
 from courses.models import Subject
 
 
@@ -19,6 +20,40 @@ JHS_SUBJECTS = (
     "Religious and Moral Education", "Physical and Health Education",
     "Creative Arts and Design", "Career Technology", "Ghanaian Language", "French",
 )
+
+LEVEL_CLASS_NAMES = {
+    "kg": ("KG 1", "KG 2"),
+    "primary": tuple(f"Basic {level}" for level in range(1, 7)),
+    "jhs": tuple(f"JHS {level}" for level in range(1, 4)),
+}
+
+
+@transaction.atomic
+def generate_school_classes(*, school):
+    academic_year = AcademicYear.objects.filter(school=school, is_current=True).first()
+    if academic_year is None:
+        academic_year = AcademicYear.objects.filter(school=school).order_by("-start_date").first()
+    if academic_year is None:
+        return None, 0
+    selected_phases = []
+    if school.offers_kg:
+        selected_phases.append("kg")
+    if school.offers_primary:
+        selected_phases.append("primary")
+    if school.offers_jhs:
+        selected_phases.append("jhs")
+    suffixes = ("A", "B") if school.stream_structure == school.StreamStructure.DOUBLE else ("",)
+    created_count = 0
+    for phase in selected_phases:
+        for base_name in LEVEL_CLASS_NAMES[phase]:
+            for suffix in suffixes:
+                _, created = SchoolClass.objects.get_or_create(
+                    school=school,
+                    academic_year=academic_year,
+                    name=f"{base_name}{suffix}",
+                )
+                created_count += int(created)
+    return academic_year, created_count
 
 
 def class_phase(class_name):

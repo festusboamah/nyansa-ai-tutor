@@ -12,7 +12,7 @@ from courses.models import Subject
 from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, StudentRosterUploadForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
 from .models import SchoolInvitation, SchoolMembership
 from .roster_import import import_student_roster, parse_student_roster
-from .curriculum import generate_ghana_curriculum
+from .curriculum import generate_ghana_curriculum, generate_school_classes
 from .services import accept_invitation, create_invitation, has_school_role
 
 
@@ -115,6 +115,17 @@ def school_onboarding(request):
             f"Curriculum ready: {created_subjects} subject(s) and {created_offerings} class-term offering(s) created.",
         )
         return redirect(f"{reverse('school_onboarding')}?step=assignment")
+
+    if request.method == "POST" and request.POST.get("action") == "generate_classes":
+        academic_year, created_count = generate_school_classes(school=request.school)
+        if academic_year is None:
+            messages.error(request, "Create an academic year before generating classes.")
+            return redirect(f"{reverse('school_onboarding')}?step=year")
+        messages.success(
+            request,
+            f"{created_count} class(es) created for {academic_year.name}. Existing classes were preserved.",
+        )
+        return redirect(f"{reverse('school_onboarding')}?step=subject")
 
     completed = sum(state.values())
     display_steps = [
