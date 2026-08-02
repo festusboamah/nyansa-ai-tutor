@@ -1449,3 +1449,5 @@ h2 {
 .setup-form-fields p { display: grid; gap: .35rem; margin-bottom: 1rem; }
 .setup-form-fields input, .setup-form-fields select, .setup-form-fields textarea { width: 100%; padding: .75rem; border: 1px solid #cdd8e7; border-radius: 8px; }
 @media (max-width: 760px) { .onboarding-layout { grid-template-columns: 1fr; } .onboarding-heading { align-items: start; } }
+.setup-complete { display: grid; justify-items: start; gap: .8rem; padding: 1rem 0; }
+.setup-complete > span { width: 3.5rem; height: 3.5rem; display: grid; place-items: center; border-radius: 50%; background: #dcfce7; color: #15803d; font-size: 1.8rem; font-weight: 800; }

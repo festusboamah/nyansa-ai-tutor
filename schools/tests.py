@@ -78,6 +78,16 @@ class SchoolOnboardingTests(TestCase):
         self.assertEqual(response.status_code, 302)
         subject = Subject.objects.get(name="Integrated Science")
         self.assertEqual(subject.school, self.school)
+        self.assertIn("?step=offering", response.url)
+
+    def test_profile_save_advances_to_academic_year(self):
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "profile", "name": self.school.name, "address": "Accra",
+            "phone": "0200000000", "email": "setup@example.com", "timezone": "Africa/Accra",
+        }, secure=True)
+        self.assertRedirects(
+            response, f"{reverse('school_onboarding')}?step=year", fetch_redirect_response=False
+        )
 
     def test_enrollment_step_rejects_student_from_another_school(self):
         year = AcademicYear.objects.create(

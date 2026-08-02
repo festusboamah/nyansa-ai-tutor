@@ -77,16 +77,39 @@ def _onboarding_state(school):
 
 
 def _next_onboarding_step(state):
-    return next((key for key, _ in ONBOARDING_STEPS if not state[key]), "profile")
+    return next((key for key, _ in ONBOARDING_STEPS if not state[key]), "complete")
+
+
+def _step_after(current_step, state):
+    """Advance in wizard order, keeping multi-entry people setup open until ready."""
+    if current_step == "people" and not state["people"]:
+        return "people"
+    keys = [key for key, _ in ONBOARDING_STEPS]
+    index = keys.index(current_step)
+    return keys[index + 1] if index + 1 < len(keys) else "complete"
 
 
 @admin_required
 def school_onboarding(request):
     state = _onboarding_state(request.school)
-    step_keys = {key for key, _ in ONBOARDING_STEPS}
+    step_keys = {key for key, _ in ONBOARDING_STEPS} | {"complete"}
     step = request.POST.get("step") or request.GET.get("step") or _next_onboarding_step(state)
     if step not in step_keys:
         raise Http404
+
+    completed = sum(state.values())
+    display_steps = [
+        {"key": key, "label": label, "complete": state[key]}
+        for key, label in ONBOARDING_STEPS
+    ]
+    if step == "complete":
+        return render(request, "schools/onboarding.html", {
+            "steps": display_steps,
+            "state": state,
+            "current_step": step,
+            "completed": completed,
+            "progress_percent": round(completed / len(ONBOARDING_STEPS) * 100),
+        })
 
     form_classes = {
         "profile": SchoolProfileForm,
@@ -130,13 +153,8 @@ def school_onboarding(request):
             obj.save()
         messages.success(request, f"{dict(ONBOARDING_STEPS)[step]} saved. Continue with the next setup step.")
         updated_state = _onboarding_state(request.school)
-        return redirect(f"{reverse('school_onboarding')}?step={_next_onboarding_step(updated_state)}")
+        return redirect(f"{reverse('school_onboarding')}?step={_step_after(step, updated_state)}")
 
-    completed = sum(state.values())
-    display_steps = [
-        {"key": key, "label": label, "complete": state[key]}
-        for key, label in ONBOARDING_STEPS
-    ]
     return render(request, "schools/onboarding.html", {
         "form": form,
         "steps": display_steps,

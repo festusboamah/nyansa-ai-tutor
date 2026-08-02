@@ -16,6 +16,15 @@
       {% endfor %}
     </nav>
     <section class="setup-form card">
+      {% if current_step == "complete" %}
+      <div class="setup-complete">
+        <span aria-hidden="true">&#10003;</span>
+        <p class="eyebrow">Setup complete</p>
+        <h2>Your school workspace is ready</h2>
+        <p>All nine setup areas have records. You can revisit any step from the menu whenever school information changes.</p>
+        <a href="{% url 'school_admin_dashboard' %}" class="btn-small">Go to school overview</a>
+      </div>
+      {% else %}
       <p class="eyebrow">Step {{ current_label }}</p><h2>{{ current_label }}</h2>
       {% if current_step == "people" %}<p>Invite at least one teacher and one student. This step remains open until both roles have been added.</p>{% endif %}
       {% if current_step == "offering" %}<p>Connect a subject to a class and term.</p>{% endif %}
@@ -25,6 +34,7 @@
         {{ form.as_p }}
         <button type="submit" class="btn-small">Save and continue</button>
       </form>
+      {% endif %}
     </section>
   </div>
 </section>
