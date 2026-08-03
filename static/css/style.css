@@ -1409,6 +1409,8 @@ h2 {
 .notification-badge { min-width: 1.35rem; height: 1.35rem; padding: 0 .3rem; border-radius: 999px; display: inline-grid; place-items: center; background: #e11d48; color: white; font-size: .72rem; font-weight: 800; }
 .notification-center { max-width: 1000px; margin: 0 auto; padding: 3.5rem 1.25rem; }
 .notification-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+.notification-heading form { flex: 0 0 auto; }
+.notification-heading button { min-width: 165px; white-space: nowrap; }
 .notification-list { display: grid; gap: .75rem; }
 .notification-item { display: grid; grid-template-columns: .75rem 1fr; gap: .9rem; padding: 1.15rem; border: 1px solid #dce5f1; border-radius: 14px; background: white; color: #18243a; text-decoration: none; box-shadow: 0 8px 25px rgba(28, 48, 78, .05); }
 .notification-item.unread { border-color: #8bc8ff; background: #f3f9ff; }
@@ -1427,6 +1429,10 @@ h2 {
 .notification-filters label { display: grid; gap: .3rem; font-weight: 700; color: #273650; }
 .notification-filters select { min-width: 190px; padding: .65rem; border: 1px solid #cdd8e7; border-radius: 8px; background: white; }
 .notification-filters .notification-checkbox { display: flex; align-items: center; gap: .45rem; padding-bottom: .65rem; }
+@media (max-width: 620px) {
+    .notification-heading { align-items: flex-start; flex-direction: column; }
+    .notification-heading button { width: 100%; }
+}
 .pending-work { margin: 1.25rem 0; padding: 1.25rem; border-radius: 14px; background: #12213a; color: white; }
 .pending-work-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: 1rem; }
 .pending-work-grid a { display: grid; padding: 1rem; border-radius: 10px; background: rgba(255,255,255,.1); color: white; text-decoration: none; }
