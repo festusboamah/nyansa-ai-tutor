@@ -195,6 +195,12 @@ class SubjectOfferingForm(SchoolScopedFormMixin, forms.ModelForm):
 
 
 class TeacherAssignmentForm(SchoolScopedFormMixin, forms.ModelForm):
+    apply_all_terms = forms.BooleanField(
+        required=False,
+        label="Assign across all terms",
+        help_text="Assign this teacher to the same class and subject for every configured term in the academic year.",
+    )
+
     class Meta:
         model = TeacherAssignment
         fields = ["offering", "teacher", "is_lead"]

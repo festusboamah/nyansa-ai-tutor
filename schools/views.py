@@ -245,7 +245,119 @@ def create_subject_offering(request):
 
 @admin_required
 def create_teacher_assignment(request):
-    return _create(request, TeacherAssignmentForm, "Assign teacher", "Teacher assigned.", lambda obj, school: None)
+    return redirect("teacher_assignment_management")
+
+
+@admin_required
+@transaction.atomic
+def teacher_assignment_management(request):
+    form = TeacherAssignmentForm(request.POST or None, school=request.school)
+    if request.method == "POST" and request.POST.get("action") == "assign" and form.is_valid():
+        selected = form.cleaned_data["offering"]
+        offerings = SubjectOffering.objects.filter(pk=selected.pk)
+        if form.cleaned_data["apply_all_terms"]:
+            offerings = SubjectOffering.objects.filter(
+                school=request.school,
+                school_class=selected.school_class,
+                subject=selected.subject,
+                term__academic_year=selected.term.academic_year,
+            )
+        created_count = 0
+        for offering in offerings:
+            if form.cleaned_data["is_lead"]:
+                TeacherAssignment.objects.filter(offering=offering, is_lead=True).update(is_lead=False)
+            _assignment, created = TeacherAssignment.objects.get_or_create(
+                offering=offering,
+                teacher=form.cleaned_data["teacher"],
+                defaults={"is_lead": form.cleaned_data["is_lead"]},
+            )
+            created_count += int(created)
+        if created_count:
+            messages.success(request, f"Teacher assigned to {created_count} offering(s).")
+        else:
+            messages.info(request, "That teacher is already assigned to the selected offering(s).")
+        return redirect("teacher_assignment_management")
+
+    offerings = SubjectOffering.objects.filter(school=request.school).select_related(
+        "school_class__academic_year", "subject", "term__academic_year"
+    )
+    filters = {
+        "year": request.GET.get("year", ""), "term": request.GET.get("term", ""),
+        "class": request.GET.get("class", ""), "subject": request.GET.get("subject", ""),
+        "teacher": request.GET.get("teacher", ""),
+    }
+    assignments = TeacherAssignment.objects.filter(offering__school=request.school).select_related(
+        "teacher__user", "offering__school_class__academic_year", "offering__subject", "offering__term"
+    )
+    for key, lookup in {
+        "year": "offering__term__academic_year_id", "term": "offering__term_id",
+        "class": "offering__school_class_id", "subject": "offering__subject_id", "teacher": "teacher_id",
+    }.items():
+        if filters[key].isdigit():
+            assignments = assignments.filter(**{lookup: filters[key]})
+    assignments = assignments.order_by(
+        "offering__school_class__name", "offering__subject__name", "offering__term__order", "teacher__user__last_name"
+    )
+    teachers = SchoolMembership.objects.filter(
+        school=request.school, role=SchoolMembership.Role.TEACHER, status=SchoolMembership.Status.ACTIVE
+    ).select_related("user")
+    unassigned = offerings.filter(teacher_assignments__isnull=True).order_by(
+        "school_class__name", "subject__name", "term__order"
+    )
+    return render(request, "schools/teacher_assignments.html", {
+        "form": form, "assignments": assignments, "unassigned": unassigned[:20],
+        "unassigned_count": unassigned.count(), "filters": filters, "teachers": teachers,
+        "years": AcademicYear.objects.filter(school=request.school),
+        "terms": Term.objects.filter(academic_year__school=request.school).select_related("academic_year"),
+        "classes": SchoolClass.objects.filter(school=request.school).select_related("academic_year"),
+        "subjects": Subject.objects.filter(school=request.school),
+    })
+
+
+@admin_required
+@transaction.atomic
+def update_teacher_assignment(request, assignment_id):
+    if request.method != "POST":
+        return redirect("teacher_assignment_management")
+    assignment = TeacherAssignment.objects.filter(
+        pk=assignment_id, offering__school=request.school
+    ).select_related("offering", "teacher").first()
+    teacher = SchoolMembership.objects.filter(
+        pk=request.POST.get("teacher"), school=request.school,
+        role=SchoolMembership.Role.TEACHER, status=SchoolMembership.Status.ACTIVE,
+    ).first()
+    if not assignment or not teacher:
+        raise Http404
+    is_lead = request.POST.get("is_lead") == "on"
+    if is_lead:
+        TeacherAssignment.objects.filter(offering=assignment.offering, is_lead=True).exclude(pk=assignment.pk).update(is_lead=False)
+    if assignment.teacher_id != teacher.id:
+        offering = assignment.offering
+        assignment.delete()
+        replacement, created = TeacherAssignment.objects.get_or_create(
+            offering=offering, teacher=teacher, defaults={"is_lead": is_lead}
+        )
+        if not created and replacement.is_lead != is_lead:
+            replacement.is_lead = is_lead
+            replacement.save(update_fields=["is_lead"])
+        messages.success(request, "Teacher assignment replaced.")
+    else:
+        assignment.is_lead = is_lead
+        assignment.save(update_fields=["is_lead"])
+        messages.success(request, "Teacher assignment updated.")
+    return redirect("teacher_assignment_management")
+
+
+@admin_required
+def delete_teacher_assignment(request, assignment_id):
+    if request.method != "POST":
+        return redirect("teacher_assignment_management")
+    assignment = TeacherAssignment.objects.filter(pk=assignment_id, offering__school=request.school).first()
+    if not assignment:
+        raise Http404
+    assignment.delete()
+    messages.success(request, "Teacher assignment removed.")
+    return redirect("teacher_assignment_management")
 
 
 @admin_required

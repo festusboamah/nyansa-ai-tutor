@@ -2,7 +2,9 @@ from datetime import date
 from django.test import TestCase
 from django.urls import reverse
 from accounts.models import User
-from academics.models import AcademicYear, ClassEnrollment, SchoolClass
+from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
+from communications.models import Notification
+from courses.models import Subject
 from .forms import TermForm
 from .models import School, SchoolMembership, StudentProfile
 from .models import SchoolInvitation
@@ -29,7 +31,7 @@ class SchoolAdminViewTests(TestCase):
         self.client.force_login(self.admin_user)
         response = self.client.get(reverse("school_admin_dashboard"), secure=True)
         self.assertContains(response, "Teacher Assignments")
-        self.assertContains(response, reverse("create_teacher_assignment"))
+        self.assertContains(response, reverse("teacher_assignment_management"))
 
     def test_student_cannot_open_admin_dashboard(self):
         self.client.force_login(self.student)
@@ -163,3 +165,47 @@ class SchoolAdminViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "text/csv")
         self.assertIn(b"ST-001", response.content)
+
+    def _assignment_setup(self):
+        year = AcademicYear.objects.create(
+            school=self.school, name="2026/2027", start_date=date(2026, 9, 1), end_date=date(2027, 7, 31)
+        )
+        school_class = SchoolClass.objects.create(school=self.school, academic_year=year, name="JHS 1")
+        subject = Subject.objects.create(school=self.school, name="Mathematics")
+        offerings = []
+        for order, name, start, end in [
+            (1, "First Term", date(2026, 9, 1), date(2026, 12, 15)),
+            (2, "Second Term", date(2027, 1, 5), date(2027, 4, 15)),
+            (3, "Third Term", date(2027, 5, 1), date(2027, 7, 20)),
+        ]:
+            term = Term.objects.create(academic_year=year, name=name, order=order, start_date=start, end_date=end)
+            offerings.append(SubjectOffering.objects.create(
+                school=self.school, school_class=school_class, subject=subject, term=term
+            ))
+        teacher_user = User.objects.create_user(username="assignment-teacher", password="test-password")
+        teacher = SchoolMembership.objects.create(
+            school=self.school, user=teacher_user, role=SchoolMembership.Role.TEACHER
+        )
+        return offerings, teacher
+
+    def test_admin_can_bulk_assign_teacher_across_all_terms(self):
+        offerings, teacher = self._assignment_setup()
+        self.client.force_login(self.admin_user)
+        response = self.client.post(reverse("teacher_assignment_management"), {
+            "action": "assign", "offering": offerings[0].id, "teacher": teacher.id,
+            "is_lead": "on", "apply_all_terms": "on",
+        }, secure=True)
+        self.assertRedirects(response, reverse("teacher_assignment_management"), fetch_redirect_response=False)
+        self.assertEqual(TeacherAssignment.objects.filter(teacher=teacher, is_lead=True).count(), 3)
+        self.assertEqual(Notification.objects.filter(recipient=teacher, kind="STAFF_ASSIGNMENT").count(), 3)
+
+    def test_assignment_management_filters_and_removes_school_scoped_assignment(self):
+        offerings, teacher = self._assignment_setup()
+        assignment = TeacherAssignment.objects.create(offering=offerings[0], teacher=teacher)
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse("teacher_assignment_management"), {"teacher": teacher.id}, secure=True)
+        self.assertContains(response, "Mathematics")
+        removed = self.client.post(reverse("delete_teacher_assignment", args=[assignment.id]), secure=True)
+        self.assertRedirects(removed, reverse("teacher_assignment_management"), fetch_redirect_response=False)
+        self.assertFalse(TeacherAssignment.objects.filter(pk=assignment.id).exists())
+        self.assertTrue(Notification.objects.filter(recipient=teacher, title="Subject assignment removed").exists())

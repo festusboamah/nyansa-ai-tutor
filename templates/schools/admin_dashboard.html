@@ -11,7 +11,7 @@
   <a class="btn-small" href="{% url 'create_term' %}">Add term</a>
   <a class="btn-small" href="{% url 'create_school_class' %}">Add class</a>
   <a class="btn-small" href="{% url 'create_subject_offering' %}">Add offering</a>
-  <a class="btn-small" href="{% url 'create_teacher_assignment' %}">Assign teacher</a>
+  <a class="btn-small" href="{% url 'teacher_assignment_management' %}">Manage teacher assignments</a>
 </div>
 <div class="admin-grid">
   <section class="card"><h2>Academic years</h2>{% for year in years %}<div class="admin-row"><strong>{{ year.name }}</strong><span>{{ year.terms.count }} terms{% if year.is_current %} · Current{% endif %}</span></div>{% empty %}<p>No academic years configured.</p>{% endfor %}</section>
