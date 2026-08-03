@@ -79,34 +79,38 @@ class Command(BaseCommand):
 
         current_year = date.today().year
         demo_year_name = f"{current_year}/{current_year + 1} Demo"
-        has_administrator_current_year = AcademicYear.objects.filter(
-            school=school, is_current=True
-        ).exclude(name=demo_year_name).exists()
-        academic_year, _ = AcademicYear.objects.update_or_create(
-            school=school,
-            name=demo_year_name,
-            defaults={
-                "start_date": date(current_year, 1, 1),
-                "end_date": date(current_year, 12, 31),
-                # Demo seeding must never override a year selected by the administrator.
-                "is_current": not has_administrator_current_year,
-            },
-        )
-        term, _ = Term.objects.update_or_create(
-            academic_year=academic_year,
-            name="Demo Term",
-            defaults={
-                "order": 1,
-                "start_date": date(current_year, 1, 1),
-                "end_date": date(current_year, 12, 31),
-            },
-        )
-        school_class, _ = SchoolClass.objects.update_or_create(
-            school=school,
-            academic_year=academic_year,
-            name="Demo Class",
-            defaults={"capacity": 30},
-        )
+        academic_year = AcademicYear.objects.filter(school=school, is_current=True).first()
+        if not academic_year:
+            academic_year, _ = AcademicYear.objects.update_or_create(
+                school=school,
+                name=demo_year_name,
+                defaults={
+                    "start_date": date(current_year, 1, 1),
+                    "end_date": date(current_year, 12, 31),
+                    "is_current": True,
+                },
+            )
+        term = Term.objects.filter(academic_year=academic_year).exclude(name="Demo Term").order_by("order").first()
+        if not term:
+            term, _ = Term.objects.update_or_create(
+                academic_year=academic_year,
+                name="Demo Term",
+                defaults={
+                    "order": 1,
+                    "start_date": academic_year.start_date,
+                    "end_date": academic_year.end_date,
+                },
+            )
+        school_class = SchoolClass.objects.filter(
+            school=school, academic_year=academic_year
+        ).exclude(name="Demo Class").order_by("name").first()
+        if not school_class:
+            school_class, _ = SchoolClass.objects.update_or_create(
+                school=school,
+                academic_year=academic_year,
+                name="Demo Class",
+                defaults={"capacity": 30},
+            )
         def demo_member(username, first_name, last_name, role, identifier, email=""):
             member_user, _ = user_model.objects.update_or_create(
                 username=username,
@@ -238,7 +242,7 @@ class Command(BaseCommand):
             policy=policy, student=students[0], school_class=school_class, term=term,
             defaults={"school": school, "observed_value": Decimal("66.67"),
                       "evidence": {"source": "Submitted attendance register", "period": term.name,
-                                   "rule": "Attendance below 80%"}, "status": RiskSignal.Status.OPEN},
+                      "rule": "Attendance below 80%"}, "status": RiskSignal.Status.OPEN},
         )
 
         self.stdout.write(self.style.SUCCESS(

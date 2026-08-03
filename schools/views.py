@@ -30,12 +30,18 @@ def admin_required(view):
 @admin_required
 def school_admin_dashboard(request):
     school = request.school
+    classes = SchoolClass.objects.filter(school=school)
+    if classes.exclude(name="Demo Class").exists():
+        classes = classes.exclude(name="Demo Class")
+    offerings = SubjectOffering.objects.filter(school=school)
+    if offerings.exclude(school_class__name="Demo Class", term__name="Demo Term").exists():
+        offerings = offerings.exclude(models.Q(school_class__name="Demo Class") | models.Q(term__name="Demo Term"))
     return render(request, "schools/admin_dashboard.html", {
         "school": school,
         "years": AcademicYear.objects.filter(school=school).prefetch_related("terms"),
-        "classes": SchoolClass.objects.filter(school=school).select_related("academic_year", "class_teacher__user"),
-        "offerings": SubjectOffering.objects.filter(school=school).select_related("school_class", "subject", "term"),
-        "assignments": TeacherAssignment.objects.filter(offering__school=school).select_related("teacher__user", "offering__subject"),
+        "classes": classes.select_related("academic_year", "class_teacher__user"),
+        "offerings": offerings.select_related("school_class", "subject", "term"),
+        "assignments": TeacherAssignment.objects.filter(offering__in=offerings).select_related("teacher__user", "offering__subject"),
         "member_count": SchoolMembership.objects.filter(school=school).count(),
     })
 
@@ -278,7 +284,10 @@ def teacher_assignment_management(request):
             messages.info(request, "That teacher is already assigned to the selected offering(s).")
         return redirect("teacher_assignment_management")
 
-    offerings = SubjectOffering.objects.filter(school=request.school).select_related(
+    offerings = SubjectOffering.objects.filter(school=request.school)
+    if offerings.exclude(school_class__name="Demo Class", term__name="Demo Term").exists():
+        offerings = offerings.exclude(models.Q(school_class__name="Demo Class") | models.Q(term__name="Demo Term"))
+    offerings = offerings.select_related(
         "school_class__academic_year", "subject", "term__academic_year"
     )
     filters = {
@@ -286,7 +295,7 @@ def teacher_assignment_management(request):
         "class": request.GET.get("class", ""), "subject": request.GET.get("subject", ""),
         "teacher": request.GET.get("teacher", ""),
     }
-    assignments = TeacherAssignment.objects.filter(offering__school=request.school).select_related(
+    assignments = TeacherAssignment.objects.filter(offering__in=offerings).select_related(
         "teacher__user", "offering__school_class__academic_year", "offering__subject", "offering__term"
     )
     for key, lookup in {
@@ -308,8 +317,8 @@ def teacher_assignment_management(request):
         "form": form, "assignments": assignments, "unassigned": unassigned[:20],
         "unassigned_count": unassigned.count(), "filters": filters, "teachers": teachers,
         "years": AcademicYear.objects.filter(school=request.school),
-        "terms": Term.objects.filter(academic_year__school=request.school).select_related("academic_year"),
-        "classes": SchoolClass.objects.filter(school=request.school).select_related("academic_year"),
+        "terms": Term.objects.filter(academic_year__school=request.school).exclude(name="Demo Term").select_related("academic_year"),
+        "classes": SchoolClass.objects.filter(school=request.school).exclude(name="Demo Class").select_related("academic_year"),
         "subjects": Subject.objects.filter(school=request.school),
     })
 
@@ -362,10 +371,13 @@ def delete_teacher_assignment(request, assignment_id):
 
 @admin_required
 def people_directory(request):
+    classes = SchoolClass.objects.filter(school=request.school)
+    if classes.exclude(name="Demo Class").exists():
+        classes = classes.exclude(name="Demo Class")
     return render(request, "schools/people_directory.html", {
         "memberships": SchoolMembership.objects.filter(school=request.school).select_related("user"),
         "invitations": SchoolInvitation.objects.filter(school=request.school)[:25],
-        "classes": SchoolClass.objects.filter(school=request.school).select_related("academic_year").annotate(
+        "classes": classes.select_related("academic_year").annotate(
             active_student_count=models.Count(
                 "student_enrollments",
                 filter=models.Q(student_enrollments__status=ClassEnrollment.Status.ACTIVE),

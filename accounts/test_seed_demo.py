@@ -86,5 +86,34 @@ class SeedDemoCommandTests(TestCase):
 
         selected_year.refresh_from_db()
         self.assertTrue(selected_year.is_current)
-        demo_year = AcademicYear.objects.exclude(pk=selected_year.pk).get(school=school)
-        self.assertFalse(demo_year.is_current)
+        self.assertEqual(AcademicYear.objects.filter(school=school).count(), 1)
+
+    @override_settings(NYANSA_DEMO_MODE=True)
+    @patch.dict(
+        "os.environ",
+        {
+            "DEMO_ADMIN_USERNAME": "demo-admin",
+            "DEMO_ADMIN_PASSWORD": "safe-demo-password",
+            "DEMO_ADMIN_EMAIL": "demo@example.com",
+        },
+    )
+    def test_configured_class_and_term_receive_future_demo_seed_data(self):
+        call_command("seed_demo")
+        school = School.objects.get(slug="nyansa-demo-school")
+        year = AcademicYear.objects.get(school=school)
+        Term.objects.create(
+            academic_year=year, name="First Term", order=2,
+            start_date=year.start_date, end_date=year.end_date,
+        )
+        SchoolClass.objects.create(school=school, academic_year=year, name="JHS 1")
+
+        call_command("seed_demo")
+
+        self.assertTrue(SubjectOffering.objects.filter(
+            school_class__name="JHS 1", term__name="First Term"
+        ).exists())
+        self.client.force_login(get_user_model().objects.get(username="demo-admin"))
+        response = self.client.get("/schools/admin/teacher-assignments/", secure=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Demo Class")
+        self.assertNotContains(response, "Demo Term")

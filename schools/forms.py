@@ -1,4 +1,5 @@
 from django import forms
+from django.db import models
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from .models import School, SchoolMembership, StudentProfile
 from .models import SchoolInvitation
@@ -47,7 +48,10 @@ class StudentRosterUploadForm(forms.Form):
 
     def __init__(self, *args, school, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["school_class"].queryset = SchoolClass.objects.filter(school=school)
+        classes = SchoolClass.objects.filter(school=school)
+        if classes.exclude(name="Demo Class").exists():
+            classes = classes.exclude(name="Demo Class")
+        self.fields["school_class"].queryset = classes
 
     def clean_roster_file(self):
         roster_file = self.cleaned_data["roster_file"]
@@ -217,9 +221,12 @@ class TeacherAssignmentForm(SchoolScopedFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["offering"].queryset = SubjectOffering.objects.filter(
-            school=self.school
-        ).select_related("school_class", "subject", "term").order_by(
+        offerings = SubjectOffering.objects.filter(school=self.school)
+        if offerings.exclude(school_class__name="Demo Class", term__name="Demo Term").exists():
+            offerings = offerings.exclude(
+                models.Q(school_class__name="Demo Class") | models.Q(term__name="Demo Term")
+            )
+        self.fields["offering"].queryset = offerings.select_related("school_class", "subject", "term").order_by(
             "school_class__name", "subject__name", "term__order"
         )
         self.fields["teacher"].queryset = SchoolMembership.objects.filter(school=self.school, role=SchoolMembership.Role.TEACHER, status=SchoolMembership.Status.ACTIVE)
