@@ -18,6 +18,7 @@ from .services import (
     can_manage_class_attendance,
     correct_attendance,
     instructional_day_count,
+    instructional_dates,
     student_attendance_summary,
     submit_attendance,
 )
@@ -89,6 +90,7 @@ def attendance_dashboard(request):
 def class_attendance_summary(request, class_id, term_id):
     school_class, term = _manageable_class_term(request, class_id, term_id)
     through = min(date.today(), term.end_date)
+    valid_dates = instructional_dates(term, through=through)
     roster = ClassEnrollment.objects.filter(
         school_class=school_class, status=ClassEnrollment.Status.ACTIVE
     ).select_related("student__user")
@@ -104,7 +106,10 @@ def class_attendance_summary(request, class_id, term_id):
         "rows": rows,
         "days_open": instructional_day_count(term, through=through),
         "sessions": AttendanceSession.objects.filter(
-            school_class=school_class, term=term, status=AttendanceSession.Status.SUBMITTED
+            school_class=school_class,
+            term=term,
+            status=AttendanceSession.Status.SUBMITTED,
+            attendance_date__in=valid_dates,
         ).prefetch_related("records"),
         "today": date.today(),
     })

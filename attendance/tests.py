@@ -184,6 +184,36 @@ class AttendanceWorkflowTests(TestCase):
         self.assertEqual(summary["present"], 1)
         self.assertEqual(summary["percentage"], Decimal("20.00"))
 
+    def test_summary_ignores_legacy_weekend_registers(self):
+        valid_session = submit_attendance(
+            school_class=self.school_class,
+            term=self.term,
+            attendance_date=date(2026, 9, 7),
+            actor=self.teacher,
+            statuses=self._statuses(),
+        )
+        legacy_session = AttendanceSession.objects.create(
+            school=self.school,
+            school_class=self.school_class,
+            term=self.term,
+            attendance_date=date(2026, 9, 12),
+            status=AttendanceSession.Status.SUBMITTED,
+            submitted_by=self.teacher,
+        )
+        AttendanceRecord.objects.create(
+            session=legacy_session,
+            student=self.students[0],
+            status=AttendanceRecord.Status.PRESENT,
+            marked_by=self.teacher,
+        )
+
+        summary = student_attendance_summary(student=self.students[0], term=self.term)
+
+        self.assertEqual(valid_session.records.filter(student=self.students[0]).count(), 1)
+        self.assertEqual(summary["present"], 1)
+        self.assertEqual(summary["days_open"], 5)
+        self.assertEqual(summary["percentage"], Decimal("20.00"))
+
     def test_teacher_register_view_is_assignment_scoped(self):
         self.client.force_login(self.other_teacher_user)
         response = self.client.get(

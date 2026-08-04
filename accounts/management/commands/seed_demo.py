@@ -222,8 +222,15 @@ class Command(BaseCommand):
                 message="Synthetic lesson plan ready for administrator review.",
             )
 
-        for offset, record_status in enumerate(("PRESENT", "PRESENT", "ABSENT"), start=1):
-            attendance_date = date(current_year, 1, offset + 1)
+        attendance_dates = []
+        attendance_date = term.start_date
+        while attendance_date <= term.end_date and len(attendance_dates) < 3:
+            if attendance_date.weekday() < 5:
+                attendance_dates.append(attendance_date)
+            attendance_date += timedelta(days=1)
+        for attendance_date, record_status in zip(
+            attendance_dates, ("PRESENT", "PRESENT", "ABSENT")
+        ):
             session, _ = AttendanceSession.objects.update_or_create(
                 school_class=school_class, attendance_date=attendance_date,
                 defaults={"school": school, "term": term, "status": AttendanceSession.Status.SUBMITTED,

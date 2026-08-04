@@ -148,16 +148,21 @@ def correct_attendance(*, record, actor, new_status, reason):
 
 
 def student_attendance_summary(*, student, term, school_class=None, through=None):
-    days_open = instructional_day_count(term, through=through)
+    valid_dates = instructional_dates(term, through=through)
+    days_open = len(valid_dates)
     records = AttendanceRecord.objects.filter(
         student=student,
         session__term=term,
         session__status=AttendanceSession.Status.SUBMITTED,
+        session__attendance_date__in=valid_dates,
     )
     if school_class is not None:
         records = records.filter(session__school_class=school_class)
     counts = {status: records.filter(status=status).count() for status in AttendanceRecord.Status.values}
     percentage = None
     if days_open:
-        percentage = (Decimal(counts[AttendanceRecord.Status.PRESENT]) / days_open * 100).quantize(Decimal("0.01"))
+        percentage = min(
+            Decimal("100.00"),
+            (Decimal(counts[AttendanceRecord.Status.PRESENT]) / days_open * 100).quantize(Decimal("0.01")),
+        )
     return {"days_open": days_open, "present": counts["PRESENT"], "absent": counts["ABSENT"], "excused": counts["EXCUSED"], "percentage": percentage}
