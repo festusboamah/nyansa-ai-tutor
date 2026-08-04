@@ -136,6 +136,10 @@ def attendance_register(request, class_id, term_id):
             enrollment.student_id: request.POST.get(f"status_{enrollment.student_id}", "")
             for enrollment in roster
         }
+        reasons = {
+            enrollment.student_id: request.POST.get(f"reason_{enrollment.student_id}", "")
+            for enrollment in roster
+        }
         try:
             session = submit_attendance(
                 school_class=school_class,
@@ -143,6 +147,7 @@ def attendance_register(request, class_id, term_id):
                 attendance_date=attendance_date,
                 actor=request.school_membership,
                 statuses=statuses,
+                reasons=reasons,
             )
         except (ValidationError, PermissionDenied) as error:
             messages.error(request, str(error))
@@ -150,7 +155,17 @@ def attendance_register(request, class_id, term_id):
             messages.success(request, "Attendance register submitted.")
             return redirect("class_attendance_summary", class_id=school_class.pk, term_id=term.pk)
     records = {record.student_id: record for record in session.records.all()} if session else {}
-    rows = [{"student": item.student, "record": records.get(item.student_id)} for item in roster]
+    rows = [
+        {
+            "student": item.student,
+            "record": records.get(item.student_id),
+            "selected_status": request.POST.get(
+                f"status_{item.student_id}", AttendanceRecord.Status.PRESENT
+            ),
+            "entered_reason": request.POST.get(f"reason_{item.student_id}", ""),
+        }
+        for item in roster
+    ]
     return render(request, "attendance/register.html", {
         "school_class": school_class,
         "term": term,

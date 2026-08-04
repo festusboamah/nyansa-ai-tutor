@@ -111,6 +111,25 @@ class AttendanceWorkflowTests(TestCase):
                 statuses=self._statuses(),
             )
 
+    def test_register_saves_reasons_only_for_non_present_students(self):
+        session = submit_attendance(
+            school_class=self.school_class,
+            term=self.term,
+            attendance_date=date(2026, 9, 7),
+            actor=self.teacher,
+            statuses=self._statuses(second=AttendanceRecord.Status.EXCUSED),
+            reasons={
+                self.students[0].pk: "Should be cleared",
+                self.students[1].pk: "Medical appointment",
+            },
+        )
+
+        self.assertEqual(session.records.get(student=self.students[0]).reason, "")
+        self.assertEqual(
+            session.records.get(student=self.students[1]).reason,
+            "Medical appointment",
+        )
+
     def test_partial_register_is_rejected_without_writes(self):
         with self.assertRaisesMessage(ValidationError, "every active student"):
             submit_attendance(
@@ -221,6 +240,18 @@ class AttendanceWorkflowTests(TestCase):
             secure=True,
         )
         self.assertEqual(response.status_code, 404)
+
+    def test_register_shows_bulk_present_control_and_reason_fields(self):
+        self.client.force_login(self.teacher_user)
+        response = self.client.get(
+            reverse("attendance_register", args=[self.school_class.pk, self.term.pk]),
+            {"date": "2026-09-07"},
+            secure=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mark all present")
+        self.assertContains(response, f'name="reason_{self.students[0].pk}"')
 
     def test_admin_can_add_tenant_scoped_closure(self):
         self.client.force_login(self.admin_user)

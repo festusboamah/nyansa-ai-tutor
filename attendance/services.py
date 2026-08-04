@@ -57,7 +57,7 @@ def can_manage_class_attendance(actor, school_class, term):
 
 
 @transaction.atomic
-def submit_attendance(*, school_class, term, attendance_date, actor, statuses):
+def submit_attendance(*, school_class, term, attendance_date, actor, statuses, reasons=None):
     if not can_manage_class_attendance(actor, school_class, term):
         raise PermissionDenied("You are not assigned to manage attendance for this class.")
     if attendance_date not in set(instructional_dates(term)):
@@ -69,6 +69,10 @@ def submit_attendance(*, school_class, term, attendance_date, actor, statuses):
     ).select_related("student"))
     roster_ids = {enrollment.student_id for enrollment in roster}
     normalized = {int(student_id): status for student_id, status in statuses.items()}
+    normalized_reasons = {
+        int(student_id): str(reason).strip()[:300]
+        for student_id, reason in (reasons or {}).items()
+    }
     if set(normalized) != roster_ids:
         raise ValidationError("Attendance must include every active student exactly once.")
     if any(status not in AttendanceRecord.Status.values for status in normalized.values()):
@@ -96,6 +100,11 @@ def submit_attendance(*, school_class, term, attendance_date, actor, statuses):
             session=session,
             student=enrollment.student,
             status=normalized[enrollment.student_id],
+            reason=(
+                normalized_reasons.get(enrollment.student_id, "")
+                if normalized[enrollment.student_id] != AttendanceRecord.Status.PRESENT
+                else ""
+            ),
             marked_by=actor,
         )
         record.full_clean()

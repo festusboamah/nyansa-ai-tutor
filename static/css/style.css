@@ -1314,12 +1314,19 @@ h2 {
 .attendance-student { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.85rem 1rem; background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow); }
 .attendance-student small { display:block; color:var(--text-muted); }
 .attendance-options { display:flex; flex-wrap:wrap; gap:.35rem; }
+.attendance-entry { display:grid; justify-items:end; gap:.55rem; }
+.attendance-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:.75rem; margin:1rem 0; color:var(--text-muted); }
+.attendance-reason { display:flex; align-items:center; gap:.5rem; font-weight:700; }
+.attendance-reason input { width:min(320px, 45vw); padding:.55rem .7rem; border:1px solid var(--border); border-radius:7px; }
+.attendance-reason.is-hidden { display:none; }
+.attendance-record-result { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:.5rem; }
+.attendance-record-result small { max-width:360px; }
 .attendance-option { padding:.45rem .65rem; border-radius:999px; font-weight:700; font-size:.85rem; cursor:pointer; }
 .attendance-option input { margin-right:.3rem; }
 .attendance-present { background:#dcfce7; color:#166534; }
 .attendance-absent { background:#fee2e2; color:#991b1b; }
 .attendance-excused { background:#fef3c7; color:#92400e; }
-@media (max-width:650px) { .attendance-student { align-items:flex-start; flex-direction:column; } .attendance-options { width:100%; display:grid; grid-template-columns:repeat(3,1fr); } .attendance-option { text-align:center; } }
+@media (max-width:650px) { .attendance-student { align-items:flex-start; flex-direction:column; } .attendance-entry { width:100%; justify-items:stretch; } .attendance-options { width:100%; display:grid; grid-template-columns:repeat(3,1fr); } .attendance-option { text-align:center; } .attendance-reason { display:grid; } .attendance-reason input { width:100%; } }
 @media (max-width:650px) { .gradebook-actions { align-items:stretch; flex-direction:column; } .gradebook-actions .btn { width:100%; } }
 @media (max-width:650px) { .import-summary { grid-template-columns:1fr; } }
 .report-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.report-summary>div{background:#eef5ff;border-radius:12px;padding:16px}.report-summary span{display:block;color:#586579;font-size:.85rem}.report-summary strong{display:block;font-size:1.4rem;margin-top:4px}.report-status{display:inline-block;border-radius:999px;padding:4px 9px;font-size:.8rem;background:#e9edf2}.report-approved,.report-published{background:#dcf6e7;color:#126437}.report-pending{background:#fff0c7;color:#725000}.report-returned{background:#ffe1df;color:#8d251f}@media(max-width:700px){.report-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}

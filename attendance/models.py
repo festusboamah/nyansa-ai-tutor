@@ -115,6 +115,11 @@ class AttendanceRecord(models.Model):
         "schools.SchoolMembership", on_delete=models.PROTECT, related_name="attendance_records"
     )
     status = models.CharField(max_length=10, choices=Status.choices)
+    reason = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Optional explanation for an absence or excused absence.",
+    )
     marked_by = models.ForeignKey(
         "schools.SchoolMembership", on_delete=models.PROTECT, related_name="marked_attendance_records"
     )

@@ -1,12 +1,94 @@
 {% extends "base.html" %}
 {% block title %}{{ school_class.name }} Register - Nyansa{% endblock %}
 {% block content %}
-<div class="admin-heading"><div><p class="eyebrow">{{ term.name }}</p><h1>{{ school_class.name }} attendance</h1><p>Mark every active student for one instructional day.</p></div></div>
+<div class="admin-heading">
+  <div>
+    <p class="eyebrow">{{ term.name }}</p>
+    <h1>{{ school_class.name }} attendance</h1>
+    <p>Mark every active student for one instructional day.</p>
+  </div>
+</div>
 <div class="attendance-help"><strong>Excused absence:</strong> the learner is absent for an approved reason such as illness, bereavement, an official activity, or an authorised family emergency.</div>
-<form method="get" class="attendance-date-picker"><label for="attendance-date">Register date</label><input id="attendance-date" type="date" name="date" value="{{ attendance_date|date:'Y-m-d' }}" min="{{ term.start_date|date:'Y-m-d' }}" max="{{ term.end_date|date:'Y-m-d' }}"><button class="btn-small btn-secondary">Open date</button></form>
-{% if session.status == "SUBMITTED" %}<div class="alert alert-success">Submitted by {{ session.submitted_by.user.username }} on {{ session.submitted_at }}. Use correction links for changes.</div>{% endif %}
-<form method="post">{% csrf_token %}<input type="hidden" name="attendance_date" value="{{ attendance_date|date:'Y-m-d' }}"><div class="attendance-register">
-{% for row in rows %}<article class="attendance-student"><div><strong>{{ row.student.user.get_full_name|default:row.student.user.username }}</strong><small>{{ row.student.identifier|default:row.student.user.username }}</small></div>{% if session.status == "SUBMITTED" %}<div><span class="status-pill attendance-{{ row.record.status|lower }}">{{ row.record.get_status_display }}</span> <a href="{% url 'attendance_correct' row.record.id %}">Correct</a></div>{% else %}<div class="attendance-options">{% for value,label in status_choices %}<label class="attendance-option attendance-{{ value|lower }}"><input type="radio" name="status_{{ row.student.id }}" value="{{ value }}" {% if value == 'PRESENT' %}checked{% endif %}>{{ label }}</label>{% endfor %}</div>{% endif %}</article>{% empty %}<p>No active students are enrolled.</p>{% endfor %}
-</div>{% if not session and rows %}<div class="gradebook-actions"><button class="btn" type="submit">Submit register</button></div>{% endif %}</form>
+<form method="get" class="attendance-date-picker">
+  <label for="attendance-date">Register date</label>
+  <input id="attendance-date" type="date" name="date" value="{{ attendance_date|date:'Y-m-d' }}" min="{{ term.start_date|date:'Y-m-d' }}" max="{{ term.end_date|date:'Y-m-d' }}">
+  <button class="btn-small btn-secondary">Open date</button>
+</form>
+{% if session.status == "SUBMITTED" %}
+  <div class="alert alert-success">Submitted by {{ session.submitted_by.user.username }} on {{ session.submitted_at }}. Use correction links for changes.</div>
+{% endif %}
+<form method="post" id="attendance-register-form">
+  {% csrf_token %}
+  <input type="hidden" name="attendance_date" value="{{ attendance_date|date:'Y-m-d' }}">
+  {% if not session and rows %}
+    <div class="attendance-toolbar">
+      <button class="btn-small btn-secondary" type="button" id="mark-all-present">Mark all present</button>
+      <span>Use this first, then change only absent or excused learners.</span>
+    </div>
+  {% endif %}
+  <div class="attendance-register">
+    {% for row in rows %}
+      <article class="attendance-student">
+        <div class="attendance-student-name">
+          <strong>{{ row.student.user.get_full_name|default:row.student.user.username }}</strong>
+          <small>{{ row.student.identifier|default:row.student.user.username }}</small>
+        </div>
+        {% if session.status == "SUBMITTED" %}
+          <div class="attendance-record-result">
+            <span class="status-pill attendance-{{ row.record.status|lower }}">{{ row.record.get_status_display }}</span>
+            {% if row.record.reason %}<small>{{ row.record.reason }}</small>{% endif %}
+            <a href="{% url 'attendance_correct' row.record.id %}">Correct</a>
+          </div>
+        {% else %}
+          <div class="attendance-entry" data-attendance-entry>
+            <div class="attendance-options">
+              {% for value,label in status_choices %}
+                <label class="attendance-option attendance-{{ value|lower }}">
+                  <input type="radio" name="status_{{ row.student.id }}" value="{{ value }}" {% if row.selected_status == value %}checked{% endif %}>
+                  {{ label }}
+                </label>
+              {% endfor %}
+            </div>
+            <label class="attendance-reason{% if row.selected_status == 'PRESENT' %} is-hidden{% endif %}">
+              <span>Reason <small>(optional)</small></span>
+              <input type="text" name="reason_{{ row.student.id }}" maxlength="300" value="{{ row.entered_reason }}" placeholder="e.g. Sick, family emergency">
+            </label>
+          </div>
+        {% endif %}
+      </article>
+    {% empty %}
+      <p>No active students are enrolled.</p>
+    {% endfor %}
+  </div>
+  {% if not session and rows %}
+    <div class="gradebook-actions"><button class="btn" type="submit">Submit register</button></div>
+  {% endif %}
+</form>
 <p><a href="{% url 'class_attendance_summary' school_class.id term.id %}">&larr; Back to class summary</a></p>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const entries = document.querySelectorAll("[data-attendance-entry]");
+  function updateReason(entry) {
+    const selected = entry.querySelector('input[type="radio"]:checked');
+    const reason = entry.querySelector(".attendance-reason");
+    if (selected && reason) reason.classList.toggle("is-hidden", selected.value === "PRESENT");
+  }
+  entries.forEach(function (entry) {
+    entry.querySelectorAll('input[type="radio"]').forEach(function (radio) {
+      radio.addEventListener("change", function () { updateReason(entry); });
+    });
+    updateReason(entry);
+  });
+  const markAll = document.getElementById("mark-all-present");
+  if (markAll) markAll.addEventListener("click", function () {
+    entries.forEach(function (entry) {
+      const present = entry.querySelector('input[value="PRESENT"]');
+      if (present) present.checked = true;
+      const input = entry.querySelector('.attendance-reason input');
+      if (input) input.value = "";
+      updateReason(entry);
+    });
+  });
+});
+</script>
 {% endblock %}
