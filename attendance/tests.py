@@ -253,6 +253,36 @@ class AttendanceWorkflowTests(TestCase):
         self.assertContains(response, "Mark all present")
         self.assertContains(response, f'name="reason_{self.students[0].pk}"')
 
+    def test_assigned_teacher_can_download_class_attendance_csv(self):
+        submit_attendance(
+            school_class=self.school_class,
+            term=self.term,
+            attendance_date=date(2026, 9, 7),
+            actor=self.teacher,
+            statuses=self._statuses(second=AttendanceRecord.Status.ABSENT),
+        )
+        self.client.force_login(self.teacher_user)
+
+        response = self.client.get(
+            reverse("attendance_summary_csv", args=[self.school_class.pk, self.term.pk]),
+            secure=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertIn("attachment;", response["Content-Disposition"])
+        content = response.content.decode()
+        self.assertIn("Student ID,Student,Present,Absent,Excused,Days open,Attendance %", content)
+        self.assertIn("attendance-student-1", content)
+
+    def test_unassigned_teacher_cannot_download_attendance_csv(self):
+        self.client.force_login(self.other_teacher_user)
+        response = self.client.get(
+            reverse("attendance_summary_csv", args=[self.school_class.pk, self.term.pk]),
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 404)
+
     def test_admin_can_add_tenant_scoped_closure(self):
         self.client.force_login(self.admin_user)
         response = self.client.post(

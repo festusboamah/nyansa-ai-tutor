@@ -1,3 +1,4 @@
+import csv
 from datetime import date
 from functools import wraps
 
@@ -5,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Prefetch, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -70,6 +72,11 @@ def _manageable_class_term(request, class_id, term_id):
     return school_class, term
 
 
+def _csv_safe(value):
+    value = str(value)
+    return f"'{value}" if value.startswith(("=", "+", "-", "@")) else value
+
+
 @attendance_staff_required
 def attendance_dashboard(request):
     manageable = _manageable_classes(request)
@@ -100,19 +107,65 @@ def class_attendance_summary(request, class_id, term_id):
         )}
         for enrollment in roster
     ]
+    sessions = AttendanceSession.objects.filter(
+        school_class=school_class,
+        term=term,
+        status=AttendanceSession.Status.SUBMITTED,
+        attendance_date__in=valid_dates,
+    ).prefetch_related("records")
+    percentages = [
+        row["summary"]["percentage"]
+        for row in rows
+        if row["summary"]["percentage"] is not None
+    ]
     return render(request, "attendance/class_summary.html", {
         "school_class": school_class,
         "term": term,
         "rows": rows,
         "days_open": instructional_day_count(term, through=through),
-        "sessions": AttendanceSession.objects.filter(
-            school_class=school_class,
-            term=term,
-            status=AttendanceSession.Status.SUBMITTED,
-            attendance_date__in=valid_dates,
-        ).prefetch_related("records"),
+        "sessions": sessions,
+        "register_count": sessions.count(),
+        "average_attendance": sum(percentages) / len(percentages) if percentages else None,
         "today": date.today(),
     })
+
+
+@attendance_staff_required
+def attendance_summary_csv(request, class_id, term_id):
+    school_class, term = _manageable_class_term(request, class_id, term_id)
+    through = min(date.today(), term.end_date)
+    roster = ClassEnrollment.objects.filter(
+        school_class=school_class,
+        status=ClassEnrollment.Status.ACTIVE,
+    ).select_related("student__user")
+    response = HttpResponse(content_type="text/csv")
+    filename = f"{school_class.name}-{term.name}-attendance.csv".replace(" ", "-")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    writer = csv.writer(response)
+    writer.writerow(["School", _csv_safe(request.school.name)])
+    writer.writerow(["Class", _csv_safe(school_class.name)])
+    writer.writerow(["Term", _csv_safe(term.name)])
+    writer.writerow(["Through", through.isoformat()])
+    writer.writerow([])
+    writer.writerow(["Student ID", "Student", "Present", "Absent", "Excused", "Days open", "Attendance %"])
+    for enrollment in roster:
+        student = enrollment.student
+        summary = student_attendance_summary(
+            student=student,
+            term=term,
+            school_class=school_class,
+            through=through,
+        )
+        writer.writerow([
+            _csv_safe(student.identifier or student.user.username),
+            _csv_safe(student.user.get_full_name() or student.user.username),
+            summary["present"],
+            summary["absent"],
+            summary["excused"],
+            summary["days_open"],
+            summary["percentage"] if summary["percentage"] is not None else "",
+        ])
+    return response
 
 
 @attendance_staff_required

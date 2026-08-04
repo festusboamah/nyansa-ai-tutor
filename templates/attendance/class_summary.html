@@ -1,8 +1,42 @@
 {% extends "base.html" %}
 {% block title %}{{ school_class.name }} Attendance Summary - Nyansa{% endblock %}
 {% block content %}
-<div class="admin-heading"><div><p class="eyebrow">{{ term.name }} &middot; through {{ today }}</p><h1>{{ school_class.name }} attendance summary</h1><p>{{ days_open }} derived instructional day{{ days_open|pluralize }} through the displayed period.</p></div><a class="btn-small" href="{% url 'attendance_register' school_class.id term.id %}">Today's register</a></div>
-<div class="gradebook-table-wrap"><table class="student-table gradebook-table attendance-summary-table"><thead><tr><th>Student</th><th>Present</th><th>Absent</th><th>Excused</th><th>Days open</th><th>Attendance</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ row.student.user.get_full_name|default:row.student.user.username }}</td><td>{{ row.summary.present }}</td><td>{{ row.summary.absent }}</td><td>{{ row.summary.excused }}</td><td>{{ row.summary.days_open }}</td><td><strong>{% if row.summary.percentage != None %}{{ row.summary.percentage }}%{% else %}&mdash;{% endif %}</strong></td></tr>{% empty %}<tr><td colspan="6">No active students.</td></tr>{% endfor %}</tbody></table></div>
-<h2>Submitted registers</h2><div class="admin-grid">{% for session in sessions %}<article class="card"><h3>{{ session.attendance_date }}</h3><p>{{ session.records.count }} students &middot; {{ session.submitted_by.user.username }}</p><a href="{% url 'attendance_register' school_class.id term.id %}?date={{ session.attendance_date|date:'Y-m-d' }}">Open register</a></article>{% empty %}<p>No registers submitted for this term.</p>{% endfor %}</div>
-<p><a href="{% url 'attendance_dashboard' %}">&larr; Back to attendance</a></p>
+<div class="admin-heading attendance-summary-heading">
+  <div>
+    <p class="eyebrow">{{ term.name }} &middot; through {{ today }}</p>
+    <h1>{{ school_class.name }} attendance summary</h1>
+    <p>{{ days_open }} derived instructional day{{ days_open|pluralize }} through the displayed period.</p>
+  </div>
+  <div class="attendance-summary-actions">
+    <a class="btn-small btn-secondary" href="{% url 'attendance_summary_csv' school_class.id term.id %}">Download CSV</a>
+    <button class="btn-small btn-secondary" type="button" onclick="window.print()">Print</button>
+    <a class="btn-small" href="{% url 'attendance_register' school_class.id term.id %}">Today's register</a>
+  </div>
+</div>
+<div class="attendance-metrics">
+  <article><strong>{{ rows|length }}</strong><span>Active students</span></article>
+  <article><strong>{{ register_count }}</strong><span>Registers submitted</span></article>
+  <article><strong>{% if average_attendance != None %}{{ average_attendance|floatformat:2 }}%{% else %}&mdash;{% endif %}</strong><span>Class average</span></article>
+</div>
+<div class="gradebook-table-wrap">
+  <table class="student-table gradebook-table attendance-summary-table">
+    <thead><tr><th>Student</th><th>Present</th><th>Absent</th><th>Excused</th><th>Days open</th><th>Attendance</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+        <tr><td>{{ row.student.user.get_full_name|default:row.student.user.username }}</td><td>{{ row.summary.present }}</td><td>{{ row.summary.absent }}</td><td>{{ row.summary.excused }}</td><td>{{ row.summary.days_open }}</td><td><strong>{% if row.summary.percentage != None %}{{ row.summary.percentage }}%{% else %}&mdash;{% endif %}</strong></td></tr>
+      {% empty %}
+        <tr><td colspan="6">No active students.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<h2>Submitted registers</h2>
+<div class="admin-grid attendance-session-grid">
+  {% for session in sessions %}
+    <article class="card"><h3>{{ session.attendance_date }}</h3><p>{{ session.records.count }} students &middot; {{ session.submitted_by.user.username }}</p><a href="{% url 'attendance_register' school_class.id term.id %}?date={{ session.attendance_date|date:'Y-m-d' }}">Open register</a></article>
+  {% empty %}
+    <p>No registers submitted for this term.</p>
+  {% endfor %}
+</div>
+<p class="attendance-back-link"><a href="{% url 'attendance_dashboard' %}">&larr; Back to attendance</a></p>
 {% endblock %}

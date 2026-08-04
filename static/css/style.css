@@ -1502,6 +1502,17 @@ h2 {
 .attendance-summary-table { width: 100%; }
 .attendance-summary-table th, .attendance-summary-table td { padding: .85rem 1rem; text-align: center; }
 .attendance-summary-table th:first-child, .attendance-summary-table td:first-child { text-align: left; }
+.attendance-summary-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:.55rem; }
+.attendance-metrics { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1rem; margin:1rem 0 1.4rem; }
+.attendance-metrics article { display:grid; gap:.25rem; padding:1rem 1.15rem; background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow); }
+.attendance-metrics strong { color:var(--primary); font-size:1.65rem; }
+.attendance-metrics span { color:var(--text-muted); }
+@media (max-width:650px) { .attendance-summary-actions { justify-content:flex-start; } .attendance-metrics { grid-template-columns:1fr; } }
+@media print {
+  .demo-banner, header, nav, footer, .attendance-summary-actions, .attendance-session-grid, .attendance-back-link { display:none !important; }
+  body, main { background:#fff !important; }
+  .attendance-metrics article, .gradebook-table-wrap { box-shadow:none !important; border:1px solid #ddd; }
+}
 @media (max-width: 850px) { .assignment-create form { grid-template-columns: 1fr; } }
 @media (max-width: 720px) {
     .roster-management .table-scroll { overflow: visible; }
