@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.test import TestCase
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import models
 from openpyxl import load_workbook
 
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
@@ -308,6 +309,53 @@ class TeacherGradebookWorkflowTests(TestCase):
         self.assertRedirects(response, reverse("gradebook_roster", args=[created.pk]), fetch_redirect_response=False)
         self.assertEqual(created.school, self.school)
         self.assertEqual(created.offering, self.offering)
+
+    def test_assessment_form_provisions_default_categories_for_unconfigured_year(self):
+        next_year = AcademicYear.objects.create(
+            school=self.school,
+            name="2027/2028",
+            start_date=date(2027, 9, 1),
+            end_date=date(2028, 7, 31),
+        )
+        next_term = Term.objects.create(
+            academic_year=next_year,
+            name="Term 1",
+            order=1,
+            start_date=date(2027, 9, 1),
+            end_date=date(2027, 12, 15),
+        )
+        next_class = SchoolClass.objects.create(
+            school=self.school,
+            academic_year=next_year,
+            name="JHS 1",
+        )
+        next_offering = SubjectOffering.objects.create(
+            school=self.school,
+            school_class=next_class,
+            subject=self.subject,
+            term=next_term,
+        )
+        TeacherAssignment.objects.create(
+            offering=next_offering,
+            teacher=self.teacher,
+            is_lead=True,
+        )
+        self.client.force_login(self.teacher_user)
+
+        response = self.client.get(
+            reverse("gradebook_create_assessment", args=[next_offering.pk]),
+            secure=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        scheme = GradeScheme.objects.get(academic_year=next_year, status=GradeScheme.Status.ACTIVE)
+        self.assertEqual(scheme.categories.count(), 2)
+        self.assertEqual(
+            scheme.categories.aggregate(total=models.Sum("weight"))["total"],
+            Decimal("100.00"),
+        )
+        self.assertContains(response, "Continuous assessment")
+        self.assertNotContains(response, "Legacy quiz")
 
     def test_invalid_roster_submission_is_atomic(self):
         first, second = self.student_memberships

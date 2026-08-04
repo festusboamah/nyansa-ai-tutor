@@ -1286,6 +1286,14 @@ h2 {
 .gradebook-fill-tool { display:flex; align-items:end; flex-wrap:wrap; gap:.55rem; margin:1rem 0; }
 .gradebook-fill-tool label { font-weight:700; }
 .gradebook-fill-tool input { width:150px; padding:.55rem .7rem; border:1px solid var(--border); border-radius:7px; }
+.assessment-form-container { max-width:760px; }
+.assessment-form { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:1rem 1.2rem; }
+.assessment-form-field { display:grid; align-content:start; gap:.4rem; font-weight:700; }
+.assessment-form-field input, .assessment-form-field select { width:100%; padding:.72rem .8rem; border:1px solid var(--border); border-radius:8px; background:#fff; }
+.assessment-form-field small { color:var(--text-muted); font-weight:400; }
+.assessment-form-field .field-error { color:#b91c1c; }
+.assessment-form-actions { grid-column:1 / -1; }
+@media (max-width:650px) { .assessment-form { grid-template-columns:1fr; } }
 @media (max-width:700px) { .gradebook-roster-metrics { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 .roster-table small { color:var(--text-muted); }
 .import-steps { margin-bottom:1.5rem; }

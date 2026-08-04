@@ -1,6 +1,7 @@
 from django import forms
 
 from .models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
+from .services import ensure_default_grade_scheme
 
 
 class AssessmentForm(forms.ModelForm):
@@ -11,6 +12,7 @@ class AssessmentForm(forms.ModelForm):
 
     def __init__(self, *args, offering, teacher_user=None, **kwargs):
         self.offering = offering
+        ensure_default_grade_scheme(offering.term.academic_year)
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = AssessmentCategory.objects.filter(
             scheme__school=offering.school,
@@ -26,6 +28,17 @@ class AssessmentForm(forms.ModelForm):
         if teacher_user is not None:
             self.fields["legacy_quiz"].queryset = self.fields["legacy_quiz"].queryset.filter(teacher=teacher_user)
             self.fields["legacy_assignment"].queryset = self.fields["legacy_assignment"].queryset.filter(teacher=teacher_user)
+        if not self.fields["legacy_quiz"].queryset.exists():
+            self.fields.pop("legacy_quiz")
+        else:
+            self.fields["legacy_quiz"].label = "Link an online quiz (optional)"
+        if not self.fields["legacy_assignment"].queryset.exists():
+            self.fields.pop("legacy_assignment")
+        else:
+            self.fields["legacy_assignment"].label = "Link an online assignment (optional)"
+        self.fields["category"].empty_label = "Choose assessment category"
+        self.fields["title"].widget.attrs["placeholder"] = "e.g. Week 4 class test"
+        self.fields["max_score"].widget.attrs.update({"placeholder": "e.g. 20", "min": "0.01", "step": "0.01"})
         self.instance.school = offering.school
         self.instance.offering = offering
 

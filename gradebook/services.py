@@ -3,7 +3,38 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 
-from .models import GradeEntry, GradeScheme
+from .models import AssessmentCategory, GradeEntry, GradeScheme
+
+
+@transaction.atomic
+def ensure_default_grade_scheme(academic_year):
+    active = GradeScheme.objects.filter(
+        school=academic_year.school,
+        academic_year=academic_year,
+        status=GradeScheme.Status.ACTIVE,
+    ).prefetch_related("categories").first()
+    if active:
+        return active
+    scheme, _ = GradeScheme.objects.get_or_create(
+        school=academic_year.school,
+        academic_year=academic_year,
+        name="Standard grading scheme",
+        defaults={"status": GradeScheme.Status.ACTIVE},
+    )
+    AssessmentCategory.objects.get_or_create(
+        scheme=scheme,
+        code="continuous-assessment",
+        defaults={"name": "Continuous assessment", "weight": Decimal("50.00"), "order": 1},
+    )
+    AssessmentCategory.objects.get_or_create(
+        scheme=scheme,
+        code="end-of-term",
+        defaults={"name": "End-of-term assessment", "weight": Decimal("50.00"), "order": 2},
+    )
+    if scheme.status != GradeScheme.Status.ACTIVE:
+        scheme.status = GradeScheme.Status.ACTIVE
+        scheme.save(update_fields=["status", "updated_at"])
+    return scheme
 
 
 @transaction.atomic

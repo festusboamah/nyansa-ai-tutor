@@ -2,18 +2,28 @@
 {% block title %}New Assessment - Nyansa{% endblock %}
 {% block content %}
 <div class="admin-heading">
-    <div>
-        <p class="eyebrow">{{ offering.school_class.name }} · {{ offering.subject.name }}</p>
-        <h1>Create assessment</h1>
-        <p>Only categories from the active {{ offering.term.academic_year.name }} grade scheme are available.</p>
-    </div>
+  <div>
+    <p class="eyebrow">{{ offering.school_class.name }} &middot; {{ offering.subject.name }}</p>
+    <h1>Create assessment</h1>
+    <p>Set up the activity, then enter or import learner scores.</p>
+  </div>
 </div>
-<div class="form-container">
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn" type="submit">Create and enter grades</button>
-        <a class="btn btn-secondary" href="{% url 'gradebook_assessments' offering.id %}">Cancel</a>
-    </form>
+<div class="form-container assessment-form-container">
+  <form method="post" class="assessment-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+      <label class="assessment-form-field" for="{{ field.id_for_label }}">
+        <span>{{ field.label }}</span>
+        {{ field }}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      </label>
+    {% endfor %}
+    <div class="gradebook-actions assessment-form-actions">
+      <a class="btn btn-secondary" href="{% url 'gradebook_assessments' offering.id %}">Cancel</a>
+      <button class="btn" type="submit">Create and enter grades</button>
+    </div>
+  </form>
 </div>
 {% endblock %}
