@@ -183,6 +183,30 @@ class TermReportWorkflowTests(TestCase):
         with ZipFile(BytesIO(archive_response.content)) as archive:
             self.assertEqual(len(archive.namelist()), 1)
 
+        merit = self.client.get(
+            reverse("order_of_merit_pdf", args=[self.school_class.pk, self.term.pk]), secure=True
+        )
+        self.assertEqual(merit.status_code, 200)
+        self.assertTrue(merit.content.startswith(b"%PDF"))
+        self.assertIn("order-of-merit.pdf", merit["Content-Disposition"])
+
+        promotion = self.client.get(
+            reverse("promotion_list_pdf", args=[self.school_class.pk, self.term.pk]), secure=True
+        )
+        self.assertEqual(promotion.status_code, 200)
+        self.assertTrue(promotion.content.startswith(b"%PDF"))
+        self.assertIn("promotion-list.pdf", promotion["Content-Disposition"])
+
+    def test_teacher_cannot_download_promotion_decisions(self):
+        self.client.force_login(self.teacher.user)
+        session = self.client.session
+        session["active_school_id"] = self.school.pk
+        session.save()
+        response = self.client.get(
+            reverse("promotion_list_pdf", args=[self.school_class.pk, self.term.pk]), secure=True
+        )
+        self.assertEqual(response.status_code, 403)
+
     def test_other_school_report_is_not_visible(self):
         report = self._generate()
         other = School.objects.create(name="Other School", slug="other-school")

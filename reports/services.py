@@ -87,6 +87,13 @@ def build_snapshot(*, student, school_class, term, policy):
             "average": str(previous_report.average_score),
             "change": str((average - previous_report.average_score).quantize(Decimal("0.01"))),
         }
+    profile = getattr(student, "student_profile", None)
+    age = None
+    if profile and profile.date_of_birth:
+        on_date = term.end_date
+        age = on_date.year - profile.date_of_birth.year - (
+            (on_date.month, on_date.day) < (profile.date_of_birth.month, profile.date_of_birth.day)
+        )
     return {
         "school": {"name": school.name, "address": school.address, "phone": school.phone, "email": school.email},
         "academic_year": term.academic_year.name,
@@ -95,6 +102,9 @@ def build_snapshot(*, student, school_class, term, policy):
         "student": {
             "name": student.user.get_full_name() or student.user.username,
             "identifier": student.identifier,
+            "gender": profile.get_gender_display() if profile and profile.gender else "",
+            "date_of_birth": profile.date_of_birth.isoformat() if profile and profile.date_of_birth else "",
+            "age": age,
         },
         "policy": {
             "show_position": policy.show_position,

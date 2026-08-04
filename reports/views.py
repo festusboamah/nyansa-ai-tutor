@@ -16,7 +16,7 @@ from schools.services import has_school_role
 
 from .forms import ReportDecisionForm, ReportDetailsForm, ReportPolicyForm
 from .models import ReportPolicy, TermReport
-from .pdf import render_report_pdf
+from .pdf import render_order_of_merit_pdf, render_promotion_list_pdf, render_report_pdf
 from .services import can_prepare_reports, generate_class_reports, transition_report, update_report_details
 
 
@@ -141,6 +141,40 @@ def class_reports_zip(request, class_id, term_id):
             archive.writestr(f"{name}-term-report.pdf", render_report_pdf(report))
     response = HttpResponse(buffer.getvalue(), content_type="application/zip")
     response["Content-Disposition"] = f'attachment; filename="{slugify(school_class.name)}-{slugify(term.name)}-reports.zip"'
+    return response
+
+
+@report_staff_required
+def order_of_merit_pdf(request, class_id, term_id):
+    school_class, term = _class_term(request, class_id, term_id)
+    reports = list(TermReport.objects.filter(
+        school_class=school_class, term=term, status=TermReport.Status.PUBLISHED
+    ).select_related("student__user"))
+    content = render_order_of_merit_pdf(
+        school_class=school_class, term=term, reports=reports
+    )
+    response = HttpResponse(content, content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'attachment; filename="{slugify(school_class.name)}-{slugify(term.name)}-order-of-merit.pdf"'
+    )
+    return response
+
+
+@report_staff_required
+def promotion_list_pdf(request, class_id, term_id):
+    if request.school_membership.role != SchoolMembership.Role.SCHOOL_ADMIN:
+        raise PermissionDenied
+    school_class, term = _class_term(request, class_id, term_id)
+    reports = list(TermReport.objects.filter(
+        school_class=school_class, term=term, status=TermReport.Status.PUBLISHED
+    ).select_related("student__user"))
+    content = render_promotion_list_pdf(
+        school_class=school_class, term=term, reports=reports
+    )
+    response = HttpResponse(content, content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'attachment; filename="{slugify(school_class.name)}-{slugify(term.name)}-promotion-list.pdf"'
+    )
     return response
 
 
