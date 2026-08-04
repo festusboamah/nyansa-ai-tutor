@@ -4,11 +4,11 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from academics.models import ClassEnrollment, SchoolClass, Term
+from academics.models import AcademicYear, ClassEnrollment, SchoolClass, Term
 from schools.models import SchoolMembership
 from schools.services import has_school_role
 
@@ -71,8 +71,18 @@ def _manageable_class_term(request, class_id, term_id):
 
 @attendance_staff_required
 def attendance_dashboard(request):
-    classes = _manageable_classes(request).prefetch_related("academic_year__terms")
-    return render(request, "attendance/dashboard.html", {"classes": classes})
+    manageable = _manageable_classes(request)
+    years = AcademicYear.objects.filter(school=request.school, classes__in=manageable).distinct().order_by("-is_current", "-start_date")
+    selected_year = years.filter(pk=request.GET.get("year")).first() if request.GET.get("year", "").isdigit() else None
+    selected_year = selected_year or years.first()
+    classes = manageable.filter(academic_year=selected_year) if selected_year else manageable.none()
+    if classes.exclude(name="Demo Class").exists():
+        classes = classes.exclude(name="Demo Class")
+    terms = Term.objects.filter(academic_year=selected_year) if selected_year else Term.objects.none()
+    if terms.exclude(name="Demo Term").exists():
+        terms = terms.exclude(name="Demo Term")
+    classes = classes.prefetch_related(Prefetch("academic_year__terms", queryset=terms))
+    return render(request, "attendance/dashboard.html", {"classes": classes, "years": years, "selected_year": selected_year})
 
 
 @attendance_staff_required

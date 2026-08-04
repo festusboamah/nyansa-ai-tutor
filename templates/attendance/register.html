@@ -2,10 +2,11 @@
 {% block title %}{{ school_class.name }} Register - Nyansa{% endblock %}
 {% block content %}
 <div class="admin-heading"><div><p class="eyebrow">{{ term.name }}</p><h1>{{ school_class.name }} attendance</h1><p>Mark every active student for one instructional day.</p></div></div>
+<div class="attendance-help"><strong>Excused absence:</strong> the learner is absent for an approved reason such as illness, bereavement, an official activity, or an authorised family emergency.</div>
 <form method="get" class="attendance-date-picker"><label for="attendance-date">Register date</label><input id="attendance-date" type="date" name="date" value="{{ attendance_date|date:'Y-m-d' }}" min="{{ term.start_date|date:'Y-m-d' }}" max="{{ term.end_date|date:'Y-m-d' }}"><button class="btn-small btn-secondary">Open date</button></form>
 {% if session.status == "SUBMITTED" %}<div class="alert alert-success">Submitted by {{ session.submitted_by.user.username }} on {{ session.submitted_at }}. Use correction links for changes.</div>{% endif %}
 <form method="post">{% csrf_token %}<input type="hidden" name="attendance_date" value="{{ attendance_date|date:'Y-m-d' }}"><div class="attendance-register">
 {% for row in rows %}<article class="attendance-student"><div><strong>{{ row.student.user.get_full_name|default:row.student.user.username }}</strong><small>{{ row.student.identifier|default:row.student.user.username }}</small></div>{% if session.status == "SUBMITTED" %}<div><span class="status-pill attendance-{{ row.record.status|lower }}">{{ row.record.get_status_display }}</span> <a href="{% url 'attendance_correct' row.record.id %}">Correct</a></div>{% else %}<div class="attendance-options">{% for value,label in status_choices %}<label class="attendance-option attendance-{{ value|lower }}"><input type="radio" name="status_{{ row.student.id }}" value="{{ value }}" {% if value == 'PRESENT' %}checked{% endif %}>{{ label }}</label>{% endfor %}</div>{% endif %}</article>{% empty %}<p>No active students are enrolled.</p>{% endfor %}
 </div>{% if not session and rows %}<div class="gradebook-actions"><button class="btn" type="submit">Submit register</button></div>{% endif %}</form>
-<p><a href="{% url 'class_attendance_summary' school_class.id term.id %}">← Back to class summary</a></p>
+<p><a href="{% url 'class_attendance_summary' school_class.id term.id %}">&larr; Back to class summary</a></p>
 {% endblock %}

@@ -226,7 +226,7 @@ class SchoolOnboardingTests(TestCase):
         self.assertEqual(str(offering), "JHS 2 — Mathematics — First Term")
         response = self.client.get(f"{reverse('school_onboarding')}?step=assignment", secure=True)
         self.assertContains(response, "JHS 2 — Mathematics — First Term")
-        self.assertContains(response, "Lead teacher for this subject")
+        self.assertContains(response, "Lead subject teacher")
 
     def test_double_stream_jhs_generator_creates_a_and_b_classes(self):
         self.school.offers_primary = False

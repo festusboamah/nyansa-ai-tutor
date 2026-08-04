@@ -211,12 +211,12 @@ class TeacherAssignmentForm(SchoolScopedFormMixin, forms.ModelForm):
         labels = {
             "offering": "Class, subject and term",
             "teacher": "Teacher",
-            "is_lead": "Lead teacher for this subject",
+            "is_lead": "Lead subject teacher",
         }
         help_texts = {
             "offering": "Choose the exact class, subject, and term this teacher will teach.",
             "teacher": "Only active teachers in this school are shown.",
-            "is_lead": "Select this for the main teacher responsible when two or more teachers share the subject. For one teacher, you may select it.",
+            "is_lead": "The main teacher responsible for this particular class and subject. This is different from the overall class teacher.",
         }
 
     def __init__(self, *args, **kwargs):

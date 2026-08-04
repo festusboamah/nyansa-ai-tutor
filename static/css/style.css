@@ -1488,6 +1488,13 @@ h2 {
 .assignment-row-form select { min-width: 180px; padding: .5rem; border: 1px solid var(--border); border-radius: 8px; }
 .assignment-lead { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
 .unassigned-panel { margin-top: 1.25rem; border-left: 4px solid #f59e0b; }
+.attendance-year-filter { display: flex; max-width: 430px; margin-bottom: 1.25rem; }
+.attendance-year-filter label { display: grid; gap: .35rem; width: 100%; font-weight: 700; }
+.attendance-year-filter select { padding: .65rem; border: 1px solid var(--border); border-radius: 8px; background: white; }
+.attendance-help { margin: 0 0 1.25rem; padding: .9rem 1rem; border-left: 4px solid #f59e0b; border-radius: 8px; background: #fff8e7; color: #684b13; }
+.attendance-summary-table { width: 100%; }
+.attendance-summary-table th, .attendance-summary-table td { padding: .85rem 1rem; text-align: center; }
+.attendance-summary-table th:first-child, .attendance-summary-table td:first-child { text-align: left; }
 @media (max-width: 850px) { .assignment-create form { grid-template-columns: 1fr; } }
 @media (max-width: 720px) {
     .roster-management .table-scroll { overflow: visible; }

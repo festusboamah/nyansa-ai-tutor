@@ -1,5 +1,5 @@
 import os
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -90,6 +90,24 @@ class Command(BaseCommand):
                     "is_current": True,
                 },
             )
+        configured_terms = Term.objects.filter(academic_year=academic_year).exclude(name="Demo Term")
+        if not configured_terms.exists():
+            source_terms = list(Term.objects.filter(
+                academic_year__school=school
+            ).exclude(academic_year=academic_year).exclude(name="Demo Term").order_by("order")[:3])
+            if source_terms:
+                Term.objects.filter(academic_year=academic_year, name="Demo Term").update(order=99)
+                span = max((academic_year.end_date - academic_year.start_date).days + 1, 6)
+                segment = max(span // len(source_terms), 2)
+                for index, source in enumerate(source_terms):
+                    start = academic_year.start_date + timedelta(days=index * segment)
+                    end = academic_year.end_date if index == len(source_terms) - 1 else min(
+                        academic_year.end_date, start + timedelta(days=segment - 1)
+                    )
+                    Term.objects.get_or_create(
+                        academic_year=academic_year, name=source.name,
+                        defaults={"order": source.order, "start_date": start, "end_date": end},
+                    )
         term = Term.objects.filter(academic_year=academic_year).exclude(name="Demo Term").order_by("order").first()
         if not term:
             term, _ = Term.objects.update_or_create(
@@ -111,6 +129,9 @@ class Command(BaseCommand):
                 name="Demo Class",
                 defaults={"capacity": 30},
             )
+        if SchoolClass.objects.filter(school=school, academic_year=academic_year).exclude(name="Demo Class").exists():
+            from schools.curriculum import generate_ghana_curriculum
+            generate_ghana_curriculum(school=school)
         def demo_member(username, first_name, last_name, role, identifier, email=""):
             member_user, _ = user_model.objects.update_or_create(
                 username=username,
