@@ -92,9 +92,13 @@ class Command(BaseCommand):
             )
         configured_terms = Term.objects.filter(academic_year=academic_year).exclude(name="Demo Term")
         if not configured_terms.exists():
-            source_terms = list(Term.objects.filter(
-                academic_year__school=school
-            ).exclude(academic_year=academic_year).exclude(name="Demo Term").order_by("order")[:3])
+            source_terms = []
+            source_years = AcademicYear.objects.filter(school=school).exclude(pk=academic_year.pk).order_by("-start_date")
+            for source_year in source_years:
+                candidate_terms = list(source_year.terms.exclude(name="Demo Term").order_by("order")[:3])
+                if candidate_terms:
+                    source_terms = candidate_terms
+                    break
             if source_terms:
                 Term.objects.filter(academic_year=academic_year, name="Demo Term").update(order=99)
                 span = max((academic_year.end_date - academic_year.start_date).days + 1, 6)
@@ -106,7 +110,7 @@ class Command(BaseCommand):
                     )
                     Term.objects.get_or_create(
                         academic_year=academic_year, name=source.name,
-                        defaults={"order": source.order, "start_date": start, "end_date": end},
+                        defaults={"order": index + 1, "start_date": start, "end_date": end},
                     )
         term = Term.objects.filter(academic_year=academic_year).exclude(name="Demo Term").order_by("order").first()
         if not term:

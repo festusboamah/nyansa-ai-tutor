@@ -117,3 +117,38 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Demo Class")
         self.assertNotContains(response, "Demo Term")
+
+    @override_settings(NYANSA_DEMO_MODE=True)
+    @patch.dict(
+        "os.environ",
+        {
+            "DEMO_ADMIN_USERNAME": "demo-admin",
+            "DEMO_ADMIN_PASSWORD": "safe-demo-password",
+            "DEMO_ADMIN_EMAIL": "demo@example.com",
+        },
+    )
+    def test_term_reconciliation_uses_one_year_and_normalises_orders(self):
+        school = School.objects.create(name="Demo School", slug="nyansa-demo-school")
+        current = AcademicYear.objects.create(
+            school=school, name="2026/2027", start_date="2026-09-01", end_date="2027-07-31", is_current=True
+        )
+        Term.objects.create(
+            academic_year=current, name="Demo Term", order=0,
+            start_date="2026-09-01", end_date="2027-07-31",
+        )
+        SchoolClass.objects.create(school=school, academic_year=current, name="JHS 1A")
+        source = AcademicYear.objects.create(
+            school=school, name="2025/2026 Demo", start_date="2025-09-01", end_date="2026-07-31"
+        )
+        for order, name in enumerate(("First Term", "Second Term", "Third Term")):
+            Term.objects.create(
+                academic_year=source, name=name, order=order,
+                start_date="2025-09-01", end_date="2026-07-31",
+            )
+
+        call_command("seed_demo")
+
+        self.assertEqual(
+            list(current.terms.exclude(name="Demo Term").order_by("order").values_list("order", flat=True)),
+            [1, 2, 3],
+        )
