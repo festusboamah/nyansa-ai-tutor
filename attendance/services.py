@@ -110,17 +110,40 @@ def submit_attendance(*, school_class, term, attendance_date, actor, statuses, r
         record.full_clean()
         record.save()
     from communications.models import MessageTemplate
-    from communications.services import enqueue_guardian_event
+    from communications.models import Notification
+    from communications.services import enqueue_guardian_event, notify_school_role
 
     for enrollment in roster:
         if normalized[enrollment.student_id] in {
             AttendanceRecord.Status.ABSENT, AttendanceRecord.Status.EXCUSED
         }:
+            student = enrollment.student
+            status_label = AttendanceRecord.Status(normalized[enrollment.student_id]).label.lower()
             enqueue_guardian_event(
-                student=enrollment.student,
+                student=student,
                 event_type=MessageTemplate.EventType.ATTENDANCE,
                 business_reference=f"attendance:{session.pk}:student:{enrollment.student_id}",
                 context={},
+            )
+            student_name = student.user.get_full_name() or student.user.username
+            reason = normalized_reasons.get(enrollment.student_id, "")
+            message = (
+                f"{student_name} was marked {status_label} in {school_class.name} "
+                f"on {attendance_date:%b. %d, %Y}."
+            )
+            if reason:
+                message += f" Reason: {reason}"
+            notify_school_role(
+                school=school_class.school,
+                role=SchoolMembership.Role.SCHOOL_ADMIN,
+                kind=Notification.Kind.ATTENDANCE,
+                title="Student attendance alert",
+                message=message,
+                target_url=(
+                    f"/attendance/classes/{school_class.pk}/terms/{term.pk}/register/"
+                    f"?date={attendance_date.isoformat()}"
+                ),
+                deduplication_key=f"attendance:{session.pk}:student:{student.pk}",
             )
     return session
 

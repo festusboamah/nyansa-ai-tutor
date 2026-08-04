@@ -8,6 +8,7 @@ class Notification(models.Model):
         GRADE_REVIEW = "GRADE_REVIEW", "Grade review"
         ASSIGNMENT = "ASSIGNMENT", "Assignment submission"
         STAFF_ASSIGNMENT = "STAFF_ASSIGNMENT", "Teaching assignment"
+        ATTENDANCE = "ATTENDANCE", "Attendance alert"
         REPORT_REVIEW = "REPORT_REVIEW", "Report review"
         FINANCE = "FINANCE", "Finance alert"
         ANALYTICS = "ANALYTICS", "Analytics alert"

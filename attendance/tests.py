@@ -8,6 +8,7 @@ from django.urls import reverse
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from accounts.models import User
 from courses.models import Subject
+from communications.models import Notification
 from schools.models import School, SchoolMembership
 
 from .models import AttendanceRecord, AttendanceRevision, AttendanceSession, SchoolCalendarPolicy, SchoolClosure
@@ -129,6 +130,38 @@ class AttendanceWorkflowTests(TestCase):
             session.records.get(student=self.students[1]).reason,
             "Medical appointment",
         )
+
+    def test_absence_creates_an_admin_attendance_alert(self):
+        session = submit_attendance(
+            school_class=self.school_class,
+            term=self.term,
+            attendance_date=date(2026, 9, 7),
+            actor=self.teacher,
+            statuses=self._statuses(second=AttendanceRecord.Status.ABSENT),
+            reasons={self.students[1].pk: "Reported sick"},
+        )
+
+        alert = Notification.objects.get(
+            recipient=self.administrator,
+            kind=Notification.Kind.ATTENDANCE,
+        )
+        self.assertIn("Reported sick", alert.message)
+        self.assertIn(self.school_class.name, alert.message)
+        self.assertEqual(
+            alert.deduplication_key,
+            f"attendance:{session.pk}:student:{self.students[1].pk}",
+        )
+        self.assertIn("date=2026-09-07", alert.target_url)
+
+    def test_present_students_do_not_create_admin_attendance_alerts(self):
+        submit_attendance(
+            school_class=self.school_class,
+            term=self.term,
+            attendance_date=date(2026, 9, 7),
+            actor=self.teacher,
+            statuses=self._statuses(),
+        )
+        self.assertFalse(Notification.objects.filter(kind=Notification.Kind.ATTENDANCE).exists())
 
     def test_partial_register_is_rejected_without_writes(self):
         with self.assertRaisesMessage(ValidationError, "every active student"):
