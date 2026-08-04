@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Case, IntegerField, When
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from urllib.parse import quote
@@ -351,12 +352,60 @@ def confirm_import(request, batch_id):
 
 @school_admin_required
 def grade_review_queue(request):
-    entries = GradeEntry.objects.filter(
+    base_entries = GradeEntry.objects.filter(
         school=request.school, status=GradeEntry.Status.PUBLISHED
-    ).select_related(
+    )
+    counts = {
+        "total": base_entries.count(),
+        "pending": base_entries.filter(review_status=GradeEntry.ReviewStatus.PENDING).count(),
+        "returned": base_entries.filter(review_status=GradeEntry.ReviewStatus.RETURNED).count(),
+        "approved": base_entries.filter(review_status=GradeEntry.ReviewStatus.APPROVED).count(),
+    }
+    classes = base_entries.values(
+        "assessment__offering__school_class_id",
+        "assessment__offering__school_class__name",
+    ).distinct().order_by("assessment__offering__school_class__name")
+    subjects = base_entries.values(
+        "assessment__offering__subject_id",
+        "assessment__offering__subject__name",
+    ).distinct().order_by("assessment__offering__subject__name")
+    selected_status = request.GET.get("status", "")
+    selected_class = request.GET.get("class", "")
+    selected_subject = request.GET.get("subject", "")
+    entries = base_entries
+    if selected_status in GradeEntry.ReviewStatus.values:
+        entries = entries.filter(review_status=selected_status)
+    else:
+        selected_status = ""
+    if selected_class.isdigit():
+        entries = entries.filter(assessment__offering__school_class_id=selected_class)
+    else:
+        selected_class = ""
+    if selected_subject.isdigit():
+        entries = entries.filter(assessment__offering__subject_id=selected_subject)
+    else:
+        selected_subject = ""
+    entries = entries.select_related(
         "student__user", "assessment__offering__subject", "assessment__offering__school_class", "recorded_by__user"
-    ).order_by("review_status", "assessment__offering__school_class__name", "student__user__username")
-    return render(request, "gradebook/review_queue.html", {"entries": entries})
+    ).annotate(
+        review_priority=Case(
+            When(review_status=GradeEntry.ReviewStatus.PENDING, then=0),
+            When(review_status=GradeEntry.ReviewStatus.RETURNED, then=1),
+            When(review_status=GradeEntry.ReviewStatus.NOT_REVIEWED, then=2),
+            default=3,
+            output_field=IntegerField(),
+        )
+    ).order_by("review_priority", "assessment__offering__school_class__name", "student__user__username")
+    return render(request, "gradebook/review_queue.html", {
+        "entries": entries,
+        "counts": counts,
+        "classes": classes,
+        "subjects": subjects,
+        "selected_status": selected_status,
+        "selected_class": selected_class,
+        "selected_subject": selected_subject,
+        "review_status_choices": GradeEntry.ReviewStatus.choices,
+    })
 
 
 @school_admin_required

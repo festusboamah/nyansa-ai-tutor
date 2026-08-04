@@ -1,25 +1,34 @@
 {% extends "base.html" %}
 {% block title %}Grade Review - Nyansa{% endblock %}
 {% block content %}
-<div class="admin-heading"><div><p class="eyebrow">School administration</p><h1>Grade review</h1><p>Approve published evidence or return it to the teacher with a required note.</p></div></div>
+<div class="admin-heading"><div><p class="eyebrow">School administration</p><h1>Grade review</h1><p>Review new submissions first, approve verified scores, or return a score with guidance.</p></div></div>
+<div class="grade-review-metrics">
+  <article><strong>{{ counts.pending }}</strong><span>Pending review</span></article>
+  <article><strong>{{ counts.returned }}</strong><span>Returned</span></article>
+  <article><strong>{{ counts.approved }}</strong><span>Approved</span></article>
+  <article><strong>{{ counts.total }}</strong><span>Published grades</span></article>
+</div>
+<form method="get" class="grade-review-filters" aria-label="Filter grade review">
+  <label>Status<select name="status"><option value="">All statuses</option>{% for value,label in review_status_choices %}<option value="{{ value }}"{% if selected_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <label>Class<select name="class"><option value="">All classes</option>{% for item in classes %}<option value="{{ item.assessment__offering__school_class_id }}"{% if selected_class == item.assessment__offering__school_class_id|stringformat:'s' %} selected{% endif %}>{{ item.assessment__offering__school_class__name }}</option>{% endfor %}</select></label>
+  <label>Subject<select name="subject"><option value="">All subjects</option>{% for item in subjects %}<option value="{{ item.assessment__offering__subject_id }}"{% if selected_subject == item.assessment__offering__subject_id|stringformat:'s' %} selected{% endif %}>{{ item.assessment__offering__subject__name }}</option>{% endfor %}</select></label>
+  <button class="btn-small" type="submit">Apply filters</button>
+  {% if selected_status or selected_class or selected_subject %}<a href="{% url 'gradebook_review_queue' %}">Clear</a>{% endif %}
+</form>
 <div class="gradebook-table-wrap"><table class="student-table gradebook-table review-table">
 <thead><tr><th>Student</th><th>Class / subject</th><th>Assessment</th><th>Score</th><th>Review state</th><th>Decision</th></tr></thead>
 <tbody>{% for entry in entries %}<tr>
-<td>{{ entry.student.user.get_full_name|default:entry.student.user.username }}</td>
-<td>{{ entry.assessment.offering.school_class.name }} / {{ entry.assessment.offering.subject.name }}</td>
-<td>{{ entry.assessment.title }}</td><td>{{ entry.score }} / {{ entry.assessment.max_score }}</td>
-<td><span class="status-pill status-{{ entry.review_status|lower }}">{{ entry.get_review_status_display }}</span>{% if entry.review_note %}<span class="field-error">{{ entry.review_note }}</span>{% endif %}</td>
+<td><strong>{{ entry.student.user.get_full_name|default:entry.student.user.username }}</strong><small>{{ entry.student.identifier|default:entry.student.user.username }}</small></td>
+<td><strong>{{ entry.assessment.offering.school_class.name }}</strong><small>{{ entry.assessment.offering.subject.name }}</small></td>
+<td>{{ entry.assessment.title }}</td><td><strong>{{ entry.score }} / {{ entry.assessment.max_score }}</strong></td>
+<td><span class="status-pill status-{{ entry.review_status|lower }}">{{ entry.get_review_status_display }}</span>{% if entry.review_note %}<small class="review-note">{{ entry.review_note }}</small>{% endif %}</td>
 <td>
 {% if entry.review_status == "PENDING" %}
-<form method="post" action="{% url 'gradebook_review' entry.id %}" class="review-form">{% csrf_token %}<input name="note" maxlength="500" placeholder="Note (required to return)"><button class="btn-small" name="decision" value="APPROVED">Approve</button><button class="btn-small btn-secondary" name="decision" value="RETURNED">Return</button></form>
-{% elif entry.review_status == "APPROVED" %}
-<span class="review-locked">Approved and locked</span>
-{% elif entry.review_status == "RETURNED" %}
-<span class="review-waiting">Awaiting teacher correction</span>
-{% else %}
-<span class="review-waiting">Not submitted for review</span>
-{% endif %}
+<form method="post" action="{% url 'gradebook_review' entry.id %}" class="review-form">{% csrf_token %}<input name="note" maxlength="500" placeholder="Note required only when returning"><div><button class="btn-small" name="decision" value="APPROVED">Approve</button><button class="btn-small btn-secondary" name="decision" value="RETURNED">Return</button></div></form>
+{% elif entry.review_status == "APPROVED" %}<span class="review-locked">Approved and locked</span>
+{% elif entry.review_status == "RETURNED" %}<span class="review-waiting">Awaiting teacher correction</span>
+{% else %}<span class="review-waiting">Not submitted for review</span>{% endif %}
 </td>
-</tr>{% empty %}<tr><td colspan="6">No published grades are available for review.</td></tr>{% endfor %}</tbody>
+</tr>{% empty %}<tr><td colspan="6"><div class="empty-state"><h2>No grades match these filters</h2><p>Clear the filters or wait for teachers to publish new scores.</p></div></td></tr>{% endfor %}</tbody>
 </table></div>
 {% endblock %}

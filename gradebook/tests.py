@@ -676,6 +676,56 @@ class TeacherGradebookWorkflowTests(TestCase):
                 decision=GradeReviewDecision.Decision.APPROVED,
             )
 
+    def test_review_queue_prioritizes_pending_and_filters_status(self):
+        pending, _ = record_grade_entry(
+            school=self.school,
+            assessment=self.assessment,
+            student=self.student_memberships[0],
+            actor=self.teacher,
+            score=Decimal("14"),
+            source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.PUBLISHED,
+            reason="Pending score",
+        )
+        approved, _ = record_grade_entry(
+            school=self.school,
+            assessment=self.assessment,
+            student=self.student_memberships[1],
+            actor=self.teacher,
+            score=Decimal("16"),
+            source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.PUBLISHED,
+            reason="Approved score",
+        )
+        admin_user = User.objects.create_user(username="filter-admin", password="test-password")
+        administrator = SchoolMembership.objects.create(
+            school=self.school,
+            user=admin_user,
+            role=SchoolMembership.Role.SCHOOL_ADMIN,
+        )
+        review_grade_entry(
+            entry=approved,
+            reviewer=administrator,
+            decision=GradeReviewDecision.Decision.APPROVED,
+            note="Verified",
+        )
+        self.client.force_login(admin_user)
+
+        queue = self.client.get(reverse("gradebook_review_queue"), secure=True)
+
+        self.assertEqual(queue.status_code, 200)
+        entries = list(queue.context["entries"])
+        self.assertEqual(entries[0], pending)
+        self.assertEqual(queue.context["counts"]["pending"], 1)
+        self.assertEqual(queue.context["counts"]["approved"], 1)
+
+        approved_only = self.client.get(
+            reverse("gradebook_review_queue"),
+            {"status": GradeEntry.ReviewStatus.APPROVED},
+            secure=True,
+        )
+        self.assertEqual(list(approved_only.context["entries"]), [approved])
+
     def test_unassigned_teacher_cannot_open_grade_correction(self):
         entry, _ = record_grade_entry(
             school=self.school,

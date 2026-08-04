@@ -1294,6 +1294,19 @@ h2 {
 .assessment-form-field .field-error { color:#b91c1c; }
 .assessment-form-actions { grid-column:1 / -1; }
 @media (max-width:650px) { .assessment-form { grid-template-columns:1fr; } }
+.grade-review-metrics { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:.8rem; margin:1rem 0; }
+.grade-review-metrics article { display:grid; gap:.2rem; padding:.9rem 1rem; background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow); }
+.grade-review-metrics strong { color:var(--primary); font-size:1.5rem; }
+.grade-review-metrics span { color:var(--text-muted); }
+.grade-review-filters { display:flex; align-items:end; flex-wrap:wrap; gap:.7rem; margin:1rem 0; padding:1rem; border:1px solid var(--border); border-radius:var(--radius); background:var(--card-bg); }
+.grade-review-filters label { display:grid; gap:.35rem; min-width:180px; font-weight:700; }
+.grade-review-filters select { padding:.6rem .7rem; border:1px solid var(--border); border-radius:7px; background:#fff; }
+.review-table td > small { display:block; margin-top:.25rem; color:var(--text-muted); }
+.review-table .review-note { color:#b45309; }
+.review-form { display:grid; gap:.45rem; min-width:270px; }
+.review-form input { width:100%; padding:.55rem .65rem; border:1px solid var(--border); border-radius:7px; }
+.review-form > div { display:flex; gap:.4rem; }
+@media (max-width:750px) { .grade-review-metrics { grid-template-columns:repeat(2, minmax(0, 1fr)); } .grade-review-filters label { width:100%; } }
 @media (max-width:700px) { .gradebook-roster-metrics { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 .roster-table small { color:var(--text-muted); }
 .import-steps { margin-bottom:1.5rem; }
