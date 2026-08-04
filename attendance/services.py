@@ -56,6 +56,40 @@ def can_manage_class_attendance(actor, school_class, term):
     ).exists()
 
 
+def _notify_attendance_status(*, student, session, status, reason, business_reference):
+    if status not in {AttendanceRecord.Status.ABSENT, AttendanceRecord.Status.EXCUSED}:
+        return
+    from communications.models import MessageTemplate, Notification
+    from communications.services import enqueue_guardian_event, notify_school_role
+
+    enqueue_guardian_event(
+        student=student,
+        event_type=MessageTemplate.EventType.ATTENDANCE,
+        business_reference=business_reference,
+        context={},
+    )
+    student_name = student.user.get_full_name() or student.user.username
+    status_label = AttendanceRecord.Status(status).label.lower()
+    message = (
+        f"{student_name} was marked {status_label} in {session.school_class.name} "
+        f"on {session.attendance_date:%b. %d, %Y}."
+    )
+    if reason:
+        message += f" Reason: {reason}"
+    notify_school_role(
+        school=session.school,
+        role=SchoolMembership.Role.SCHOOL_ADMIN,
+        kind=Notification.Kind.ATTENDANCE,
+        title="Student attendance alert",
+        message=message,
+        target_url=(
+            f"/attendance/classes/{session.school_class_id}/terms/{session.term_id}/register/"
+            f"?date={session.attendance_date.isoformat()}"
+        ),
+        deduplication_key=business_reference,
+    )
+
+
 @transaction.atomic
 def submit_attendance(*, school_class, term, attendance_date, actor, statuses, reasons=None):
     if not can_manage_class_attendance(actor, school_class, term):
@@ -109,42 +143,14 @@ def submit_attendance(*, school_class, term, attendance_date, actor, statuses, r
         )
         record.full_clean()
         record.save()
-    from communications.models import MessageTemplate
-    from communications.models import Notification
-    from communications.services import enqueue_guardian_event, notify_school_role
-
     for enrollment in roster:
-        if normalized[enrollment.student_id] in {
-            AttendanceRecord.Status.ABSENT, AttendanceRecord.Status.EXCUSED
-        }:
-            student = enrollment.student
-            status_label = AttendanceRecord.Status(normalized[enrollment.student_id]).label.lower()
-            enqueue_guardian_event(
-                student=student,
-                event_type=MessageTemplate.EventType.ATTENDANCE,
-                business_reference=f"attendance:{session.pk}:student:{enrollment.student_id}",
-                context={},
-            )
-            student_name = student.user.get_full_name() or student.user.username
-            reason = normalized_reasons.get(enrollment.student_id, "")
-            message = (
-                f"{student_name} was marked {status_label} in {school_class.name} "
-                f"on {attendance_date:%b. %d, %Y}."
-            )
-            if reason:
-                message += f" Reason: {reason}"
-            notify_school_role(
-                school=school_class.school,
-                role=SchoolMembership.Role.SCHOOL_ADMIN,
-                kind=Notification.Kind.ATTENDANCE,
-                title="Student attendance alert",
-                message=message,
-                target_url=(
-                    f"/attendance/classes/{school_class.pk}/terms/{term.pk}/register/"
-                    f"?date={attendance_date.isoformat()}"
-                ),
-                deduplication_key=f"attendance:{session.pk}:student:{student.pk}",
-            )
+        _notify_attendance_status(
+            student=enrollment.student,
+            session=session,
+            status=normalized[enrollment.student_id],
+            reason=normalized_reasons.get(enrollment.student_id, ""),
+            business_reference=f"attendance:{session.pk}:student:{enrollment.student_id}",
+        )
     return session
 
 
@@ -166,15 +172,25 @@ def correct_attendance(*, record, actor, new_status, reason):
         raise ValidationError("Choose a different attendance status.")
     previous = record.status
     record.status = new_status
+    record.reason = reason if new_status != AttendanceRecord.Status.PRESENT else ""
     record.marked_by = actor
     record.full_clean()
-    record.save(update_fields=["status", "marked_by", "updated_at"])
-    AttendanceRevision.objects.create(
+    record.save(update_fields=["status", "reason", "marked_by", "updated_at"])
+    revision = AttendanceRevision.objects.create(
         record=record,
         previous_status=previous,
         new_status=new_status,
         reason=reason,
         changed_by=actor,
+    )
+    _notify_attendance_status(
+        student=record.student,
+        session=record.session,
+        status=new_status,
+        reason=reason,
+        business_reference=(
+            f"attendance-correction:{revision.pk}:student:{record.student_id}"
+        ),
     )
     return record
 

@@ -163,6 +163,31 @@ class AttendanceWorkflowTests(TestCase):
         )
         self.assertFalse(Notification.objects.filter(kind=Notification.Kind.ATTENDANCE).exists())
 
+    def test_correction_to_absent_creates_admin_attendance_alert(self):
+        session = submit_attendance(
+            school_class=self.school_class,
+            term=self.term,
+            attendance_date=date(2026, 9, 7),
+            actor=self.teacher,
+            statuses=self._statuses(),
+        )
+        record = session.records.get(student=self.students[0])
+
+        corrected = correct_attendance(
+            record=record,
+            actor=self.teacher,
+            new_status=AttendanceRecord.Status.ABSENT,
+            reason="Parent reported illness",
+        )
+
+        alert = Notification.objects.get(
+            recipient=self.administrator,
+            kind=Notification.Kind.ATTENDANCE,
+        )
+        self.assertIn("Parent reported illness", alert.message)
+        self.assertTrue(alert.deduplication_key.startswith("attendance-correction:"))
+        self.assertEqual(corrected.reason, "Parent reported illness")
+
     def test_partial_register_is_rejected_without_writes(self):
         with self.assertRaisesMessage(ValidationError, "every active student"):
             submit_attendance(
