@@ -2,52 +2,76 @@
 {% block title %}{{ assessment.title }} Roster - Nyansa{% endblock %}
 {% block content %}
 <div class="admin-heading">
-    <div>
-        <p class="eyebrow">{{ assessment.offering.school_class.name }} · {{ assessment.offering.subject.name }}</p>
-        <h1>{{ assessment.title }}</h1>
-        <p>{{ assessment.category.name }} · Maximum {{ assessment.max_score }} · {{ assessment.get_status_display }}</p>
-    </div>
-    <div class="dashboard-actions">
-        {% if assessment.legacy_quiz or assessment.legacy_assignment %}
-        <form method="post" action="{% url 'gradebook_sync' assessment.id %}" class="inline-form">
-            {% csrf_token %}<button class="btn-small btn-secondary" type="submit">Sync online results</button>
-        </form>
-        {% endif %}
-        <a class="btn-small btn-secondary" href="{% url 'gradebook_template' assessment.id %}">Download Excel template</a>
-        {% if assessment.status != "CLOSED" %}<a class="btn-small" href="{% url 'gradebook_import' assessment.id %}">Upload grades</a>{% endif %}
-    </div>
-</div>
-{% if assessment.status == "CLOSED" %}<div class="alert alert-error">This assessment is closed. Scores are read-only.</div>{% endif %}
-<form method="post">
-    {% csrf_token %}
-    <div class="gradebook-table-wrap">
-    <table class="student-table gradebook-table roster-table">
-        <thead><tr><th>Student</th><th>Identifier</th><th>Score / {{ assessment.max_score }}</th><th>State</th><th>Review</th><th>History</th></tr></thead>
-        <tbody>
-        {% for row in rows %}
-            <tr>
-                <td><strong>{{ row.membership.user.get_full_name|default:row.membership.user.username }}</strong><br><small>{{ row.membership.user.username }}</small></td>
-                <td>{{ row.membership.identifier|default:"—" }}</td>
-                <td>
-                    <input class="score-input{% if row.error %} input-error{% endif %}" type="number" name="score_{{ row.membership.id }}" value="{{ row.value }}" min="0" max="{{ assessment.max_score }}" step="0.01" {% if assessment.status == "CLOSED" %}disabled{% endif %}>
-                    {% if row.error %}<span class="field-error">{{ row.error }}</span>{% endif %}
-                </td>
-                <td>{% if row.entry %}<span class="status-pill status-{{ row.entry.status|lower }}">{{ row.entry.get_status_display }}</span>{% else %}Not entered{% endif %}</td>
-                <td>{% if row.entry %}<span class="status-pill status-{{ row.entry.review_status|lower }}">{{ row.entry.get_review_status_display }}</span>{% else %}—{% endif %}</td>
-                <td>{% if row.entry %}<a href="{% url 'gradebook_correct' row.entry.id %}">Correct / history</a>{% else %}—{% endif %}</td>
-            </tr>
-        {% empty %}
-            <tr><td colspan="6">No active students are enrolled in this class.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    </div>
-    {% if assessment.status != "CLOSED" and rows %}
-    <div class="gradebook-actions">
-        <button class="btn btn-secondary" type="submit" name="action" value="draft">Save draft</button>
-        <button class="btn" type="submit" name="action" value="publish">Publish entered grades</button>
-    </div>
+  <div>
+    <p class="eyebrow">{{ assessment.offering.school_class.name }} &middot; {{ assessment.offering.subject.name }}</p>
+    <h1>{{ assessment.title }}</h1>
+    <p>{{ assessment.category.name }} &middot; Maximum {{ assessment.max_score }} &middot; {{ assessment.get_status_display }}</p>
+  </div>
+  <div class="dashboard-actions">
+    {% if assessment.legacy_quiz or assessment.legacy_assignment %}
+      <form method="post" action="{% url 'gradebook_sync' assessment.id %}" class="inline-form">{% csrf_token %}<button class="btn-small btn-secondary" type="submit">Sync online results</button></form>
     {% endif %}
+    <a class="btn-small btn-secondary" href="{% url 'gradebook_template' assessment.id %}">Download Excel template</a>
+    {% if assessment.status != "CLOSED" %}<a class="btn-small" href="{% url 'gradebook_import' assessment.id %}">Upload grades</a>{% endif %}
+  </div>
+</div>
+<div class="gradebook-roster-metrics">
+  <article><strong>{{ rows|length }}</strong><span>Students</span></article>
+  <article><strong>{{ entered_count }}</strong><span>Scores entered</span></article>
+  <article><strong>{{ missing_count }}</strong><span>Scores missing</span></article>
+  <article><strong>{{ pending_count }}</strong><span>Pending review</span></article>
+</div>
+{% if assessment.status == "CLOSED" %}
+  <div class="alert alert-error">This assessment is closed. Scores are read-only.</div>
+{% else %}
+  <div class="gradebook-entry-help"><strong>How publishing works:</strong> Save draft keeps scores editable. Publish entered grades sends only completed scores to the administrator for review; blank rows remain missing.</div>
+{% endif %}
+<form method="post" id="grade-roster-form">
+  {% csrf_token %}
+  {% if assessment.status != "CLOSED" and rows %}
+    <div class="gradebook-fill-tool">
+      <label for="bulk-score">Fill blank scores with</label>
+      <input id="bulk-score" type="number" min="0" max="{{ assessment.max_score }}" step="0.01" placeholder="0–{{ assessment.max_score }}">
+      <button class="btn-small btn-secondary" id="fill-blank-scores" type="button">Fill blanks</button>
+      <button class="btn-small btn-secondary" id="clear-unsaved-scores" type="button">Clear unsaved</button>
+    </div>
+  {% endif %}
+  <div class="gradebook-table-wrap">
+    <table class="student-table gradebook-table roster-table">
+      <thead><tr><th>Student</th><th>Identifier</th><th>Score / {{ assessment.max_score }}</th><th>State</th><th>Review</th><th>History</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td><strong>{{ row.membership.user.get_full_name|default:row.membership.user.username }}</strong><br><small>{{ row.membership.user.username }}</small></td>
+          <td>{{ row.membership.identifier|default:"—" }}</td>
+          <td><input class="score-input{% if row.error %} input-error{% endif %}" type="number" name="score_{{ row.membership.id }}" value="{{ row.value }}" min="0" max="{{ assessment.max_score }}" step="0.01" data-saved-value="{% if row.entry %}{{ row.entry.score }}{% endif %}" {% if assessment.status == "CLOSED" %}disabled{% endif %}>{% if row.error %}<span class="field-error">{{ row.error }}</span>{% endif %}</td>
+          <td>{% if row.entry %}<span class="status-pill status-{{ row.entry.status|lower }}">{{ row.entry.get_status_display }}</span>{% else %}Not entered{% endif %}</td>
+          <td>{% if row.entry %}<span class="status-pill status-{{ row.entry.review_status|lower }}">{{ row.entry.get_review_status_display }}</span>{% else %}&mdash;{% endif %}</td>
+          <td>{% if row.entry %}<a href="{% url 'gradebook_correct' row.entry.id %}">Correct / history</a>{% else %}&mdash;{% endif %}</td>
+        </tr>
+      {% empty %}<tr><td colspan="6">No active students are enrolled in this class.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if assessment.status != "CLOSED" and rows %}
+    <div class="gradebook-actions"><button class="btn btn-secondary" type="submit" name="action" value="draft">Save draft</button><button class="btn" type="submit" name="action" value="publish">Publish entered grades</button></div>
+  {% endif %}
 </form>
-<p><a href="{% url 'gradebook_assessments' assessment.offering.id %}">← Back to assessments</a></p>
+<p><a href="{% url 'gradebook_assessments' assessment.offering.id %}">&larr; Back to assessments</a></p>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const scores = Array.from(document.querySelectorAll(".score-input:not([disabled])"));
+  const bulkScore = document.getElementById("bulk-score");
+  const fillButton = document.getElementById("fill-blank-scores");
+  const clearButton = document.getElementById("clear-unsaved-scores");
+  if (fillButton) fillButton.addEventListener("click", function () {
+    if (!bulkScore || bulkScore.value === "" || !bulkScore.checkValidity()) { if (bulkScore) bulkScore.reportValidity(); return; }
+    scores.forEach(function (input) { if (input.value === "") input.value = bulkScore.value; });
+  });
+  if (clearButton) clearButton.addEventListener("click", function () {
+    scores.forEach(function (input) { input.value = input.dataset.savedValue || ""; });
+    if (bulkScore) bulkScore.value = "";
+  });
+});
+</script>
 {% endblock %}

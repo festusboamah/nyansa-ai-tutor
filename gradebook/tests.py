@@ -344,6 +344,31 @@ class TeacherGradebookWorkflowTests(TestCase):
         self.assertEqual(set(entries.values_list("source", flat=True)), {GradeEntry.Source.MANUAL})
         self.assertEqual(set(entries.values_list("recorded_by", flat=True)), {self.teacher.pk})
 
+    def test_roster_shows_progress_and_bulk_entry_controls(self):
+        record_grade_entry(
+            school=self.school,
+            assessment=self.assessment,
+            student=self.student_memberships[0],
+            actor=self.teacher,
+            score=Decimal("17"),
+            source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.PUBLISHED,
+            reason="Ready for review",
+        )
+        self.client.force_login(self.teacher_user)
+
+        response = self.client.get(
+            reverse("gradebook_roster", args=[self.assessment.pk]),
+            secure=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["entered_count"], 1)
+        self.assertEqual(response.context["missing_count"], 1)
+        self.assertEqual(response.context["pending_count"], 1)
+        self.assertContains(response, "Fill blank scores with")
+        self.assertContains(response, "Publish entered grades")
+
     def test_closed_assessment_cannot_be_changed(self):
         self.assessment.status = Assessment.Status.CLOSED
         self.assessment.save(update_fields=["status"])

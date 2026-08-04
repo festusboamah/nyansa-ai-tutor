@@ -1278,6 +1278,15 @@ h2 {
 .input-error { border-color:var(--danger); }
 .field-error { display:block; margin-top:.3rem; color:var(--danger); font-size:.8rem; max-width:20rem; }
 .gradebook-actions { display:flex; gap:.75rem; justify-content:flex-end; margin:1rem 0 1.5rem; }
+.gradebook-roster-metrics { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:.8rem; margin:1rem 0; }
+.gradebook-roster-metrics article { display:grid; gap:.2rem; padding:.9rem 1rem; background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow); }
+.gradebook-roster-metrics strong { color:var(--primary); font-size:1.5rem; }
+.gradebook-roster-metrics span { color:var(--text-muted); }
+.gradebook-entry-help { margin:1rem 0; padding:.9rem 1rem; border-left:4px solid var(--primary); border-radius:8px; background:#eef7ff; }
+.gradebook-fill-tool { display:flex; align-items:end; flex-wrap:wrap; gap:.55rem; margin:1rem 0; }
+.gradebook-fill-tool label { font-weight:700; }
+.gradebook-fill-tool input { width:150px; padding:.55rem .7rem; border:1px solid var(--border); border-radius:7px; }
+@media (max-width:700px) { .gradebook-roster-metrics { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 .roster-table small { color:var(--text-muted); }
 .import-steps { margin-bottom:1.5rem; }
 .import-steps li { margin:.5rem 0; }

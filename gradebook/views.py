@@ -200,7 +200,15 @@ def grade_roster(request, assessment_id):
             "value": request.POST.get(f"score_{enrollment.student_id}", "") if request.method == "POST" else (entry.score if entry else ""),
             "error": errors.get(enrollment.student_id),
         })
-    return render(request, "gradebook/grade_roster.html", {"assessment": assessment, "rows": rows})
+    entries = list(existing.values())
+    return render(request, "gradebook/grade_roster.html", {
+        "assessment": assessment,
+        "rows": rows,
+        "entered_count": len(entries),
+        "missing_count": max(len(enrollments) - len(entries), 0),
+        "published_count": sum(entry.status == GradeEntry.Status.PUBLISHED for entry in entries),
+        "pending_count": sum(entry.review_status == GradeEntry.ReviewStatus.PENDING for entry in entries),
+    })
 
 
 @teacher_required
