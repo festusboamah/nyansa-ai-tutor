@@ -74,6 +74,29 @@ class TermReportWorkflowTests(TestCase):
         self.assertEqual(report.snapshot["attendance"]["days_open"], 5)
         self.assertEqual(report.snapshot["school"]["name"], "Nyansa Academy")
         self.assertEqual(report.promotion_outcome, TermReport.Promotion.PROMOTED)
+        self.assertEqual(report.snapshot["class_teacher"], "report-teacher")
+
+    def test_report_separates_weighted_class_and_exam_scores(self):
+        self.category.weight = Decimal("50.00")
+        self.category.name = "Class Score"
+        self.category.save(update_fields=["weight", "name"])
+        exam_category = AssessmentCategory.objects.create(
+            scheme=self.scheme, name="Exam Score", code="end-of-term", weight=Decimal("50.00"), order=2
+        )
+        exam = Assessment.objects.create(
+            school=self.school, offering=self.offering, category=exam_category,
+            title="End-of-term examination", max_score=Decimal("100.00"), status=Assessment.Status.CLOSED,
+        )
+        GradeEntry.objects.create(
+            school=self.school, assessment=exam, student=self.student, recorded_by=self.teacher,
+            score=Decimal("82.00"), status=GradeEntry.Status.PUBLISHED,
+            review_status=GradeEntry.ReviewStatus.APPROVED, reviewed_by=self.admin,
+        )
+        report = self._generate()
+        result = report.snapshot["subjects"][0]
+        self.assertEqual(result["class_score"], "36.00")
+        self.assertEqual(result["exam_score"], "41.00")
+        self.assertEqual(result["score"], "77.00")
 
     def test_unapproved_grade_is_not_an_official_source(self):
         self.grade.review_status = GradeEntry.ReviewStatus.PENDING

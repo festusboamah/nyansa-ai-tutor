@@ -35,22 +35,33 @@ def _subject_result(student, offering, scheme, pass_mark):
     grouped = {}
     for entry in entries:
         grouped.setdefault(entry.assessment.category_id, []).append(entry.percentage)
-    weighted, used_weight, categories = Decimal("0"), Decimal("0"), []
+    weighted, categories = Decimal("0"), []
+    class_score = exam_score = None
     for category in scheme.categories.all():
         values = grouped.get(category.pk, [])
         average = (sum(values, Decimal("0")) / len(values)) if values else None
+        contribution = None
         if average is not None:
             weighted += average * category.weight
-            used_weight += category.weight
+            contribution = (average * category.weight / Decimal("100")).quantize(Decimal("0.01"))
+            category_key = f"{category.code} {category.name}".lower()
+            if any(label in category_key for label in ("continuous", "class score", "term work")):
+                class_score = contribution
+            elif any(label in category_key for label in ("end-of-term", "exam")):
+                exam_score = contribution
         categories.append({
             "name": category.name,
             "weight": str(category.weight),
             "average": str(average.quantize(Decimal("0.01"))) if average is not None else None,
+            "contribution": str(contribution) if contribution is not None else None,
         })
-    score = (weighted / used_weight).quantize(Decimal("0.01")) if used_weight else None
+    complete = bool(categories) and all(item["average"] is not None for item in categories)
+    score = (weighted / Decimal("100")).quantize(Decimal("0.01")) if complete else None
     return {
         "subject": offering.subject.name,
         "score": str(score) if score is not None else None,
+        "class_score": str(class_score) if class_score is not None else None,
+        "exam_score": str(exam_score) if exam_score is not None else None,
         "grade": "Pass" if score is not None and score >= pass_mark else ("Fail" if score is not None else "—"),
         "categories": categories,
     }
@@ -99,6 +110,10 @@ def build_snapshot(*, student, school_class, term, policy):
         "academic_year": term.academic_year.name,
         "term": term.name,
         "class": school_class.name,
+        "class_teacher": (
+            school_class.class_teacher.user.get_full_name() or school_class.class_teacher.user.username
+            if school_class.class_teacher_id else ""
+        ),
         "student": {
             "name": student.user.get_full_name() or student.user.username,
             "identifier": student.identifier,

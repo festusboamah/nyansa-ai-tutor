@@ -51,7 +51,7 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(SchoolMembership.objects.count(), 5)
         self.assertEqual(ClassEnrollment.objects.count(), 2)
         self.assertEqual(SubjectOffering.objects.count(), 3)
-        self.assertEqual(GradeEntry.objects.count(), 6)
+        self.assertEqual(GradeEntry.objects.count(), 12)
         self.assertEqual(AttendanceRecord.objects.count(), 6)
         self.assertEqual(GuardianLink.objects.count(), 1)
         self.assertEqual(TermReport.objects.count(), 1)

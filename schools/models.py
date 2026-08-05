@@ -52,6 +52,8 @@ class School(models.Model):
     )
     logo = models.FileField(upload_to="schools/logos/", blank=True)
     official_stamp = models.FileField(upload_to="schools/stamps/", blank=True)
+    headteacher_name = models.CharField(max_length=160, blank=True)
+    headteacher_signature = models.FileField(upload_to="schools/signatures/", blank=True)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

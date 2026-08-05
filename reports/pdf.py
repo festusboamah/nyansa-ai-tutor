@@ -1,13 +1,34 @@
 from io import BytesIO
+from pathlib import Path
 
+from django.conf import settings
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 
 
+def _media_link_callback(uri, _rel):
+    if uri.startswith(settings.MEDIA_URL):
+        return str(Path(settings.MEDIA_ROOT) / uri.removeprefix(settings.MEDIA_URL))
+    return uri
+
+
+def _available_file_url(field):
+    if not field or not field.name or not field.storage.exists(field.name):
+        return ""
+    return field.url
+
+
 def render_report_pdf(report):
-    html = render_to_string("reports/report_pdf.html", {"report": report, "data": report.snapshot})
+    html = render_to_string("reports/report_pdf.html", {
+        "report": report, "data": report.snapshot, "school": report.school,
+        "school_logo_url": _available_file_url(report.school.logo),
+        "school_stamp_url": _available_file_url(report.school.official_stamp),
+        "headteacher_signature_url": _available_file_url(report.school.headteacher_signature),
+    })
     output = BytesIO()
-    result = pisa.CreatePDF(html, dest=output, encoding="utf-8")
+    result = pisa.CreatePDF(
+        html, dest=output, encoding="utf-8", link_callback=_media_link_callback
+    )
     if result.err:
         raise RuntimeError("The report PDF could not be generated.")
     return output.getvalue()
@@ -16,7 +37,9 @@ def render_report_pdf(report):
 def _render_template(template_name, context):
     html = render_to_string(template_name, context)
     output = BytesIO()
-    result = pisa.CreatePDF(html, dest=output, encoding="utf-8")
+    result = pisa.CreatePDF(
+        html, dest=output, encoding="utf-8", link_callback=_media_link_callback
+    )
     if result.err:
         raise RuntimeError("The report PDF could not be generated.")
     return output.getvalue()

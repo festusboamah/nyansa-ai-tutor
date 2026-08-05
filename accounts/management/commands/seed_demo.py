@@ -173,7 +173,10 @@ class Command(BaseCommand):
             defaults={"status": GradeScheme.Status.ACTIVE},
         )
         category, _ = AssessmentCategory.objects.update_or_create(
-            scheme=scheme, code="term-work", defaults={"name": "Term Work", "weight": Decimal("100"), "order": 1},
+            scheme=scheme, code="term-work", defaults={"name": "Class Score", "weight": Decimal("50"), "order": 1},
+        )
+        exam_category, _ = AssessmentCategory.objects.update_or_create(
+            scheme=scheme, code="end-of-term", defaults={"name": "Exam Score", "weight": Decimal("50"), "order": 2},
         )
         subjects = []
         for subject_name in ("English Language", "Mathematics", "Science"):
@@ -185,8 +188,15 @@ class Command(BaseCommand):
             subjects.append(subject)
             offering, _ = SubjectOffering.objects.get_or_create(school=school, school_class=school_class, subject=subject, term=term)
             TeacherAssignment.objects.update_or_create(offering=offering, teacher=teacher, defaults={"is_lead": True})
+            Assessment.objects.filter(
+                school=school, offering=offering, category=category, title="Demo Assessment"
+            ).update(title="Class assessment")
             assessment, _ = Assessment.objects.update_or_create(
-                school=school, offering=offering, category=category, title="Demo Assessment",
+                school=school, offering=offering, category=category, title="Class assessment",
+                defaults={"max_score": Decimal("100"), "status": Assessment.Status.CLOSED},
+            )
+            exam_assessment, _ = Assessment.objects.update_or_create(
+                school=school, offering=offering, category=exam_category, title="End-of-term examination",
                 defaults={"max_score": Decimal("100"), "status": Assessment.Status.CLOSED},
             )
             for index, student in enumerate(students):
@@ -196,6 +206,13 @@ class Command(BaseCommand):
                               "source": GradeEntry.Source.MANUAL, "status": GradeEntry.Status.PUBLISHED,
                               "review_status": GradeEntry.ReviewStatus.APPROVED, "reviewed_by": admin,
                               "reviewed_at": timezone.now(), "review_note": "Synthetic demonstration grade."},
+                )
+                GradeEntry.objects.update_or_create(
+                    assessment=exam_assessment, student=student,
+                    defaults={"school": school, "recorded_by": teacher, "score": Decimal(82 - index * 14),
+                              "source": GradeEntry.Source.MANUAL, "status": GradeEntry.Status.PUBLISHED,
+                              "review_status": GradeEntry.ReviewStatus.APPROVED, "reviewed_by": admin,
+                              "reviewed_at": timezone.now(), "review_note": "Synthetic demonstration exam grade."},
                 )
 
         lesson_note, lesson_created = LessonNote.objects.get_or_create(

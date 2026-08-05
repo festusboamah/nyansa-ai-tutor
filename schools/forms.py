@@ -28,17 +28,23 @@ class SchoolProfileForm(forms.ModelForm):
         fields = [
             "name", "address", "phone", "email", "timezone", "student_access_mode",
             "offers_kg", "offers_primary", "offers_jhs", "stream_structure", "logo", "official_stamp",
+            "headteacher_name", "headteacher_signature",
         ]
         labels = {
             "offers_kg": "Kindergarten (KG 1–2)",
             "offers_primary": "Primary (Basic 1–6)",
             "offers_jhs": "Junior High School (JHS 1–3)",
             "stream_structure": "Class streams",
+            "headteacher_name": "Headteacher name",
+            "headteacher_signature": "Headteacher signature",
         }
         help_texts = {
             "student_access_mode": "Choose how students will access Nyansa.",
             "offers_kg": "Select every education level operated by this school.",
             "stream_structure": "Choose double stream if each level is divided into A and B classes.",
+            "logo": "Displayed on official school reports.",
+            "official_stamp": "Upload a clear PNG or JPG of the official school stamp.",
+            "headteacher_signature": "Upload a transparent PNG or clear JPG of the authorised signature.",
         }
 
 
