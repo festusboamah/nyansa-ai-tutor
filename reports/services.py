@@ -194,8 +194,11 @@ def update_report_details(
     report = TermReport.objects.select_for_update().get(pk=report.pk)
     if not can_prepare_reports(actor, report.school_class, report.term):
         raise PermissionDenied("You cannot edit this report.")
-    if report.status not in {TermReport.Status.DRAFT, TermReport.Status.RETURNED}:
-        raise ValidationError("Only draft or returned reports can be edited.")
+    editable_statuses = {TermReport.Status.DRAFT, TermReport.Status.RETURNED}
+    if actor.role == SchoolMembership.Role.SCHOOL_ADMIN:
+        editable_statuses |= {TermReport.Status.PENDING, TermReport.Status.APPROVED}
+    if report.status not in editable_statuses:
+        raise ValidationError("This report can no longer be edited at its current workflow stage.")
     if actor.role == SchoolMembership.Role.SCHOOL_ADMIN:
         if administrator_remark is not None:
             report.administrator_remark = administrator_remark.strip()

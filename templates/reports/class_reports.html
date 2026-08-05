@@ -1,7 +1,28 @@
 {% extends "base.html" %}
 {% block title %}{{ school_class.name }} Reports - Nyansa{% endblock %}
 {% block content %}
-<div class="admin-heading"><div><p class="eyebrow">{{ term.academic_year.name }} · {{ term.name }}</p><h1>{{ school_class.name }} reports</h1><p>Generation refreshes only draft and returned reports. Reviewed and published snapshots stay locked.</p></div><div class="button-row"><a class="btn-small btn-secondary" href="{% url 'class_term_reports_zip' school_class.id term.id %}">Terminal reports ZIP</a><a class="btn-small btn-secondary" href="{% url 'order_of_merit_pdf' school_class.id term.id %}">Order of merit PDF</a>{% if request.school_membership.role == "SCHOOL_ADMIN" %}<a class="btn-small btn-secondary" href="{% url 'promotion_list_pdf' school_class.id term.id %}">Promotion list PDF</a>{% endif %}</div></div>
-<form method="post" class="card">{% csrf_token %}<button class="btn-small" type="submit">Generate or refresh class reports</button></form>
-<div class="card table-wrap"><table><thead><tr><th>Student</th><th>Average</th><th>Position</th><th>Status</th><th></th></tr></thead><tbody>{% for report in reports %}<tr><td>{{ report.student.user.get_full_name|default:report.student.user.username }}</td><td>{{ report.average_score|default:"—" }}</td><td>{{ report.position|default:"—" }}</td><td><span class="report-status report-{{ report.status|lower }}">{{ report.get_status_display }}</span></td><td><a href="{% url 'term_report_detail' report.id %}">Review</a></td></tr>{% empty %}<tr><td colspan="5">No reports generated yet.</td></tr>{% endfor %}</tbody></table></div>
+<div class="admin-heading">
+    <div><p class="eyebrow">{{ term.academic_year.name }} - {{ term.name }}</p><h1>{{ school_class.name }} reports</h1><p>Use bulk actions for the whole class, then open individual reports only for exceptions.</p></div>
+    <div class="button-row"><a class="btn-small btn-secondary" href="{% url 'class_term_reports_zip' school_class.id term.id %}">Terminal reports ZIP</a><a class="btn-small btn-secondary" href="{% url 'order_of_merit_pdf' school_class.id term.id %}">Order of merit PDF</a>{% if request.school_membership.role == "SCHOOL_ADMIN" %}<a class="btn-small btn-secondary" href="{% url 'promotion_list_pdf' school_class.id term.id %}">Promotion list PDF</a>{% endif %}</div>
+</div>
+<form method="post" class="card">{% csrf_token %}<input type="hidden" name="form_type" value="generate"><button class="btn-small" type="submit">Generate or refresh class reports</button></form>
+
+{% if reports %}
+<form method="post" class="card bulk-report-form">{% csrf_token %}
+    <h2>Bulk report actions</h2>
+    <p>Select the learners below. Shared text applies only to selected editable reports; individual reports can still be adjusted afterwards.</p>
+    {% if request.school_membership.role == "SCHOOL_ADMIN" %}
+        <label for="administrator_remark"><strong>Shared administrator remark</strong></label>
+        <textarea id="administrator_remark" name="administrator_remark" rows="2" placeholder="e.g. Promoted to the next class."></textarea>
+        <div class="button-row bulk-buttons"><button class="btn-small btn-secondary" type="submit" name="form_type" value="bulk_details">Apply remark</button><select name="action" aria-label="Bulk workflow action"><option value="approve">Approve selected</option><option value="publish">Publish selected</option></select><button class="btn-small" type="submit" name="form_type" value="bulk_action">Apply workflow action</button></div>
+    {% else %}
+        <div class="bulk-fields"><label><strong>Shared conduct</strong><input type="text" name="conduct" placeholder="e.g. Very good"></label><label><strong>Shared teacher remark</strong><textarea name="teacher_remark" rows="2" placeholder="e.g. Good progress. Keep working consistently."></textarea></label></div>
+        <div class="button-row bulk-buttons"><button class="btn-small btn-secondary" type="submit" name="form_type" value="bulk_details">Apply details</button><input type="hidden" name="action" value="submit"><button class="btn-small" type="submit" name="form_type" value="bulk_action">Submit selected for review</button></div>
+    {% endif %}
+    <div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="select-all-reports" aria-label="Select all reports"></th><th>Student</th><th>Average</th><th>Position</th><th>Status</th><th></th></tr></thead><tbody>{% for report in reports %}<tr><td><input class="report-checkbox" type="checkbox" name="report_ids" value="{{ report.id }}" aria-label="Select {{ report.student.user.get_full_name|default:report.student.user.username }}"></td><td>{{ report.student.user.get_full_name|default:report.student.user.username }}</td><td>{{ report.average_score|default:"-" }}</td><td>{{ report.position|default:"-" }}</td><td><span class="report-status report-{{ report.status|lower }}">{{ report.get_status_display }}</span></td><td><a href="{% url 'term_report_detail' report.id %}">Review individually</a></td></tr>{% endfor %}</tbody></table></div>
+</form>
+<script>document.getElementById('select-all-reports').addEventListener('change',function(){document.querySelectorAll('.report-checkbox').forEach((box)=>box.checked=this.checked);});</script>
+{% else %}
+<div class="card"><p>No reports generated yet. Generate the class reports first.</p></div>
+{% endif %}
 {% endblock %}

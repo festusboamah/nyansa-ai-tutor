@@ -54,14 +54,65 @@ def report_dashboard(request):
 def class_reports(request, class_id, term_id):
     school_class, term = _class_term(request, class_id, term_id)
     if request.method == "POST":
-        try:
-            reports = generate_class_reports(
-                school_class=school_class, term=term, actor=request.school_membership
-            )
-        except (ValidationError, PermissionDenied) as error:
-            messages.error(request, str(error))
+        form_type = request.POST.get("form_type", "generate")
+        if form_type == "generate":
+            try:
+                reports = generate_class_reports(
+                    school_class=school_class, term=term, actor=request.school_membership
+                )
+            except (ValidationError, PermissionDenied) as error:
+                messages.error(request, str(error))
+            else:
+                messages.success(request, f"Prepared {len(reports)} report snapshots.")
         else:
-            messages.success(request, f"Prepared {len(reports)} report snapshots.")
+            selected_ids = request.POST.getlist("report_ids")
+            selected = TermReport.objects.filter(
+                pk__in=selected_ids, school_class=school_class, term=term
+            ).select_related("student__user")
+            if not selected_ids:
+                messages.error(request, "Select at least one learner report.")
+                return redirect("class_term_reports", class_id=class_id, term_id=term_id)
+            completed, skipped = 0, 0
+            for report in selected:
+                try:
+                    if form_type == "bulk_details":
+                        if request.school_membership.role == SchoolMembership.Role.SCHOOL_ADMIN:
+                            update_report_details(
+                                report=report, actor=request.school_membership,
+                                administrator_remark=request.POST.get("administrator_remark", ""),
+                            )
+                        else:
+                            update_report_details(
+                                report=report, actor=request.school_membership,
+                                conduct=request.POST.get("conduct", ""),
+                                teacher_remark=request.POST.get("teacher_remark", ""),
+                            )
+                    elif form_type == "bulk_action":
+                        action = request.POST.get("action", "")
+                        allowed = (
+                            {"approve", "publish"}
+                            if request.school_membership.role == SchoolMembership.Role.SCHOOL_ADMIN
+                            else {"submit"}
+                        )
+                        if action not in allowed:
+                            raise PermissionDenied("That bulk action is not available to your role.")
+                        transition_report(
+                            report=report, actor=request.school_membership, action=action,
+                            note=request.POST.get("note", ""),
+                        )
+                    else:
+                        raise ValidationError("Unknown bulk report operation.")
+                except (ValidationError, PermissionDenied):
+                    skipped += 1
+                else:
+                    completed += 1
+            if completed:
+                messages.success(request, f"Updated {completed} selected report(s).")
+            if skipped:
+                messages.warning(
+                    request,
+                    f"Skipped {skipped} report(s) because their status or permissions did not allow the operation.",
+                )
         return redirect("class_term_reports", class_id=class_id, term_id=term_id)
     reports = TermReport.objects.filter(school_class=school_class, term=term).select_related("student__user")
     return render(request, "reports/class_reports.html", {

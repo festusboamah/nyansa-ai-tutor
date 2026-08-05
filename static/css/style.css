@@ -1263,11 +1263,16 @@ h2 {
 
 .admin-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem; }
 .button-row { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:.65rem; }
+.bulk-report-form textarea, .bulk-report-form select, .bulk-report-form input[type="text"] { width:100%; margin-top:.45rem; }
+.bulk-fields { display:grid; grid-template-columns:minmax(180px,.7fr) minmax(260px,1.3fr); gap:1rem; margin:1rem 0; }
+.bulk-fields label { display:block; }
+.bulk-buttons { align-items:center; justify-content:flex-start; margin:1rem 0; }
+.bulk-buttons select { width:auto; min-width:190px; margin:0; }
 .eyebrow { text-transform:uppercase; letter-spacing:.08em; font-size:.78rem; font-weight:700; color:var(--primary); margin-bottom:.25rem; }
 .admin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1.5rem; }
 .admin-row { display:flex; justify-content:space-between; gap:1rem; padding:.8rem 0; border-bottom:1px solid var(--border); }
 .admin-row span { color:var(--text-muted); text-align:right; }
-@media (max-width: 650px) { .navbar { padding:1rem; align-items:flex-start; } .navbar-links { flex-wrap:wrap; justify-content:flex-end; gap:.35rem; } .main-content { padding:1.5rem 1rem; } .admin-heading, .admin-row { align-items:flex-start; flex-direction:column; } .button-row { justify-content:flex-start; } .admin-row span { text-align:left; } }
+@media (max-width: 650px) { .navbar { padding:1rem; align-items:flex-start; } .navbar-links { flex-wrap:wrap; justify-content:flex-end; gap:.35rem; } .main-content { padding:1.5rem 1rem; } .admin-heading, .admin-row { align-items:flex-start; flex-direction:column; } .button-row { justify-content:flex-start; } .bulk-fields { grid-template-columns:1fr; } .bulk-buttons { align-items:stretch; flex-direction:column; } .bulk-buttons select { width:100%; } .admin-row span { text-align:left; } }
 
 .gradebook-table-wrap { overflow-x:auto; margin-bottom:1.25rem; background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow); }
 .gradebook-table { margin:0; min-width:680px; }

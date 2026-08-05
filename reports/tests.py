@@ -140,7 +140,7 @@ class TermReportWorkflowTests(TestCase):
         transition_report(report=report, actor=self.teacher, action="submit")
         transition_report(report=report, actor=self.admin, action="approve")
         transition_report(report=report, actor=self.admin, action="publish")
-        with self.assertRaisesMessage(ValidationError, "draft or returned"):
+        with self.assertRaisesMessage(ValidationError, "current workflow stage"):
             update_report_details(
                 report=report, actor=self.teacher, conduct="Good", teacher_remark="Changed",
                 promotion_outcome=TermReport.Promotion.PROMOTED,
@@ -221,6 +221,47 @@ class TermReportWorkflowTests(TestCase):
             reverse("promotion_list_pdf", args=[self.school_class.pk, self.term.pk]), secure=True
         )
         self.assertEqual(response.status_code, 403)
+
+    def test_class_reports_support_bulk_teacher_and_admin_workflow(self):
+        report = self._generate()
+        url = reverse("class_term_reports", args=[self.school_class.pk, self.term.pk])
+        self.client.force_login(self.teacher.user)
+        session = self.client.session
+        session["active_school_id"] = self.school.pk
+        session.save()
+        details = self.client.post(url, {
+            "form_type": "bulk_details", "report_ids": [report.pk],
+            "conduct": "Very good", "teacher_remark": "Keep progressing.",
+        }, secure=True)
+        self.assertEqual(details.status_code, 302)
+        submit = self.client.post(url, {
+            "form_type": "bulk_action", "report_ids": [report.pk], "action": "submit",
+        }, secure=True)
+        self.assertEqual(submit.status_code, 302)
+        report.refresh_from_db()
+        self.assertEqual(report.status, TermReport.Status.PENDING)
+        self.assertEqual(report.teacher_remark, "Keep progressing.")
+
+        self.client.force_login(self.admin.user)
+        session = self.client.session
+        session["active_school_id"] = self.school.pk
+        session.save()
+        admin_details = self.client.post(url, {
+            "form_type": "bulk_details", "report_ids": [report.pk],
+            "administrator_remark": "Promoted to the next class.",
+        }, secure=True)
+        self.assertEqual(admin_details.status_code, 302)
+        approve = self.client.post(url, {
+            "form_type": "bulk_action", "report_ids": [report.pk], "action": "approve",
+        }, secure=True)
+        self.assertEqual(approve.status_code, 302)
+        publish = self.client.post(url, {
+            "form_type": "bulk_action", "report_ids": [report.pk], "action": "publish",
+        }, secure=True)
+        self.assertEqual(publish.status_code, 302)
+        report.refresh_from_db()
+        self.assertEqual(report.status, TermReport.Status.PUBLISHED)
+        self.assertEqual(report.administrator_remark, "Promoted to the next class.")
 
     def test_other_school_report_is_not_visible(self):
         report = self._generate()
