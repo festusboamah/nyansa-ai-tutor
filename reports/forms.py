@@ -20,8 +20,12 @@ class ReportDetailsForm(forms.ModelForm):
 
     def __init__(self, *args, is_admin=False, **kwargs):
         super().__init__(*args, **kwargs)
-        if not is_admin:
+        if is_admin:
+            self.fields.pop("conduct")
+            self.fields.pop("teacher_remark")
+        else:
             self.fields.pop("administrator_remark")
+            self.fields.pop("promotion_outcome")
 
 
 class ReportDecisionForm(forms.Form):

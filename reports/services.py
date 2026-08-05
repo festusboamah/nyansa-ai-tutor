@@ -187,20 +187,28 @@ def generate_class_reports(*, school_class, term, actor):
 
 
 @transaction.atomic
-def update_report_details(*, report, actor, conduct, teacher_remark, promotion_outcome, administrator_remark=None):
+def update_report_details(
+    *, report, actor, conduct=None, teacher_remark=None,
+    promotion_outcome=None, administrator_remark=None,
+):
     report = TermReport.objects.select_for_update().get(pk=report.pk)
     if not can_prepare_reports(actor, report.school_class, report.term):
         raise PermissionDenied("You cannot edit this report.")
     if report.status not in {TermReport.Status.DRAFT, TermReport.Status.RETURNED}:
         raise ValidationError("Only draft or returned reports can be edited.")
-    report.conduct = conduct.strip()
-    report.teacher_remark = teacher_remark.strip()
-    if administrator_remark is not None:
-        if actor.role != SchoolMembership.Role.SCHOOL_ADMIN:
-            raise PermissionDenied("Only a school administrator can set the administrator remark.")
-        report.administrator_remark = administrator_remark.strip()
-    report.promotion_outcome = promotion_outcome
-    report.save(update_fields=["conduct", "teacher_remark", "administrator_remark", "promotion_outcome", "updated_at"])
+    if actor.role == SchoolMembership.Role.SCHOOL_ADMIN:
+        if administrator_remark is not None:
+            report.administrator_remark = administrator_remark.strip()
+        if promotion_outcome is not None:
+            report.promotion_outcome = promotion_outcome
+    else:
+        if conduct is not None:
+            report.conduct = conduct.strip()
+        if teacher_remark is not None:
+            report.teacher_remark = teacher_remark.strip()
+    report.save(update_fields=[
+        "conduct", "teacher_remark", "administrator_remark", "promotion_outcome", "updated_at"
+    ])
     return report
 
 
@@ -210,7 +218,7 @@ def transition_report(*, report, actor, action, note=""):
     admin = actor.school_id == report.school_id and actor.is_active and actor.role == SchoolMembership.Role.SCHOOL_ADMIN
     transitions = {
         "submit": ({TermReport.Status.DRAFT, TermReport.Status.RETURNED}, TermReport.Status.PENDING),
-        "approve": ({TermReport.Status.PENDING}, TermReport.Status.APPROVED),
+        "approve": ({TermReport.Status.DRAFT, TermReport.Status.RETURNED, TermReport.Status.PENDING}, TermReport.Status.APPROVED),
         "return": ({TermReport.Status.PENDING}, TermReport.Status.RETURNED),
         "publish": ({TermReport.Status.APPROVED}, TermReport.Status.PUBLISHED),
         "reopen": ({TermReport.Status.PUBLISHED}, TermReport.Status.DRAFT),
@@ -221,6 +229,8 @@ def transition_report(*, report, actor, action, note=""):
     if report.status not in allowed:
         raise ValidationError(f"A {report.get_status_display().lower()} report cannot be {action}ed.")
     if action == "submit":
+        if actor.role != SchoolMembership.Role.TEACHER:
+            raise PermissionDenied("Only a teacher can submit a report for review.")
         if not can_prepare_reports(actor, report.school_class, report.term):
             raise PermissionDenied("You cannot submit this report.")
     elif not admin:

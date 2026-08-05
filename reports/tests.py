@@ -146,6 +146,22 @@ class TermReportWorkflowTests(TestCase):
                 promotion_outcome=TermReport.Promotion.PROMOTED,
             )
 
+    def test_admin_edits_only_admin_fields_and_can_approve_draft_directly(self):
+        report = self._generate(actor=self.admin)
+        update_report_details(
+            report=report, actor=self.admin, administrator_remark="Approved by headteacher",
+            promotion_outcome=TermReport.Promotion.PROMOTED,
+        )
+        transition_report(report=report, actor=self.admin, action="approve")
+        report.refresh_from_db()
+        self.assertEqual(report.status, TermReport.Status.APPROVED)
+        self.assertEqual(report.administrator_remark, "Approved by headteacher")
+
+    def test_admin_cannot_submit_report_to_self(self):
+        report = self._generate(actor=self.admin)
+        with self.assertRaises(PermissionDenied):
+            transition_report(report=report, actor=self.admin, action="submit")
+
     def test_workflow_history_is_immutable(self):
         report = self._generate()
         event = report.workflow_events.first()
@@ -166,7 +182,6 @@ class TermReportWorkflowTests(TestCase):
 
     def test_report_pdf_and_bulk_zip_are_downloadable(self):
         report = self._generate(actor=self.admin)
-        transition_report(report=report, actor=self.admin, action="submit")
         transition_report(report=report, actor=self.admin, action="approve")
         transition_report(report=report, actor=self.admin, action="publish")
         self.client.force_login(self.admin.user)

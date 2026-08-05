@@ -79,16 +79,27 @@ def report_detail(request, report_id):
         raise PermissionDenied
     is_admin = request.school_membership.role == SchoolMembership.Role.SCHOOL_ADMIN
     details_form = ReportDetailsForm(request.POST or None, instance=report, is_admin=is_admin)
-    actions = [("submit", "Submit for review")]
-    if request.school_membership.role == SchoolMembership.Role.SCHOOL_ADMIN:
-        actions += [("approve", "Approve"), ("return", "Send back"), ("publish", "Publish"), ("reopen", "Reopen published report")]
+    if is_admin:
+        actions = {
+            TermReport.Status.DRAFT: [("approve", "Approve as administrator")],
+            TermReport.Status.RETURNED: [("approve", "Approve as administrator")],
+            TermReport.Status.PENDING: [("approve", "Approve"), ("return", "Send back")],
+            TermReport.Status.APPROVED: [("publish", "Publish")],
+            TermReport.Status.PUBLISHED: [("reopen", "Reopen published report")],
+        }.get(report.status, [])
+    else:
+        actions = (
+            [("submit", "Submit for administrator review")]
+            if report.status in {TermReport.Status.DRAFT, TermReport.Status.RETURNED}
+            else []
+        )
     decision_form = ReportDecisionForm(actions=actions)
     if request.method == "POST" and request.POST.get("form_type") == "details" and details_form.is_valid():
         try:
             update_report_details(
                 report=report, actor=request.school_membership,
-                conduct=details_form.cleaned_data["conduct"],
-                teacher_remark=details_form.cleaned_data["teacher_remark"],
+                conduct=details_form.cleaned_data.get("conduct"),
+                teacher_remark=details_form.cleaned_data.get("teacher_remark"),
                 promotion_outcome=details_form.cleaned_data["promotion_outcome"],
                 administrator_remark=details_form.cleaned_data.get("administrator_remark"),
             )
@@ -113,7 +124,7 @@ def report_detail(request, report_id):
     report.refresh_from_db()
     return render(request, "reports/detail.html", {
         "report": report, "data": report.snapshot, "details_form": details_form,
-        "decision_form": decision_form,
+        "decision_form": decision_form, "workflow_actions": actions,
     })
 
 
