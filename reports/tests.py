@@ -185,6 +185,24 @@ class TermReportWorkflowTests(TestCase):
         with self.assertRaises(PermissionDenied):
             transition_report(report=report, actor=self.admin, action="submit")
 
+    def test_reopen_error_does_not_invalidate_administrator_details_form(self):
+        report = self._generate(actor=self.admin)
+        transition_report(report=report, actor=self.admin, action="approve")
+        transition_report(report=report, actor=self.admin, action="publish")
+        self.client.force_login(self.admin.user)
+        session = self.client.session
+        session["active_school_id"] = self.school.pk
+        session.save()
+        response = self.client.post(
+            reverse("term_report_detail", args=[report.pk]),
+            {"form_type": "decision", "action": "reopen", "note": ""},
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["details_form"].is_bound)
+        self.assertContains(response, "A reason is required.")
+        self.assertNotContains(response, "This field is required.")
+
     def test_workflow_history_is_immutable(self):
         report = self._generate()
         event = report.workflow_events.first()

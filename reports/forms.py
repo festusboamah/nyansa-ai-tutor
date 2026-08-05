@@ -35,3 +35,4 @@ class ReportDecisionForm(forms.Form):
     def __init__(self, *args, actions, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["action"].choices = actions
+        self.fields["note"].help_text = "Required when sending back or reopening a published report."

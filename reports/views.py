@@ -129,7 +129,12 @@ def report_detail(request, report_id):
     if not can_prepare_reports(request.school_membership, report.school_class, report.term):
         raise PermissionDenied
     is_admin = request.school_membership.role == SchoolMembership.Role.SCHOOL_ADMIN
-    details_form = ReportDetailsForm(request.POST or None, instance=report, is_admin=is_admin)
+    submitted_form = request.POST.get("form_type") if request.method == "POST" else None
+    details_form = ReportDetailsForm(
+        request.POST if submitted_form == "details" else None,
+        instance=report,
+        is_admin=is_admin,
+    )
     if is_admin:
         actions = {
             TermReport.Status.DRAFT: [("approve", "Approve as administrator")],
@@ -144,7 +149,10 @@ def report_detail(request, report_id):
             if report.status in {TermReport.Status.DRAFT, TermReport.Status.RETURNED}
             else []
         )
-    decision_form = ReportDecisionForm(actions=actions)
+    decision_form = ReportDecisionForm(
+        request.POST if submitted_form == "decision" else None,
+        actions=actions,
+    )
     if request.method == "POST" and request.POST.get("form_type") == "details" and details_form.is_valid():
         try:
             update_report_details(
@@ -160,14 +168,15 @@ def report_detail(request, report_id):
             messages.success(request, "Report details saved.")
             return redirect("term_report_detail", report_id=report.pk)
     elif request.method == "POST" and request.POST.get("form_type") == "decision":
-        decision_form = ReportDecisionForm(request.POST, actions=actions)
         if decision_form.is_valid():
             try:
                 transition_report(
                     report=report, actor=request.school_membership,
                     action=decision_form.cleaned_data["action"], note=decision_form.cleaned_data["note"],
                 )
-            except (ValidationError, PermissionDenied) as error:
+            except ValidationError as error:
+                decision_form.add_error("note", " ".join(error.messages))
+            except PermissionDenied as error:
                 decision_form.add_error(None, str(error))
             else:
                 messages.success(request, "Report workflow updated.")
