@@ -113,6 +113,26 @@ class SchoolOnboardingTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("Upload a PNG or JPG image", form.errors["official_stamp"][0])
 
+    def test_existing_unsupported_stamp_does_not_block_signature_replacement(self):
+        self.school.official_stamp.name = "schools/stamps/old-stamp.avif"
+        self.school.save(update_fields=["official_stamp"])
+        form = SchoolProfileForm(
+            data={
+                "name": self.school.name,
+                "timezone": "Africa/Accra",
+                "student_access_mode": School.StudentAccessMode.STAFF_MANAGED,
+                "stream_structure": School.StreamStructure.SINGLE,
+            },
+            files={
+                "headteacher_signature": SimpleUploadedFile(
+                    "signature.png", b"png-placeholder", content_type="image/png"
+                )
+            },
+            instance=self.school,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIn("cannot appear in PDFs", form.fields["official_stamp"].help_text)
+
     def test_new_current_year_replaces_previous_current_year(self):
         previous = AcademicYear.objects.create(
             school=self.school, name="2025/2026", start_date="2025-09-01",

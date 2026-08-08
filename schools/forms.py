@@ -1,4 +1,5 @@
 from django import forms
+from django.core.files.uploadedfile import UploadedFile
 from django.db import models
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from .models import School, SchoolMembership, StudentProfile
@@ -49,11 +50,19 @@ class SchoolProfileForm(forms.ModelForm):
             "headteacher_signature": "Upload a transparent PNG or clear JPG of the authorised signature.",
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in ("logo", "official_stamp", "headteacher_signature"):
+            current = getattr(self.instance, field_name, None)
+            if current and current.name and not current.name.lower().endswith(self.REPORT_IMAGE_EXTENSIONS):
+                self.fields[field_name].help_text = (
+                    f"The current {current.name.rsplit('/', 1)[-1]} cannot appear in PDFs. "
+                    "Replace it with a PNG or JPG image."
+                )
+
     def _clean_report_image(self, field_name):
         upload = self.cleaned_data.get(field_name)
-        if upload and upload.name.lower().endswith(self.REPORT_IMAGE_EXTENSIONS):
-            return upload
-        if upload:
+        if isinstance(upload, UploadedFile) and not upload.name.lower().endswith(self.REPORT_IMAGE_EXTENSIONS):
             raise forms.ValidationError(
                 "Upload a PNG or JPG image. AVIF, SVG, HEIC, and PDF files cannot be placed on reports."
             )
