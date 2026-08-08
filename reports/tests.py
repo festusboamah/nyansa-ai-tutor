@@ -14,7 +14,7 @@ from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeSc
 from schools.models import School, SchoolMembership
 
 from .models import ReportPolicy, ReportWorkflowEvent, TermReport
-from .services import generate_class_reports, transition_report, update_report_details
+from .services import _ges_grade, generate_class_reports, transition_report, update_report_details
 
 
 class TermReportWorkflowTests(TestCase):
@@ -75,6 +75,34 @@ class TermReportWorkflowTests(TestCase):
         self.assertEqual(report.snapshot["school"]["name"], "Nyansa Academy")
         self.assertEqual(report.promotion_outcome, TermReport.Promotion.PROMOTED)
         self.assertEqual(report.snapshot["class_teacher"], "report-teacher")
+        self.assertEqual(report.snapshot["subjects"][0]["grade"], "3")
+        self.assertEqual(report.snapshot["subjects"][0]["remark"], "High")
+
+    def test_ges_grade_and_remark_boundaries(self):
+        expected = {
+            "95": ("1", "Highest"), "85": ("2", "Higher"),
+            "75": ("3", "High"), "65": ("4", "High Average"),
+            "57": ("5", "Average"), "52": ("6", "Low Average"),
+            "45": ("7", "Low"), "35": ("8", "Lowest"),
+            "20": ("9", "Fail"),
+        }
+        for score, result in expected.items():
+            with self.subTest(score=score):
+                self.assertEqual(_ges_grade(Decimal(score)), result)
+
+    def test_report_prioritises_core_subjects_and_excludes_physical_education(self):
+        for name in (
+            "Career Technology", "Science", "English Language", "Physical Education", "Social Studies"
+        ):
+            subject = Subject.objects.create(school=self.school, name=name)
+            SubjectOffering.objects.create(
+                school=self.school, school_class=self.school_class, subject=subject, term=self.term
+            )
+        report = self._generate()
+        self.assertEqual(
+            [item["subject"] for item in report.snapshot["subjects"]],
+            ["Social Studies", "English Language", "Mathematics", "Science", "Career Technology"],
+        )
 
     def test_report_separates_weighted_class_and_exam_scores(self):
         self.category.weight = Decimal("50.00")

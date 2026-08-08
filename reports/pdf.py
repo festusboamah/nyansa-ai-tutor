@@ -5,6 +5,8 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 
+from .services import report_subject_sort_key
+
 
 def _media_link_callback(uri, _rel):
     if uri.startswith(settings.MEDIA_URL):
@@ -57,7 +59,7 @@ def build_class_report_rows(reports):
         subject["subject"]
         for report in reports
         for subject in report.snapshot.get("subjects", [])
-    })
+    }, key=report_subject_sort_key)
     rows, previous_average, previous_position = [], None, 0
     for index, report in enumerate(reports, 1):
         if previous_position == 0 or report.average_score != previous_average:

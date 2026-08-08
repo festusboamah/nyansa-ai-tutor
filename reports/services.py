@@ -12,6 +12,37 @@ from schools.models import SchoolMembership
 from .models import ReportPolicy, ReportWorkflowEvent, TermReport
 
 
+CORE_SUBJECT_ORDER = {
+    "social studies": 0,
+    "english language": 1,
+    "mathematics": 2,
+    "science": 3,
+}
+REPORT_EXCLUDED_SUBJECTS = {"physical education", "physical and health education"}
+
+
+def report_subject_sort_key(subject_name):
+    normalised = subject_name.strip().casefold()
+    return CORE_SUBJECT_ORDER.get(normalised, len(CORE_SUBJECT_ORDER)), normalised
+
+
+def _ges_grade(score):
+    if score is None:
+        return "—", "No approved score"
+    boundaries = (
+        (Decimal("90"), "1", "Highest"),
+        (Decimal("80"), "2", "Higher"),
+        (Decimal("70"), "3", "High"),
+        (Decimal("60"), "4", "High Average"),
+        (Decimal("55"), "5", "Average"),
+        (Decimal("50"), "6", "Low Average"),
+        (Decimal("40"), "7", "Low"),
+        (Decimal("30"), "8", "Lowest"),
+        (Decimal("0"), "9", "Fail"),
+    )
+    return next((grade, remark) for minimum, grade, remark in boundaries if score >= minimum)
+
+
 def can_prepare_reports(actor, school_class, term):
     if actor.school_id != school_class.school_id or not actor.is_active:
         return False
@@ -57,13 +88,15 @@ def _subject_result(student, offering, scheme, pass_mark):
         })
     complete = bool(categories) and all(item["average"] is not None for item in categories)
     score = (weighted / Decimal("100")).quantize(Decimal("0.01")) if complete else None
+    grade, remark = _ges_grade(score)
     return {
         "subject": offering.subject.name,
         "score": str(score) if score is not None else None,
         "class_score": str(class_score) if class_score is not None else None,
         "exam_score": str(exam_score) if exam_score is not None else None,
-        "grade": "Pass" if score is not None and score >= pass_mark else ("Fail" if score is not None else "—"),
         "categories": categories,
+        "grade": grade,
+        "remark": remark,
     }
 
 
@@ -74,9 +107,14 @@ def build_snapshot(*, student, school_class, term, policy):
     ).prefetch_related("categories").first()
     if not scheme:
         raise ValidationError("Activate a grade scheme for this academic year before generating reports.")
-    offerings = SubjectOffering.objects.filter(
+    offerings = list(SubjectOffering.objects.filter(
         school_class=school_class, term=term
-    ).select_related("subject").order_by("subject__name")
+    ).select_related("subject"))
+    offerings = [
+        offering for offering in offerings
+        if offering.subject.name.strip().casefold() not in REPORT_EXCLUDED_SUBJECTS
+    ]
+    offerings.sort(key=lambda offering: report_subject_sort_key(offering.subject.name))
     subjects = [_subject_result(student, offering, scheme, policy.pass_mark) for offering in offerings]
     scored = [Decimal(item["score"]) for item in subjects if item["score"] is not None]
     total = sum(scored, Decimal("0"))
