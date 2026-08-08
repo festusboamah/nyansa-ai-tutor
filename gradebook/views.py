@@ -10,14 +10,15 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from urllib.parse import quote
 
-from academics.models import ClassEnrollment, SubjectOffering
+from academics.models import AcademicYear, ClassEnrollment, SubjectOffering
 from schools.models import SchoolMembership
 from schools.services import has_school_role
 
 from .forms import AssessmentForm, GradeCorrectionForm, GradeWorkbookUploadForm
 from .history import record_grade_entry, review_grade_entry
 from .imports import confirm_grade_import
-from .models import Assessment, GradeEntry, GradeImportBatch, GradeImportRow, GradeReviewDecision
+from .models import Assessment, GradeEntry, GradeImportBatch, GradeImportRow, GradeReviewDecision, GradeScheme
+from .services import configure_ges_grade_scheme
 from .spreadsheets import WorkbookValidationError, build_grade_template, parse_grade_template
 from .sync import sync_legacy_assessment
 
@@ -355,6 +356,36 @@ def grade_review_queue(request):
     base_entries = GradeEntry.objects.filter(
         school=request.school, status=GradeEntry.Status.PUBLISHED
     )
+
+
+@school_admin_required
+def grade_settings(request):
+    years = AcademicYear.objects.filter(school=request.school).order_by("-start_date")
+    selected_year = years.filter(pk=request.POST.get("academic_year") or request.GET.get("academic_year")).first()
+    if selected_year is None:
+        selected_year = years.filter(is_current=True).first() or years.first()
+    if request.method == "POST":
+        if selected_year is None:
+            messages.error(request, "Create an academic year before configuring grades.")
+        else:
+            configure_ges_grade_scheme(selected_year)
+            messages.success(
+                request,
+                f"GES 50/50 grading is active for {selected_year.name}. Teachers can now create Class Score and Examination assessments.",
+            )
+            return redirect(f"{request.path}?academic_year={selected_year.pk}")
+    active_scheme = None
+    if selected_year is not None:
+        active_scheme = GradeScheme.objects.filter(
+            school=request.school,
+            academic_year=selected_year,
+            status=GradeScheme.Status.ACTIVE,
+        ).prefetch_related("categories").first()
+    return render(request, "gradebook/grade_settings.html", {
+        "years": years,
+        "selected_year": selected_year,
+        "active_scheme": active_scheme,
+    })
     counts = {
         "total": base_entries.count(),
         "pending": base_entries.filter(review_status=GradeEntry.ReviewStatus.PENDING).count(),

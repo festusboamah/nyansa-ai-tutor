@@ -18,7 +18,7 @@ from schools.models import School, SchoolMembership
 from quizzes.models import Assignment, AssignmentSubmission, Quiz, Submission
 from .history import record_grade_entry, review_grade_entry
 from .models import Assessment, AssessmentCategory, GradeEntry, GradeEntryRevision, GradeImportBatch, GradeImportRow, GradeReviewDecision, GradeScheme
-from .services import activate_grade_scheme, calculate_weighted_result
+from .services import activate_grade_scheme, calculate_weighted_result, configure_ges_grade_scheme
 from .sync import sync_legacy_assessment
 
 
@@ -83,6 +83,44 @@ class GradebookTests(TestCase):
             activate_grade_scheme(self.scheme)
         self.scheme.refresh_from_db()
         self.assertEqual(self.scheme.status, GradeScheme.Status.DRAFT)
+
+    def test_configure_ges_scheme_preserves_and_archives_legacy_scheme(self):
+        self.scheme.status = GradeScheme.Status.ACTIVE
+        self.scheme.save(update_fields=["status"])
+        configured = configure_ges_grade_scheme(self.year)
+        self.scheme.refresh_from_db()
+        self.assertEqual(self.scheme.status, GradeScheme.Status.ARCHIVED)
+        self.assertEqual(configured.status, GradeScheme.Status.ACTIVE)
+        self.assertEqual(
+            list(configured.categories.values_list("name", "weight", "order")),
+            [
+                ("Class Score", Decimal("50.00"), 1),
+                ("Examination", Decimal("50.00"), 2),
+            ],
+        )
+
+    def test_school_admin_can_activate_ges_scheme_from_settings(self):
+        admin = self._membership("grade-admin", SchoolMembership.Role.SCHOOL_ADMIN)
+        self.client.force_login(admin.user)
+        response = self.client.post(
+            reverse("gradebook_settings"), {"academic_year": self.year.pk}, secure=True
+        )
+        self.assertRedirects(
+            response,
+            f"{reverse('gradebook_settings')}?academic_year={self.year.pk}",
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(GradeScheme.objects.filter(
+            school=self.school,
+            academic_year=self.year,
+            name="GES 50/50 grading scheme",
+            status=GradeScheme.Status.ACTIVE,
+        ).exists())
+
+    def test_teacher_cannot_open_grade_settings(self):
+        self.client.force_login(self.teacher.user)
+        response = self.client.get(reverse("gradebook_settings"), secure=True)
+        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
 
     def test_activating_scheme_archives_previous_scheme_for_year(self):
         old = GradeScheme.objects.create(

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Grade Settings | Nyansa{% endblock %}
+{% block content %}
+<section class="page-shell">
+  <p class="eyebrow">Academic administration</p>
+  <h1>Grade settings</h1>
+  <p>Configure how Class Score and Examination contribute to terminal reports.</p>
+
+  <section class="card">
+    <form method="get" class="assignment-filters">
+      <label>Academic year
+        <select name="academic_year" onchange="this.form.submit()">
+          {% for year in years %}<option value="{{ year.pk }}"{% if selected_year.pk == year.pk %} selected{% endif %}>{{ year.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <noscript><button class="btn-small" type="submit">View</button></noscript>
+    </form>
+
+    {% if selected_year %}
+      <h2>{{ selected_year.name }}</h2>
+      {% if active_scheme %}
+        <p><strong>Active scheme:</strong> {{ active_scheme.name }}</p>
+        <div class="table-scroll"><table class="gradebook-table"><thead><tr><th>Category</th><th>Code</th><th>Weight</th></tr></thead><tbody>
+          {% for category in active_scheme.categories.all %}<tr><td>{{ category.name }}</td><td>{{ category.code }}</td><td>{{ category.weight }}%</td></tr>{% empty %}<tr><td colspan="3">No categories configured.</td></tr>{% endfor %}
+        </tbody></table></div>
+      {% else %}<p>No active grading scheme exists for this academic year.</p>{% endif %}
+
+      <div class="curriculum-generator">
+        <h3>GES terminal-report structure</h3>
+        <p>This activates <strong>Class Score (50%)</strong> and <strong>Examination (50%)</strong>. Existing legacy assessments and grades are preserved, but teachers must create new assessments under the new categories.</p>
+        <form method="post">{% csrf_token %}<input type="hidden" name="academic_year" value="{{ selected_year.pk }}"><button type="submit" class="btn-small">Activate GES 50/50 grading</button></form>
+      </div>
+    {% else %}<p>Create an academic year before configuring grades.</p>{% endif %}
+  </section>
+</section>
+{% endblock %}

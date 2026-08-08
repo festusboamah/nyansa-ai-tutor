@@ -38,6 +38,28 @@ def ensure_default_grade_scheme(academic_year):
 
 
 @transaction.atomic
+def configure_ges_grade_scheme(academic_year):
+    """Create and activate the standard 50/50 scheme without deleting legacy grades."""
+    scheme, _ = GradeScheme.objects.get_or_create(
+        school=academic_year.school,
+        academic_year=academic_year,
+        name="GES 50/50 grading scheme",
+        defaults={"status": GradeScheme.Status.DRAFT},
+    )
+    categories = (
+        ("class-score", "Class Score", Decimal("50.00"), 1),
+        ("exam", "Examination", Decimal("50.00"), 2),
+    )
+    for code, name, weight, order in categories:
+        AssessmentCategory.objects.update_or_create(
+            scheme=scheme,
+            code=code,
+            defaults={"name": name, "weight": weight, "order": order},
+        )
+    return activate_grade_scheme(scheme)
+
+
+@transaction.atomic
 def activate_grade_scheme(scheme):
     scheme = GradeScheme.objects.select_for_update().get(pk=scheme.pk)
     total = scheme.categories.aggregate(total_weight=models.Sum("weight"))["total_weight"]
