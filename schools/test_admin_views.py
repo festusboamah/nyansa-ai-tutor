@@ -27,9 +27,11 @@ class SchoolAdminViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.school.name)
 
-    def test_admin_navigation_links_to_teacher_assignments(self):
+    def test_admin_navigation_links_to_school_operations(self):
         self.client.force_login(self.admin_user)
         response = self.client.get(reverse("school_admin_dashboard"), secure=True)
+        self.assertContains(response, "School Setup")
+        self.assertContains(response, reverse("school_onboarding"))
         self.assertContains(response, "Teacher Assignments")
         self.assertContains(response, reverse("teacher_assignment_management"))
 
