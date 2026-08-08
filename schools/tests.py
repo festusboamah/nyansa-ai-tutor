@@ -12,6 +12,7 @@ from courses.models import Subject
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, Term
 
 from .models import School, SchoolMembership, StudentProfile
+from .forms import SchoolProfileForm
 from .services import (
     ACTIVE_SCHOOL_SESSION_KEY,
     resolve_active_membership,
@@ -93,6 +94,24 @@ class SchoolOnboardingTests(TestCase):
         self.assertRedirects(
             response, f"{reverse('school_onboarding')}?step=year", fetch_redirect_response=False
         )
+
+    def test_report_branding_rejects_unsupported_image_format(self):
+        form = SchoolProfileForm(
+            data={
+                "name": self.school.name,
+                "timezone": "Africa/Accra",
+                "student_access_mode": School.StudentAccessMode.STAFF_MANAGED,
+                "stream_structure": School.StreamStructure.SINGLE,
+            },
+            files={
+                "official_stamp": SimpleUploadedFile(
+                    "stamp.avif", b"not-an-image", content_type="image/avif"
+                )
+            },
+            instance=self.school,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("Upload a PNG or JPG image", form.errors["official_stamp"][0])
 
     def test_new_current_year_replaces_previous_current_year(self):
         previous = AcademicYear.objects.create(

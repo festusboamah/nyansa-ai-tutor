@@ -1496,7 +1496,9 @@ h2 {
 .setup-form { margin: 0; }
 .setup-form-fields { margin-top: 1.2rem; }
 .setup-form-fields p { display: grid; gap: .35rem; margin-bottom: 1rem; }
-.setup-form-fields input, .setup-form-fields select, .setup-form-fields textarea { width: 100%; padding: .75rem; border: 1px solid #cdd8e7; border-radius: 8px; }
+.setup-form-fields input:not([type="checkbox"]):not([type="radio"]), .setup-form-fields select, .setup-form-fields textarea { width: 100%; padding: .75rem; border: 1px solid #cdd8e7; border-radius: 8px; }
+.setup-form-fields input[type="checkbox"], .setup-form-fields input[type="radio"] { width: 1rem; height: 1rem; margin: 0 .4rem 0 0; padding: 0; vertical-align: middle; accent-color: #079af3; }
+input[type="checkbox"], input[type="radio"] { max-width: 1.1rem; }
 @media (max-width: 760px) { .onboarding-layout { grid-template-columns: 1fr; } .onboarding-heading { align-items: start; } }
 .setup-complete { display: grid; justify-items: start; gap: .8rem; padding: 1rem 0; }
 .setup-complete > span { width: 3.5rem; height: 3.5rem; display: grid; place-items: center; border-radius: 50%; background: #dcfce7; color: #15803d; font-size: 1.8rem; font-weight: 800; }

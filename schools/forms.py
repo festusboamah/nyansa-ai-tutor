@@ -23,6 +23,8 @@ class SchoolScopedFormMixin:
 
 
 class SchoolProfileForm(forms.ModelForm):
+    REPORT_IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
+
     class Meta:
         model = School
         fields = [
@@ -46,6 +48,25 @@ class SchoolProfileForm(forms.ModelForm):
             "official_stamp": "Upload a clear PNG or JPG of the official school stamp.",
             "headteacher_signature": "Upload a transparent PNG or clear JPG of the authorised signature.",
         }
+
+    def _clean_report_image(self, field_name):
+        upload = self.cleaned_data.get(field_name)
+        if upload and upload.name.lower().endswith(self.REPORT_IMAGE_EXTENSIONS):
+            return upload
+        if upload:
+            raise forms.ValidationError(
+                "Upload a PNG or JPG image. AVIF, SVG, HEIC, and PDF files cannot be placed on reports."
+            )
+        return upload
+
+    def clean_logo(self):
+        return self._clean_report_image("logo")
+
+    def clean_official_stamp(self):
+        return self._clean_report_image("official_stamp")
+
+    def clean_headteacher_signature(self):
+        return self._clean_report_image("headteacher_signature")
 
 
 class StudentRosterUploadForm(forms.Form):
