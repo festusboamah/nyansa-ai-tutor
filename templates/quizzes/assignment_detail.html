@@ -7,6 +7,20 @@
 <p>📅 Deadline: <strong>{{ assignment.deadline|date:"M d, Y - g:i A" }}</strong></p>
 {% endif %}
 
+{% if assignment.criteria.all %}
+<div class="card">
+    <h2>Grading Rubric</h2>
+    <ul class="choice-review-list">
+        {% for criterion in assignment.criteria.all %}
+            <li>
+                <strong>{{ criterion.name }}</strong> ({{ criterion.max_points }} points)
+                {% if criterion.description %}<br>{{ criterion.description }}{% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 {% if user.is_student %}
     {% if my_submission %}
     <div class="card">
@@ -40,5 +54,6 @@
     {% endif %}
 {% else %}
     <a href="{% url 'assignment_submissions_list' assignment.id %}" class="btn-small">View Submissions</a>
+    <a href="{% url 'manage_rubric' assignment.id %}" class="btn-small btn-secondary">Manage Rubric</a>
 {% endif %}
 {% endblock %}

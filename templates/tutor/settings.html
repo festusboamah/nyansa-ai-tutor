@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Tutor Settings - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">Teacher-controlled AI</p>
+        <h1>Tutor Settings</h1>
+        <p>Choose which tutor modes are available to students at your school.</p>
+    </div>
+</div>
+
+<form method="post" class="card">
+    {% csrf_token %}
+    {% for value, label in modes %}
+    <div class="admin-row">
+        <label for="enabled_{{ value }}">{{ label }}</label>
+        <input type="checkbox" id="enabled_{{ value }}" name="enabled_{{ value }}" {% if value not in disabled_modes %}checked{% endif %}>
+    </div>
+    {% endfor %}
+
+    <div class="admin-row">
+        <label for="max_hint_depth">Max hints per problem (Give Me a Hint mode)</label>
+        <input type="number" id="max_hint_depth" name="max_hint_depth" min="1" value="{{ settings_row.max_hint_depth }}">
+    </div>
+    <div class="admin-row">
+        <label for="allow_final_answer_reveal">Allow revealing the final answer once hints run out</label>
+        <input type="checkbox" id="allow_final_answer_reveal" name="allow_final_answer_reveal" {% if settings_row.allow_final_answer_reveal %}checked{% endif %}>
+    </div>
+    <div class="admin-row">
+        <label for="daily_usage_limit">Daily tutor AI calls allowed (leave blank for no limit)</label>
+        <input type="number" id="daily_usage_limit" name="daily_usage_limit" min="1" value="{{ settings_row.daily_usage_limit|default_if_none:'' }}">
+    </div>
+    <div class="admin-row">
+        <label for="min_difficulty">Minimum practice difficulty (Practice With Me mode)</label>
+        <select id="min_difficulty" name="min_difficulty">
+            {% for value, label in difficulty_choices %}
+            <option value="{{ value }}" {% if settings_row.min_difficulty == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="admin-row">
+        <label for="max_difficulty">Maximum practice difficulty (Practice With Me mode)</label>
+        <select id="max_difficulty" name="max_difficulty">
+            {% for value, label in difficulty_choices %}
+            <option value="{{ value }}" {% if settings_row.max_difficulty == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="admin-row">
+        <label for="restricted_period_start">Assessment period start (tutor unavailable, leave both blank for none)</label>
+        <input type="date" id="restricted_period_start" name="restricted_period_start" value="{{ settings_row.restricted_period_start|date:'Y-m-d'|default:'' }}">
+    </div>
+    <div class="admin-row">
+        <label for="restricted_period_end">Assessment period end</label>
+        <input type="date" id="restricted_period_end" name="restricted_period_end" value="{{ settings_row.restricted_period_end|date:'Y-m-d'|default:'' }}">
+    </div>
+
+    <button class="btn-small" type="submit">Save settings</button>
+</form>
+{% endblock %}

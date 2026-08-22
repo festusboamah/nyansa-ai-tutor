@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'accounts',
     'courses',
     'quizzes',
+    'tutor',
     'dashboard',
     'schools',
     'academics',
@@ -45,6 +46,8 @@ INSTALLED_APPS = [
     'communications',
     'finance',
     'analytics',
+    'mastery',
+    'integrations',
 ]
 
 MIDDLEWARE = [
@@ -115,6 +118,8 @@ else:
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 ANALYTICS_AI_NARRATIVES = os.getenv("ANALYTICS_AI_NARRATIVES", "False").lower() in {"1", "true", "yes", "on"}
 ANALYTICS_AI_MODEL = os.getenv("ANALYTICS_AI_MODEL", "claude-sonnet-4-5")
+TUTOR_AI_MODEL = os.getenv("TUTOR_AI_MODEL", "claude-sonnet-4-5")
+NYANSA_AI_MODEL = os.getenv("NYANSA_AI_MODEL", "claude-sonnet-4-5")
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

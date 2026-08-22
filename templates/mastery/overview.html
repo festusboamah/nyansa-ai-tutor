@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Mastery - Nyansa{% endblock %}
+{% block content %}
+<h1>📊 My Mastery</h1>
+<p>Mastery is computed from published, administrator-approved gradebook entries for assessments your teacher has tagged with a topic.</p>
+
+<form method="get" class="card analytics-filter">
+    <label for="term">Reporting period</label>
+    <select id="term" name="term" onchange="this.form.submit()">
+        {% for item in terms %}
+        <option value="{{ item.id }}" {% if term and item.id == term.id %}selected{% endif %}>{{ item.academic_year.name }} · {{ item.name }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+{% if term %}
+{% if role == "STUDENT" %}
+{% for row in subject_rows %}
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>{{ row.subject.name }}</h2>
+    {% for strand_row in row.strands %}
+    <h3>{{ strand_row.strand.name }}</h3>
+    <div class="admin-grid">
+        {% for topic in strand_row.topics %}
+        <div class="admin-row">
+            <span>{{ topic.topic.name }}</span>
+            <span>
+                {% if topic.mastery_percentage != None %}{{ topic.mastery_percentage }}%{% else %}No evidence yet{% endif %}
+                · {{ topic.status|title }}
+            </span>
+        </div>
+        {% empty %}
+        <p>No topics configured for this strand yet.</p>
+        {% endfor %}
+    </div>
+    {% empty %}
+    <p>No strands configured for this subject yet.</p>
+    {% endfor %}
+</div>
+{% empty %}
+<div class="card">No enrolled subjects with mastery data yet.</div>
+{% endfor %}
+{% else %}
+<article class="card" style="margin-top: 1.5rem;">
+    <h2>Classes</h2>
+    {% for school_class in classes %}
+    <div class="admin-row">
+        <span>{{ school_class.name }}</span>
+        <a href="{% url 'mastery_class' school_class.id term.id %}">View mastery</a>
+    </div>
+    {% empty %}
+    <p>No assigned classes.</p>
+    {% endfor %}
+</article>
+{% endif %}
+{% else %}
+<div class="card">Configure an academic term to begin tracking mastery.</div>
+{% endif %}
+{% endblock %}

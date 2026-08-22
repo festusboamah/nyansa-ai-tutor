@@ -3,10 +3,9 @@ from django.db import transaction
 from django.utils import timezone
 
 from schools.models import SchoolMembership
-from communications.models import Notification
-from communications.services import create_notification, notify_school_role
 
 from .models import LessonNote, LessonNoteEvent, LessonNoteNotification, LessonNoteVersion
+from .signals import lesson_note_author_notified, lesson_note_needs_review
 
 
 SNAPSHOT_FIELDS = (
@@ -48,15 +47,7 @@ def _notify_reviewers(note, message):
     LessonNoteNotification.objects.bulk_create(
         [LessonNoteNotification(lesson_note=note, recipient=recipient, message=message) for recipient in recipients]
     )
-    notify_school_role(
-        school=note.subject.school,
-        role=SchoolMembership.Role.SCHOOL_ADMIN,
-        kind=Notification.Kind.LESSON_REVIEW,
-        title="Lesson note awaiting review",
-        message=message,
-        target_url="/dashboard/lesson-review/",
-        deduplication_key=f"lesson:{note.id}:review:{note.current_version}:{note.status}",
-    )
+    lesson_note_needs_review.send(sender=LessonNote, note=note, message=message)
 
 
 def _notify_author(note, message):
@@ -64,14 +55,7 @@ def _notify_author(note, message):
     recipient = _author_membership(note)
     if recipient:
         LessonNoteNotification.objects.create(lesson_note=note, recipient=recipient, message=message)
-        create_notification(
-            recipient=recipient,
-            kind=Notification.Kind.LESSON_REVIEW,
-            title="Lesson note review update",
-            message=message,
-            target_url="/dashboard/lesson-notes/",
-            deduplication_key=f"lesson:{note.id}:author:{note.current_version}:{note.status}",
-        )
+        lesson_note_author_notified.send(sender=LessonNote, note=note, message=message)
 
 
 def _snapshot(note):

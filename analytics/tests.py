@@ -7,16 +7,17 @@ from django.urls import reverse
 
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from accounts.models import User
-from attendance.models import AttendanceRecord, AttendanceSession
 from courses.models import Subject
 from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
-from reports.models import TermReport
 from schools.models import School, SchoolMembership
+
+from ai_core.client import AIError
+from mastery.models import Strand, Topic
 
 from .models import EarlyWarningPolicy, NarrativeSnapshot, RiskSignal
 from .services import (
-    approve_narrative, class_metrics, complete_intervention, create_intervention, create_narrative,
-    generate_risk_signals, offering_metrics, school_metrics,
+    approve_narrative, class_insight_metrics, class_metrics, complete_intervention, create_intervention,
+    create_narrative, generate_risk_signals, offering_metrics, school_metrics,
 )
 
 
@@ -55,22 +56,9 @@ class AnalyticsWorkflowTests(TestCase):
         self.assessment_missing = self._assessment("Project")
         self._grade(self.assessment_one, "40")
         self._grade(self.assessment_two, "60")
-        TermReport.objects.create(
-            school=self.school, school_class=self.school_class, term=self.term, student=self.student,
-            status=TermReport.Status.PUBLISHED, prepared_by=self.teacher,
-            total_score=Decimal("45"), average_score=Decimal("45"), snapshot={"average": "45.00"},
-        )
-        for index, day in enumerate(range(7, 12)):
-            session = AttendanceSession.objects.create(
-                school=self.school, school_class=self.school_class, term=self.term,
-                attendance_date=date(2026, 9, day), status=AttendanceSession.Status.SUBMITTED,
-                submitted_by=self.teacher,
-            )
-            AttendanceRecord.objects.create(
-                session=session, student=self.student,
-                status=AttendanceRecord.Status.PRESENT if index < 3 else AttendanceRecord.Status.ABSENT,
-                marked_by=self.teacher,
-            )
+        # assessment_missing is deliberately left ungraded: 2 of 3 expected assessments
+        # have a recorded entry (submission_rate = 2/3 = 66.67%), and the two recorded
+        # entries average to 50.00% (academic_average).
 
     def _member(self, username, role):
         user = User.objects.create_user(username=username, password="test-password", role=User.Role.TEACHER if role != "STUDENT" else User.Role.STUDENT)
@@ -104,21 +92,22 @@ class AnalyticsWorkflowTests(TestCase):
 
     def test_class_and_school_metrics_agree_with_authoritative_records(self):
         metrics = class_metrics(self.school_class, self.term)
-        self.assertEqual(metrics["academic_average"], Decimal("45.00"))
-        self.assertEqual(metrics["attendance_percentage"], Decimal("60.00"))
-        self.assertEqual(metrics["days_open"], 5)
+        self.assertEqual(metrics["academic_average"], Decimal("50.00"))
+        self.assertEqual(metrics["submission_rate"], Decimal("66.67"))
+        self.assertEqual(metrics["expected_assessments"], 3)
+        self.assertEqual(metrics["evaluated_entry_count"], 2)
         school = school_metrics(self.school, self.term)
-        self.assertEqual(school["academic_average"], Decimal("45.00"))
-        self.assertEqual(school["attendance_percentage"], Decimal("60.00"))
+        self.assertEqual(school["academic_average"], Decimal("50.00"))
+        self.assertEqual(school["submission_rate"], Decimal("66.67"))
         self.assertEqual(school["period"], "2026/2027 · Term 1")
 
     def test_warning_rules_create_explainable_signals(self):
         EarlyWarningPolicy.objects.create(
             school=self.school, name="Academic support", metric=EarlyWarningPolicy.Metric.LOW_AVERAGE,
-            threshold=Decimal("50"), created_by=self.admin,
+            threshold=Decimal("55"), created_by=self.admin,
         )
         EarlyWarningPolicy.objects.create(
-            school=self.school, name="Attendance support", metric=EarlyWarningPolicy.Metric.LOW_ATTENDANCE,
+            school=self.school, name="Submission support", metric=EarlyWarningPolicy.Metric.LOW_SUBMISSION_RATE,
             threshold=Decimal("70"), created_by=self.admin,
         )
         EarlyWarningPolicy.objects.create(
@@ -136,17 +125,17 @@ class AnalyticsWorkflowTests(TestCase):
     def test_signal_resolves_when_source_metric_recovers_and_can_reopen(self):
         policy = EarlyWarningPolicy.objects.create(
             school=self.school, name="Academic threshold", metric=EarlyWarningPolicy.Metric.LOW_AVERAGE,
-            threshold=Decimal("50"), created_by=self.admin,
+            threshold=Decimal("55"), created_by=self.admin,
         )
         signal = generate_risk_signals(school_class=self.school_class, term=self.term, actor=self.teacher)[0]
-        report = self.student.term_reports.get(term=self.term)
-        report.average_score = Decimal("75")
-        report.save(update_fields=["average_score"])
+        entry = GradeEntry.objects.get(assessment=self.assessment_one, student=self.student)
+        entry.score = Decimal("90")
+        entry.save(update_fields=["score"])
         generate_risk_signals(school_class=self.school_class, term=self.term, actor=self.teacher)
         signal.refresh_from_db()
         self.assertEqual(signal.status, RiskSignal.Status.RESOLVED)
-        report.average_score = Decimal("40")
-        report.save(update_fields=["average_score"])
+        entry.score = Decimal("40")
+        entry.save(update_fields=["score"])
         generate_risk_signals(school_class=self.school_class, term=self.term, actor=self.teacher)
         signal.refresh_from_db()
         self.assertEqual(signal.status, RiskSignal.Status.OPEN)
@@ -154,7 +143,7 @@ class AnalyticsWorkflowTests(TestCase):
     def test_intervention_requires_staff_with_class_access(self):
         policy = EarlyWarningPolicy.objects.create(
             school=self.school, name="Support", metric=EarlyWarningPolicy.Metric.LOW_AVERAGE,
-            threshold=Decimal("50"), created_by=self.admin,
+            threshold=Decimal("55"), created_by=self.admin,
         )
         signal = generate_risk_signals(school_class=self.school_class, term=self.term, actor=self.teacher)[0]
         intervention = create_intervention(
@@ -182,13 +171,65 @@ class AnalyticsWorkflowTests(TestCase):
             school=self.school, term=self.term, actor=self.admin,
             scope=NarrativeSnapshot.Scope.SCHOOL, metrics=metrics,
         )
-        self.assertEqual(narrative.metrics_snapshot["academic_average"], "45.00")
+        self.assertEqual(narrative.metrics_snapshot["academic_average"], "50.00")
         self.assertIn("Period: 2026/2027 · Term 1", narrative.narrative)
+        self.assertIn("Submission rate is 66.67%.", narrative.narrative)
         with self.assertRaises(PermissionDenied):
             approve_narrative(narrative=narrative, actor=self.teacher)
         approve_narrative(narrative=narrative, actor=self.admin)
         narrative.refresh_from_db()
         self.assertEqual(narrative.status, NarrativeSnapshot.Status.APPROVED)
+
+    def test_class_insight_metrics_only_includes_topics_needing_support(self):
+        strand = Strand.objects.create(school=self.school, subject=self.subject, name="Number")
+        weak_topic = Topic.objects.create(strand=strand, name="Fractions")
+        steady_topic = Topic.objects.create(strand=strand, name="Decimals")
+        self.assessment_one.topic = weak_topic
+        self.assessment_one.save(update_fields=["topic"])
+        self.assessment_two.topic = steady_topic
+        self.assessment_two.save(update_fields=["topic"])
+        # assessment_one (40%) -> weak_topic NEEDS_SUPPORT; assessment_two (60%) -> steady_topic DEVELOPING
+
+        metrics = class_insight_metrics(self.school_class, self.term)
+
+        topic_names = {row["topic"] for row in metrics["topics_needing_support"]}
+        self.assertIn("Fractions", topic_names)
+        self.assertNotIn("Decimals", topic_names)
+        fractions_row = next(row for row in metrics["topics_needing_support"] if row["topic"] == "Fractions")
+        self.assertEqual(fractions_row["needs_support_count"], 1)
+        self.assertEqual(fractions_row["subject"], "Mathematics")
+        self.assertEqual(metrics["submission_rate"], Decimal("66.67"))
+
+    def test_create_narrative_falls_back_to_template_when_ai_generator_fails(self):
+        def failing_generator(safe_metrics):
+            raise AIError("boom")
+
+        metrics = class_metrics(self.school_class, self.term)
+        narrative = create_narrative(
+            school=self.school, term=self.term, actor=self.admin,
+            scope=NarrativeSnapshot.Scope.CLASS, metrics=metrics, school_class=self.school_class,
+            generator=failing_generator,
+        )
+
+        self.assertEqual(narrative.generation_method, "grounded-template")
+        self.assertIn("Submission rate is 66.67%.", narrative.narrative)
+
+    def test_class_detail_narrative_post_creates_class_scoped_snapshot(self):
+        self._login(self.admin)
+
+        response = self.client.post(
+            reverse("analytics_class", args=[self.school_class.pk, self.term.pk]),
+            {"action": "narrative"}, secure=True,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        narrative = NarrativeSnapshot.objects.get(school_class=self.school_class, term=self.term)
+        self.assertEqual(narrative.scope, NarrativeSnapshot.Scope.CLASS)
+
+        detail_response = self.client.get(
+            reverse("analytics_class", args=[self.school_class.pk, self.term.pk]), secure=True
+        )
+        self.assertIn(narrative, detail_response.context["narratives"])
 
     def test_unassigned_teacher_cannot_drill_into_class_or_offering(self):
         self._login(self.unassigned)
@@ -204,7 +245,7 @@ class AnalyticsWorkflowTests(TestCase):
     def test_cross_school_signal_is_not_visible(self):
         policy = EarlyWarningPolicy.objects.create(
             school=self.school, name="Private support", metric=EarlyWarningPolicy.Metric.LOW_AVERAGE,
-            threshold=Decimal("50"), created_by=self.admin,
+            threshold=Decimal("55"), created_by=self.admin,
         )
         signal = generate_risk_signals(school_class=self.school_class, term=self.term, actor=self.teacher)[0]
         other = School.objects.create(name="Other Insight", slug="other-insight")
@@ -216,3 +257,29 @@ class AnalyticsWorkflowTests(TestCase):
         session.save()
         response = self.client.get(reverse("analytics_signal", args=[signal.pk]), secure=True)
         self.assertEqual(response.status_code, 404)
+
+    def test_admin_dashboard_and_class_detail_render_submission_metrics(self):
+        self._login(self.admin)
+        dashboard_response = self.client.get(
+            reverse("analytics_dashboard"), {"term": self.term.pk}, secure=True
+        )
+        self.assertEqual(dashboard_response.status_code, 200)
+        self.assertContains(dashboard_response, "School submission rate")
+        self.assertEqual(
+            dashboard_response.context["school_metrics"]["submission_rate"], Decimal("66.67")
+        )
+
+        class_response = self.client.get(
+            reverse("analytics_class", args=[self.school_class.pk, self.term.pk]), secure=True
+        )
+        self.assertEqual(class_response.status_code, 200)
+        self.assertContains(class_response, "Submission rate")
+        self.assertEqual(class_response.context["metrics"]["submission_rate"], Decimal("66.67"))
+
+        narrative_response = self.client.post(
+            reverse("analytics_dashboard"), {"term": self.term.pk, "action": "narrative"}, secure=True
+        )
+        self.assertEqual(narrative_response.status_code, 302)
+        self.assertTrue(
+            NarrativeSnapshot.objects.filter(school=self.school, term=self.term).exists()
+        )

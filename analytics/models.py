@@ -8,7 +8,7 @@ from django.db import models
 class EarlyWarningPolicy(models.Model):
     class Metric(models.TextChoices):
         LOW_AVERAGE = "LOW_AVERAGE", "Low academic average"
-        LOW_ATTENDANCE = "LOW_ATTENDANCE", "Low attendance percentage"
+        LOW_SUBMISSION_RATE = "LOW_SUBMISSION_RATE", "Low submission rate"
         MISSING_GRADES = "MISSING_GRADES", "Missing approved grade entries"
 
     school = models.ForeignKey("schools.School", on_delete=models.CASCADE, related_name="warning_policies")

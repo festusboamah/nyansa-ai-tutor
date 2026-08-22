@@ -3,10 +3,9 @@ from django.db import transaction
 from django.utils import timezone
 
 from schools.models import SchoolMembership
-from communications.models import Notification
-from communications.services import create_notification, notify_school_role
 
 from .models import GradeEntry, GradeEntryRevision, GradeReviewDecision
+from .signals import grade_entry_published, grade_review_decided
 
 
 @transaction.atomic
@@ -79,15 +78,7 @@ def record_grade_entry(
         changed_by=actor,
     )
     if entry.status == GradeEntry.Status.PUBLISHED:
-        notify_school_role(
-            school=school,
-            role=SchoolMembership.Role.SCHOOL_ADMIN,
-            kind=Notification.Kind.GRADE_REVIEW,
-            title="Grade awaiting approval",
-            message=f"{actor.user.username} published a grade for {student.user.get_full_name() or student.user.username}.",
-            target_url="/gradebook/review/",
-            deduplication_key=f"grade:{entry.id}:pending:{entry.updated_at.isoformat()}",
-        )
+        grade_entry_published.send(sender=GradeEntry, entry=entry, actor=actor)
     return entry, True
 
 
@@ -114,13 +105,5 @@ def review_grade_entry(*, entry, reviewer, decision, note=""):
     GradeReviewDecision.objects.create(
         entry=entry, decision=decision, note=note, reviewed_by=reviewer
     )
-    if entry.recorded_by_id:
-        create_notification(
-            recipient=entry.recorded_by,
-            kind=Notification.Kind.GRADE_REVIEW,
-            title="Grade review completed",
-            message=f"A grade was {entry.get_review_status_display().lower()}." + (f" {note}" if note else ""),
-            target_url="/gradebook/",
-            deduplication_key=f"grade:{entry.id}:decision:{entry.review_status}:{entry.reviewed_at.isoformat()}",
-        )
+    grade_review_decided.send(sender=GradeEntry, entry=entry, note=note)
     return entry

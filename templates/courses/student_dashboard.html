@@ -3,6 +3,14 @@
 {% block content %}
 <h1>My Subjects</h1>
 
+{% if due_goal_count %}
+<div class="card">
+    <h2>📚 Study Goals</h2>
+    <p>{{ due_goal_count }} topic{{ due_goal_count|pluralize }} due for revision.</p>
+    <a href="{% url 'mastery_study_goals' %}" class="btn-small">View Study Goals</a>
+</div>
+{% endif %}
+
 {% if upcoming_items %}
 <div class="card deadlines-widget">
     <h2>⏰ Upcoming Deadlines</h2>

@@ -7,10 +7,10 @@ from django.db.models import Avg, Count, Q, Sum
 from django.utils import timezone
 
 from academics.models import ClassEnrollment, TeacherAssignment
-from attendance.models import AttendanceRecord, AttendanceSession
-from attendance.services import instructional_day_count, student_attendance_summary
+from ai_core.client import AIError
+from courses.models import Subject
 from gradebook.models import Assessment, GradeEntry
-from reports.models import TermReport
+from mastery.services import class_topic_bands
 from schools.models import SchoolMembership
 
 from .models import EarlyWarningPolicy, Intervention, NarrativeSnapshot, RiskSignal
@@ -59,74 +59,110 @@ def offering_metrics(offering):
     }
 
 
+def _percentage_average(entries):
+    """Normalizes each GradeEntry's score against its own assessment's max_score,
+    then averages those percentages so entries from differently-scaled assessments
+    are comparable."""
+    values = list(entries.values_list("score", "assessment__max_score"))
+    percentages = [score / max_score * Decimal("100") for score, max_score in values if max_score]
+    if not percentages:
+        return None, 0
+    average = (sum(percentages, Decimal("0")) / len(percentages)).quantize(Decimal("0.01"))
+    return average, len(percentages)
+
+
 def class_metrics(school_class, term):
-    reports = TermReport.objects.filter(
-        school_class=school_class, term=term, status=TermReport.Status.PUBLISHED,
-        average_score__isnull=False,
+    offerings = school_class.subject_offerings.filter(term=term)
+    approved_entries = GradeEntry.objects.filter(
+        assessment__offering__in=offerings, status=GradeEntry.Status.PUBLISHED,
+        review_status=GradeEntry.ReviewStatus.APPROVED,
     )
-    academic_average = reports.aggregate(value=Avg("average_score"))["value"]
-    roster = ClassEnrollment.objects.filter(
+    academic_average, evaluated_entry_count = _percentage_average(approved_entries)
+
+    roster_student_ids = list(ClassEnrollment.objects.filter(
         school_class=school_class, status=ClassEnrollment.Status.ACTIVE
-    ).select_related("student")
-    days_open = instructional_day_count(term, through=term.end_date)
-    attendance = AttendanceRecord.objects.filter(
-        session__school_class=school_class, session__term=term,
-        session__status=AttendanceSession.Status.SUBMITTED,
-    )
-    present = attendance.filter(status=AttendanceRecord.Status.PRESENT).count()
-    possible = days_open * roster.count()
-    attendance_percentage = (
-        Decimal(present) / possible * 100
+    ).values_list("student_id", flat=True))
+    expected_assessments = Assessment.objects.filter(offering__in=offerings).count()
+    possible = expected_assessments * len(roster_student_ids)
+    recorded = GradeEntry.objects.filter(
+        assessment__offering__in=offerings, student_id__in=roster_student_ids,
+    ).count()
+    submission_rate = (
+        Decimal(recorded) / possible * 100
     ).quantize(Decimal("0.01")) if possible else None
+
     return {
         "period": f"{term.academic_year.name} · {term.name}",
-        "academic_source": "Published term-report snapshots",
-        "attendance_source": "Submitted attendance registers and derived instructional days",
-        "student_count": roster.count(), "published_report_count": reports.count(),
-        "academic_average": academic_average.quantize(Decimal("0.01")) if academic_average is not None else None,
-        "attendance_percentage": attendance_percentage, "days_open": days_open,
+        "academic_source": "Published, administrator-approved gradebook entries",
+        "submission_source": "Recorded grade entries against configured assessments",
+        "student_count": len(roster_student_ids), "evaluated_entry_count": evaluated_entry_count,
+        "academic_average": academic_average,
+        "submission_rate": submission_rate, "expected_assessments": expected_assessments,
     }
+
+
+def class_insight_metrics(school_class, term):
+    metrics = dict(class_metrics(school_class, term))
+    subjects = Subject.objects.filter(
+        school=school_class.school, offerings__school_class=school_class, offerings__term=term
+    ).distinct()
+    topics_needing_support = []
+    for subject in subjects:
+        for row in class_topic_bands(school_class, subject, term):
+            needs_support_count = row["counts"]["NEEDS_SUPPORT"]
+            if needs_support_count > 0:
+                topics_needing_support.append({
+                    "subject": subject.name,
+                    "strand": row["strand"].name,
+                    "topic": row["topic"].name,
+                    "needs_support_count": needs_support_count,
+                    "mastered_count": row["counts"]["MASTERED"],
+                })
+    metrics["topics_needing_support"] = topics_needing_support
+    return metrics
 
 
 def school_metrics(school, term):
     classes = school.classes.filter(academic_year=term.academic_year)
     rows = [{"school_class": item, "metrics": class_metrics(item, term)} for item in classes]
     academic = [row["metrics"]["academic_average"] for row in rows if row["metrics"]["academic_average"] is not None]
-    attendance = [row["metrics"]["attendance_percentage"] for row in rows if row["metrics"]["attendance_percentage"] is not None]
+    submission = [row["metrics"]["submission_rate"] for row in rows if row["metrics"]["submission_rate"] is not None]
     return {
         "period": f"{term.academic_year.name} · {term.name}",
-        "academic_source": "Published term-report snapshots",
-        "attendance_source": "Submitted attendance registers and school calendars",
+        "academic_source": "Published, administrator-approved gradebook entries",
+        "submission_source": "Recorded grade entries against configured assessments",
         "class_count": len(rows), "classes": rows,
         "academic_average": (sum(academic, Decimal("0")) / len(academic)).quantize(Decimal("0.01")) if academic else None,
-        "attendance_percentage": (sum(attendance, Decimal("0")) / len(attendance)).quantize(Decimal("0.01")) if attendance else None,
+        "submission_rate": (sum(submission, Decimal("0")) / len(submission)).quantize(Decimal("0.01")) if submission else None,
     }
 
 
 def _student_observation(policy, student, school_class, term):
-    if policy.metric == EarlyWarningPolicy.Metric.LOW_AVERAGE:
-        report = TermReport.objects.filter(
-            student=student, school_class=school_class, term=term,
-            status=TermReport.Status.PUBLISHED, average_score__isnull=False,
-        ).first()
-        if not report:
-            return None
-        return report.average_score, {
-            "source": "Published term report", "report_id": report.id,
-            "period": f"{term.academic_year.name} · {term.name}", "rule": "value below threshold",
-        }
-    if policy.metric == EarlyWarningPolicy.Metric.LOW_ATTENDANCE:
-        summary = student_attendance_summary(
-            student=student, term=term, school_class=school_class, through=term.end_date
-        )
-        if summary["percentage"] is None:
-            return None
-        return summary["percentage"], {
-            "source": "Submitted attendance and derived instructional days",
-            "period": f"{term.academic_year.name} · {term.name}",
-            "present": summary["present"], "days_open": summary["days_open"], "rule": "value below threshold",
-        }
     offerings = school_class.subject_offerings.filter(term=term)
+    period = f"{term.academic_year.name} · {term.name}"
+
+    if policy.metric == EarlyWarningPolicy.Metric.LOW_AVERAGE:
+        entries = GradeEntry.objects.filter(
+            student=student, assessment__offering__in=offerings,
+            status=GradeEntry.Status.PUBLISHED, review_status=GradeEntry.ReviewStatus.APPROVED,
+        )
+        average, entry_count = _percentage_average(entries)
+        if average is None:
+            return None
+        return average, {
+            "source": "Published, administrator-approved gradebook entries",
+            "period": period, "entry_count": entry_count, "rule": "value below threshold",
+        }
+    if policy.metric == EarlyWarningPolicy.Metric.LOW_SUBMISSION_RATE:
+        expected = Assessment.objects.filter(offering__in=offerings).count()
+        if expected == 0:
+            return None
+        recorded = GradeEntry.objects.filter(student=student, assessment__offering__in=offerings).count()
+        percentage = (Decimal(recorded) / expected * 100).quantize(Decimal("0.01"))
+        return percentage, {
+            "source": "Recorded grade entries against configured assessments",
+            "period": period, "recorded": recorded, "expected": expected, "rule": "value below threshold",
+        }
     expected = Assessment.objects.filter(offering__in=offerings).count()
     approved = GradeEntry.objects.filter(
         student=student, assessment__offering__in=offerings,
@@ -135,8 +171,7 @@ def _student_observation(policy, student, school_class, term):
     missing = max(expected - approved, 0)
     return Decimal(missing), {
         "source": "Configured assessments and published approved grade entries",
-        "period": f"{term.academic_year.name} · {term.name}",
-        "expected": expected, "approved": approved, "rule": "value at or above threshold",
+        "period": period, "expected": expected, "approved": approved, "rule": "value at or above threshold",
     }
 
 
@@ -224,10 +259,10 @@ def complete_intervention(*, intervention, actor, outcome):
 
 def draft_narrative(metrics):
     academic = metrics.get("academic_average")
-    attendance = metrics.get("attendance_percentage")
+    submission = metrics.get("submission_rate")
     parts = [f"Period: {metrics['period']}. Source records are listed with each metric."]
-    parts.append(f"Academic average is {academic}%." if academic is not None else "No published academic average is available.")
-    parts.append(f"Attendance is {attendance}%." if attendance is not None else "No attendance percentage is available.")
+    parts.append(f"Academic average is {academic}%." if academic is not None else "No academic average is available from approved gradebook entries.")
+    parts.append(f"Submission rate is {submission}%." if submission is not None else "No submission rate is available.")
     parts.append("Review the underlying class rows and open warning signals before sharing this draft.")
     return " ".join(parts)
 
@@ -245,7 +280,15 @@ def create_narrative(*, school, term, actor, scope, metrics, school_class=None, 
         method = f"claude:{settings.ANALYTICS_AI_MODEL}"
     elif selected_generator is not None:
         method = "injected-assisted-generator"
-    narrative = (selected_generator or draft_narrative)(safe_metrics)
+
+    if selected_generator is not None:
+        try:
+            narrative = selected_generator(safe_metrics)
+        except AIError:
+            narrative = draft_narrative(safe_metrics)
+            method = "grounded-template"
+    else:
+        narrative = draft_narrative(safe_metrics)
     item = NarrativeSnapshot(
         school=school, term=term, scope=scope, school_class=school_class, offering=offering,
         metrics_snapshot=safe_metrics, narrative=narrative, generated_by=actor,

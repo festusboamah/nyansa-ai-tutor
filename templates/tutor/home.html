@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}AI Tutor - Nyansa{% endblock %}
+{% block content %}
+<h1>🤖 AI Tutor</h1>
+<p>Choose how you'd like the tutor to help, then start a conversation.</p>
+
+<div class="card form-card">
+    <form method="post" action="{% url 'tutor_start_session' %}">
+        {% csrf_token %}
+        <label for="mode">Mode</label>
+        <select name="mode" id="mode" required>
+            {% for value, label in modes %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="subject_id">Subject (optional)</label>
+        <select name="subject_id" id="subject_id">
+            <option value="">No specific subject</option>
+            {% for subject in subjects %}
+            <option value="{{ subject.id }}">{{ subject.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="document_id">Ground in a study document (optional)</label>
+        <select name="document_id" id="document_id">
+            <option value="">No document</option>
+            {% for doc in documents %}
+            <option value="{{ doc.id }}">{{ doc.title }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="material_id">Ground in a teacher-approved material (optional)</label>
+        <select name="material_id" id="material_id">
+            <option value="">No material</option>
+            {% for material in materials %}
+            <option value="{{ material.id }}">{{ material.subject.name }} · {{ material.title }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="topic_id">Focus on a topic (optional)</label>
+        <select name="topic_id" id="topic_id">
+            <option value="">No specific topic</option>
+            {% for topic in topics %}
+            <option value="{{ topic.id }}">{{ topic.strand.subject.name }} · {{ topic.strand.name }} · {{ topic.name }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn-small">Start Tutoring Session</button>
+    </form>
+</div>
+
+<h2>My Sessions</h2>
+<div class="card-grid">
+    {% for session in sessions %}
+    <a href="{% url 'tutor_session_detail' session.id %}" class="card study-doc-card">
+        <h2>{{ session.title }}</h2>
+        <p class="submission-date">Last active {{ session.updated_at|date:"M d, Y" }}</p>
+    </a>
+    {% empty %}
+    <p>You haven't started a tutoring session yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

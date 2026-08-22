@@ -16,6 +16,7 @@ from courses.models import Subject
 from schools.models import School, SchoolMembership
 
 from quizzes.models import Assignment, AssignmentSubmission, Quiz, Submission
+from . import evidence
 from .history import record_grade_entry, review_grade_entry
 from .models import Assessment, AssessmentCategory, GradeEntry, GradeEntryRevision, GradeImportBatch, GradeImportRow, GradeReviewDecision, GradeScheme
 from .services import activate_grade_scheme, calculate_weighted_result, configure_ges_grade_scheme
@@ -238,6 +239,34 @@ class GradebookTests(TestCase):
         )
         self.assertEqual(result["final_score"], Decimal("62.00"))
         self.assertEqual(result["used_weight"], Decimal("100.00"))
+
+    def test_category_evidence_reports_approved_average_and_entry_count(self):
+        coursework = self._assessment(self.coursework, "Project", "50")
+        exam = self._assessment(self.exam, "Exam")
+        GradeEntry.objects.create(
+            school=self.school, assessment=coursework, student=self.student,
+            recorded_by=self.teacher, score=Decimal("40"), status=GradeEntry.Status.PUBLISHED,
+            review_status=GradeEntry.ReviewStatus.APPROVED,
+        )
+        GradeEntry.objects.create(
+            school=self.school, assessment=exam, student=self.student,
+            recorded_by=self.teacher, score=Decimal("30"), status=GradeEntry.Status.DRAFT,
+        )
+        rows = evidence.category_evidence(self.student, self.offering, self.scheme)
+        by_name = {row["name"]: row for row in rows}
+        self.assertEqual(by_name["Coursework"]["average"], Decimal("80"))
+        self.assertEqual(by_name["Coursework"]["entry_count"], 1)
+        self.assertIsNone(by_name["Exam"]["average"])
+        self.assertEqual(by_name["Exam"]["entry_count"], 0)
+
+    def test_active_scheme_for_returns_only_active_scheme_for_year(self):
+        self.assertIsNone(evidence.active_scheme_for(self.school, self.year))
+        self.scheme.status = GradeScheme.Status.ACTIVE
+        self.scheme.save(update_fields=["status"])
+        self.assertEqual(evidence.active_scheme_for(self.school, self.year), self.scheme)
+        self.scheme.status = GradeScheme.Status.ARCHIVED
+        self.scheme.save(update_fields=["status"])
+        self.assertIsNone(evidence.active_scheme_for(self.school, self.year))
 
 
 class TeacherGradebookWorkflowTests(TestCase):

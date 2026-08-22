@@ -9,10 +9,19 @@
     <a href="{{ submission.file.url }}" target="_blank" class="btn-small">📄 View Submission</a>
 </div>
 
-{% if submission.ai_suggested_score is not None %}
+{% if criterion_scores %}
 <div class="ai-feedback-box">
-    <strong>🤖 AI Suggested Grade (for your reference):</strong>
-    <p>Suggested Score: {{ submission.ai_suggested_score }} / {{ submission.max_score }}</p>
+    <strong>🤖 AI Suggested Grade, by criterion (for your reference):</strong>
+    <ul class="choice-review-list">
+        {% for cs in criterion_scores %}
+            <li>
+                <strong>{{ cs.criterion.name }}:</strong>
+                {% if cs.ai_score is not None %}{{ cs.ai_score }} / {{ cs.criterion.max_points }}{% else %}No suggestion{% endif %}
+                <br>{{ cs.ai_feedback }}
+            </li>
+        {% endfor %}
+    </ul>
+    <p>Suggested Total: {{ submission.ai_suggested_score|default:"N/A" }} / {{ submission.max_score }}</p>
     <p>{{ submission.ai_suggested_feedback }}</p>
     <p style="font-size: 0.85rem; font-style: italic;">This is a suggestion only — the form below is pre-filled with it, but you can edit before submitting the final grade.</p>
 </div>

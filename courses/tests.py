@@ -1,3 +1,5 @@
+from unittest.mock import Mock, patch
+
 from django.test import TestCase
 from django.db import IntegrityError
 from django.urls import reverse
@@ -7,7 +9,12 @@ from quizzes.models import Assignment, AssignmentSubmission, Quiz, Submission
 from schools.models import School, SchoolMembership
 
 from .grading import calculate_subject_grade, letter_grade
-from .models import Enrollment, Subject
+from .models import Enrollment, Material, StudyDocument, Subject
+from . import study_ai
+
+
+def _fake_response(text):
+    return Mock(content=[Mock(text=text)])
 
 
 class LetterGradeTests(TestCase):
@@ -201,3 +208,153 @@ class CourseAccessBaselineTests(TestCase):
         response = self.client.get(reverse("create_subject"), secure=True)
 
         self.assertEqual(response.status_code, 200)
+
+
+class StudyAITests(TestCase):
+    @patch("ai_core.client.client")
+    def test_generate_summary_returns_text_on_success(self, mock_client):
+        mock_client.messages.create.return_value = _fake_response("A tidy summary.")
+        self.assertEqual(study_ai.generate_summary("some extracted text"), "A tidy summary.")
+
+    @patch("ai_core.client.client")
+    def test_generate_summary_falls_back_on_ai_failure(self, mock_client):
+        mock_client.messages.create.side_effect = RuntimeError("down")
+        result = study_ai.generate_summary("some extracted text")
+        self.assertEqual(result, "Summary generation is temporarily unavailable. Please try again later.")
+
+    @patch("ai_core.client.client")
+    def test_answer_question_returns_text_on_success(self, mock_client):
+        mock_client.messages.create.return_value = _fake_response("The answer is 42.")
+        result = study_ai.answer_question_about_document("document text", "What is the answer?")
+        self.assertEqual(result, "The answer is 42.")
+
+    @patch("ai_core.client.client")
+    def test_answer_question_falls_back_on_ai_failure(self, mock_client):
+        mock_client.messages.create.side_effect = RuntimeError("down")
+        result = study_ai.answer_question_about_document("document text", "What is the answer?")
+        self.assertEqual(result, "Sorry, I couldn't process your question right now. Please try again.")
+
+
+class MaterialTextExtractionTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Material School", slug="material-school")
+        self.teacher = User.objects.create_user(
+            username="material-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.subject = Subject.objects.create(school=self.school, name="Mathematics")
+
+    def test_returns_cached_text_without_re_extracting(self):
+        material = Material.objects.create(
+            subject=self.subject, teacher=self.teacher, title="Notes",
+            material_type=Material.MaterialType.DOCUMENT, file="materials/notes.pdf",
+            extracted_text="Already extracted.",
+        )
+        with patch.object(study_ai, "extract_text_from_pdf") as mock_extract:
+            result = study_ai.get_or_extract_material_text(material)
+        mock_extract.assert_not_called()
+        self.assertEqual(result, "Already extracted.")
+
+    def test_extracts_and_caches_on_first_use(self):
+        material = Material.objects.create(
+            subject=self.subject, teacher=self.teacher, title="Notes",
+            material_type=Material.MaterialType.DOCUMENT, file="materials/notes.pdf",
+        )
+        with patch.object(study_ai, "extract_text_from_pdf", return_value="Freshly extracted.") as mock_extract:
+            result = study_ai.get_or_extract_material_text(material)
+        mock_extract.assert_called_once()
+        self.assertEqual(result, "Freshly extracted.")
+        material.refresh_from_db()
+        self.assertEqual(material.extracted_text, "Freshly extracted.")
+
+    def test_returns_empty_string_for_material_with_no_file(self):
+        material = Material.objects.create(
+            subject=self.subject, teacher=self.teacher, title="Video link",
+            material_type=Material.MaterialType.VIDEO, video_url="https://example.com/video",
+        )
+        self.assertEqual(study_ai.get_or_extract_material_text(material), "")
+
+
+class DraftQuizVisibilityTests(TestCase):
+    def setUp(self):
+        self.student = User.objects.create_user(username="draft-student", password="test-password")
+        self.teacher = User.objects.create_user(
+            username="draft-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.school = School.objects.create(name="Draft School", slug="draft-school")
+        SchoolMembership.objects.create(school=self.school, user=self.student, role=SchoolMembership.Role.STUDENT)
+        SchoolMembership.objects.create(school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER)
+        self.subject = Subject.objects.create(school=self.school, name="Mathematics")
+        Enrollment.objects.create(student=self.student, subject=self.subject)
+        self.draft_quiz = Quiz.objects.create(
+            subject=self.subject, teacher=self.teacher, title="Draft Quiz", status=Quiz.Status.DRAFT,
+        )
+        self.published_quiz = Quiz.objects.create(
+            subject=self.subject, teacher=self.teacher, title="Published Quiz", status=Quiz.Status.PUBLISHED,
+        )
+
+    def test_student_does_not_see_draft_quiz(self):
+        self.client.force_login(self.student)
+
+        response = self.client.get(reverse("subject_detail", args=[self.subject.id]), secure=True)
+
+        self.assertNotContains(response, "Draft Quiz")
+        self.assertContains(response, "Published Quiz")
+
+    def test_teacher_sees_draft_quiz(self):
+        self.client.force_login(self.teacher)
+
+        response = self.client.get(reverse("subject_detail", args=[self.subject.id]), secure=True)
+
+        self.assertContains(response, "Draft Quiz")
+        self.assertContains(response, "Published Quiz")
+
+
+class StudentDashboardStudyGoalsTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Dashboard School", slug="dashboard-school")
+        self.student_user = User.objects.create_user(username="dash-student", password="test-password")
+        self.membership = SchoolMembership.objects.create(
+            school=self.school, user=self.student_user, role=SchoolMembership.Role.STUDENT
+        )
+        self.subject = Subject.objects.create(school=self.school, name="Mathematics")
+        Enrollment.objects.create(student=self.student_user, subject=self.subject)
+
+    def test_dashboard_shows_no_due_goal_card_when_no_goals(self):
+        self.client.force_login(self.student_user)
+
+        response = self.client.get(reverse("dashboard"), secure=True)
+
+        self.assertNotContains(response, "due for revision")
+
+    def test_dashboard_shows_due_goal_count(self):
+        from mastery.models import Strand, StudyGoal, Topic
+
+        strand = Strand.objects.create(school=self.school, subject=self.subject, name="Number", order=1)
+        topic = Topic.objects.create(strand=strand, name="Fractions", order=1)
+        StudyGoal.objects.create(school=self.school, student=self.membership, topic=topic)
+        self.client.force_login(self.student_user)
+
+        response = self.client.get(reverse("dashboard"), secure=True)
+
+        self.assertContains(response, "1 topic due for revision.")
+
+
+class StudyDocumentDetailAccessTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Study Doc School", slug="study-doc-school")
+        self.owner = User.objects.create_user(username="doc-owner", password="test-password")
+        self.other_student = User.objects.create_user(username="doc-other-student", password="test-password")
+        for user in (self.owner, self.other_student):
+            SchoolMembership.objects.create(school=self.school, user=user, role=SchoolMembership.Role.STUDENT)
+        self.document = StudyDocument.objects.create(
+            school=self.school, student=self.owner, title="Notes", file="study_documents/notes.pdf",
+        )
+
+    def test_another_student_in_the_same_school_cannot_open_someone_elses_document(self):
+        self.client.force_login(self.other_student)
+
+        response = self.client.get(
+            reverse("study_document_detail", args=[self.document.id]), secure=True
+        )
+
+        self.assertEqual(response.status_code, 404)

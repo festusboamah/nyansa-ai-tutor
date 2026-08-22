@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ session.title }} - Nyansa{% endblock %}
+{% block content %}
+<h1>🤖 {{ session.title }}</h1>
+
+<div class="qa-history">
+    {% for message in conversation %}
+    <div class="qa-item">
+        {% if message.role == "STUDENT" %}
+        <div class="qa-question">🙋 You: {{ message.content }}</div>
+        {% else %}
+        <div class="qa-answer">🤖 Tutor: {{ message.content }}</div>
+        {% endif %}
+    </div>
+    {% empty %}
+    <p>Say hello to get started.</p>
+    {% endfor %}
+</div>
+
+<div class="card form-card">
+    <form method="post">
+        {% csrf_token %}
+        <textarea name="message" rows="3" placeholder="Type your message..." required></textarea>
+        <button type="submit" class="btn-small">Send</button>
+    </form>
+</div>
+
+<a href="{% url 'tutor_home' %}" class="btn-small btn-secondary">Back to My Sessions</a>
+{% endblock %}

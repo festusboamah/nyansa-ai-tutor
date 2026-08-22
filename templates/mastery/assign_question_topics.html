@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Assign Question Topics - Nyansa{% endblock %}
+{% block content %}
+<h1>🏷️ Assign Question Topics</h1>
+<p>{{ quiz.title }} · {{ quiz.subject.name }}</p>
+
+<form method="post" class="card">
+    {% csrf_token %}
+    {% for question in questions %}
+    <div class="admin-row">
+        <label for="topic-select-{{ question.id }}">{{ question.text|truncatechars:80 }}</label>
+        <select id="topic-select-{{ question.id }}" name="topic_{{ question.id }}">
+            <option value="">No topic</option>
+            {% for topic in topics %}
+            <option value="{{ topic.id }}" {% if question.topic_id == topic.id %}selected{% endif %}>{{ topic.strand.name }} · {{ topic.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% empty %}
+    <p>No questions added to this quiz yet.</p>
+    {% endfor %}
+    <button class="btn-small" type="submit">Save question topics</button>
+</form>
+{% endblock %}

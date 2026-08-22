@@ -1,5 +1,5 @@
 from django import forms
-from .models import Assignment, AssignmentSubmission
+from .models import Assignment, AssignmentSubmission, RubricCriterion
 
 
 class AssignmentForm(forms.ModelForm):
@@ -13,10 +13,9 @@ class AssignmentForm(forms.ModelForm):
 
     class Meta:
         model = Assignment
-        fields = ["subject", "title", "instructions", "grading_rubric", "deadline"]
+        fields = ["subject", "title", "instructions", "deadline"]
         widgets = {
             "instructions": forms.Textarea(attrs={"rows": 4}),
-            "grading_rubric": forms.Textarea(attrs={"rows": 3}),
             "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}),
         }
 
@@ -34,3 +33,13 @@ class GradeAssignmentForm(forms.ModelForm):
         widgets = {
             "teacher_feedback": forms.Textarea(attrs={"rows": 4}),
         }
+
+
+RubricCriterionFormSet = forms.inlineformset_factory(
+    Assignment,
+    RubricCriterion,
+    fields=["name", "description", "max_points", "order"],
+    widgets={"description": forms.Textarea(attrs={"rows": 2})},
+    extra=3,
+    can_delete=True,
+)

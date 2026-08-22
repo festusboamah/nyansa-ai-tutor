@@ -14,7 +14,7 @@
     {% for submission in submissions %}
     <div class="card">
         <h2>{{ submission.quiz.title }}</h2>
-        <p>Score: <strong>{{ submission.score }}%</strong></p>
+        <p>Score: <strong>{% if submission.score != None %}{{ submission.score }}%{% else %}Not graded yet{% endif %}</strong></p>
         <p class="submission-date">{{ submission.submitted_at|date:"M d, Y - g:i A" }}</p>
     </div>
     {% empty %}

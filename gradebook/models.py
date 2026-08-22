@@ -82,6 +82,9 @@ class Assessment(models.Model):
     legacy_assignment = models.OneToOneField(
         "quizzes.Assignment", null=True, blank=True, on_delete=models.SET_NULL, related_name="gradebook_assessment"
     )
+    topic = models.ForeignKey(
+        "mastery.Topic", null=True, blank=True, on_delete=models.SET_NULL, related_name="assessments"
+    )
     title = models.CharField(max_length=150)
     max_score = models.DecimalField(
         max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]

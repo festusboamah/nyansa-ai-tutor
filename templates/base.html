@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Nyansa{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <script src="{% static 'js/navigation.js' %}" defer></script>
 </head>
@@ -20,7 +21,7 @@
         <div class="navbar-brand">
             <a href="{% url 'home' %}" class="brand-link">
     <img src="{% static 'images/logo.svg' %}" alt="Nyansa logo" class="brand-logo">
-    Nyansa
+    Nyansa <span class="brand-ai">AI</span>
 </a>
         </div>
         <div class="navbar-links">
@@ -28,7 +29,10 @@
     {% if request.school_membership.role == "STUDENT" %}
     <a href="{% url 'dashboard' %}">Dashboard</a>
     <a href="{% url 'browse_subjects' %}">Browse Subjects</a>
+    <a href="{% url 'tutor_home' %}">Tutor</a>
     <a href="{% url 'study_documents' %}">Study Hub</a>
+    <a href="{% url 'mastery_overview' %}">Mastery</a>
+    <a href="{% url 'mastery_study_goals' %}">Study Goals</a>
     <a href="{% url 'transcript' %}">Transcript</a>
 {% endif %}
     {% if request.school_membership.role == "TEACHER" %}
@@ -37,6 +41,9 @@
         {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'attendance_dashboard' %}">Attendance</a>{% endif %}
         {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'term_report_dashboard' %}">Reports</a>{% endif %}
         {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'analytics_dashboard' %}">Analytics</a>{% endif %}
+        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'mastery_overview' %}">Mastery</a>{% endif %}
+        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'generate_bank_questions' %}">Question Bank</a>{% endif %}
+        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'mastery_improvement_report' %}">Improvement Report</a>{% endif %}
     {% endif %}
     {% if request.school_membership.role == "SCHOOL_ADMIN" %}
         <a href="{% url 'school_admin_dashboard' %}">Overview</a>
@@ -49,6 +56,12 @@
                 <a href="{% url 'attendance_dashboard' %}">Attendance</a>
                 <a href="{% url 'term_report_dashboard' %}">Term Reports</a>
                 <a href="{% url 'analytics_dashboard' %}">Analytics</a>
+                <a href="{% url 'mastery_overview' %}">Mastery</a>
+                <a href="{% url 'mastery_curriculum' %}">Curriculum</a>
+                <a href="{% url 'tutor_settings' %}">Tutor Settings</a>
+                <a href="{% url 'quiz_generation_settings' %}">Quiz AI Settings</a>
+                <a href="{% url 'bank_review_queue' %}">Question Bank Review</a>
+                <a href="{% url 'mastery_improvement_report' %}">Improvement Report</a>
             </div>
         </details>
         <details class="nav-menu">
@@ -60,6 +73,7 @@
                 <a href="{% url 'guardian_links' %}">Guardians</a>
                 <a href="{% url 'communications_dashboard' %}">Messages</a>
                 <a href="{% url 'finance_dashboard' %}">Finance</a>
+                <a href="{% url 'integration_credential_settings' %}">API Access</a>
             </div>
         </details>
     {% endif %}

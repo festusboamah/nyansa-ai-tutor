@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Quiz AI Settings - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">Teacher-controlled AI</p>
+        <h1>Quiz AI Settings</h1>
+        <p>Choose whether AI-generated quizzes need a teacher's review before students can take them.</p>
+    </div>
+</div>
+
+<form method="post" class="card">
+    {% csrf_token %}
+    <div class="admin-row">
+        <label for="require_review">Require teacher review before an AI-generated quiz is published</label>
+        <input type="checkbox" id="require_review" name="require_review" {% if settings_row.require_review %}checked{% endif %}>
+    </div>
+
+    <button class="btn-small" type="submit">Save settings</button>
+</form>
+{% endblock %}

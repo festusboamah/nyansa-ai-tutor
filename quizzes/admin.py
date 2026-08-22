@@ -1,5 +1,18 @@
 from django.contrib import admin
-from .models import Quiz, Question, Choice, Submission, Answer, Badge
+from .models import (
+    Answer,
+    Assignment,
+    AssignmentSubmission,
+    Badge,
+    BankQuestion,
+    BankQuestionChoice,
+    Choice,
+    CriterionScore,
+    Question,
+    Quiz,
+    RubricCriterion,
+    Submission,
+)
 
 
 class ChoiceInline(admin.TabularInline):
@@ -23,7 +36,7 @@ class QuizAdmin(admin.ModelAdmin):
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ("text", "quiz", "question_type", "order")
-    list_filter = ("question_type", "quiz")
+    list_filter = ("question_type", "quiz", "topic")
     inlines = [ChoiceInline]
 
 
@@ -36,7 +49,45 @@ class SubmissionAdmin(admin.ModelAdmin):
 admin.site.register(Answer)
 
 
+class BankQuestionChoiceInline(admin.TabularInline):
+    model = BankQuestionChoice
+    extra = 3
+
+
+@admin.register(BankQuestion)
+class BankQuestionAdmin(admin.ModelAdmin):
+    list_display = ("text", "subject", "topic", "difficulty", "status", "created_by", "created_at")
+    list_filter = ("status", "difficulty", "subject", "topic")
+    inlines = [BankQuestionChoiceInline]
+
+
 @admin.register(Badge)
 class BadgeAdmin(admin.ModelAdmin):
     list_display = ("student", "badge_type", "submission", "awarded_at")
     list_filter = ("badge_type",)
+
+
+class RubricCriterionInline(admin.TabularInline):
+    model = RubricCriterion
+    extra = 1
+
+
+@admin.register(Assignment)
+class AssignmentAdmin(admin.ModelAdmin):
+    list_display = ("title", "subject", "teacher", "deadline", "created_at")
+    list_filter = ("subject",)
+    inlines = [RubricCriterionInline]
+
+
+class CriterionScoreInline(admin.TabularInline):
+    model = CriterionScore
+    extra = 0
+    readonly_fields = ("criterion", "ai_score", "ai_feedback")
+    can_delete = False
+
+
+@admin.register(AssignmentSubmission)
+class AssignmentSubmissionAdmin(admin.ModelAdmin):
+    list_display = ("student", "assignment", "final_score", "max_score", "submitted_at")
+    list_filter = ("assignment",)
+    inlines = [CriterionScoreInline]

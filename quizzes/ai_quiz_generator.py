@@ -1,8 +1,6 @@
-import json
-import anthropic
-from django.conf import settings
+from django.db import transaction
 
-client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+from ai_core.client import AIError, complete_json
 
 
 def generate_quiz_questions(topic, num_questions, difficulty):
@@ -35,21 +33,44 @@ Respond ONLY with valid JSON in this exact structure, no other text:
 }}"""
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=2000,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw_text = response.content[0].text.strip()
-
-        # Strip markdown code fences if Claude added them
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
-            raw_text = raw_text.strip()
-
-        result = json.loads(raw_text)
+        result = complete_json(prompt, max_tokens=2000)
         return result.get("questions", [])
-    except Exception:
+    except AIError:
         return []
+
+
+def create_bank_questions(subject, topic, difficulty, topic_description, num_questions, created_by):
+    """
+    Generates questions via generate_quiz_questions and persists them as
+    BankQuestion/BankQuestionChoice rows, PENDING_REVIEW. Returns the created BankQuestions.
+    """
+    from .models import BankQuestion, BankQuestionChoice, Question
+
+    generated = generate_quiz_questions(topic_description, num_questions, difficulty)
+
+    created = []
+    with transaction.atomic():
+        for q_data in generated:
+            text = q_data.get("text", "").strip()
+            if not text:
+                continue
+            bank_question = BankQuestion.objects.create(
+                subject=subject,
+                topic=topic,
+                created_by=created_by,
+                text=text,
+                question_type=Question.QuestionType.MULTIPLE_CHOICE,
+                difficulty=difficulty,
+            )
+            for choice_data in q_data.get("choices", []):
+                choice_text = choice_data.get("text", "").strip()
+                if not choice_text:
+                    continue
+                BankQuestionChoice.objects.create(
+                    question=bank_question,
+                    text=choice_text,
+                    is_correct=choice_data.get("is_correct", False),
+                )
+            created.append(bank_question)
+
+    return created

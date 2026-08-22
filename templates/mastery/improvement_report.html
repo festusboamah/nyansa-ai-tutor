@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Improvement Report - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">Explainable insight</p>
+        <h1>Remediation Improvement Report</h1>
+        <p>How many completed remediation plans show measured mastery improvement, from recorded before/after snapshots.</p>
+    </div>
+</div>
+
+<form method="get" class="card">
+    <label for="term">Reporting period</label>
+    <select id="term" name="term" onchange="this.form.submit()">
+        {% for item in terms %}
+        <option value="{{ item.id }}" {% if item.id == term.id %}selected{% endif %}>{{ item.academic_year.name }} · {{ item.name }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+{% if term %}
+<div class="report-summary">
+    <div><span>Remediation plans</span><strong>{{ outcomes.plan_count }}</strong></div>
+    <div><span>Completed</span><strong>{{ outcomes.completed_count }}</strong></div>
+    <div><span>Comparable (mastery recorded both ends)</span><strong>{{ outcomes.comparable_count }}</strong></div>
+    <div><span>Improvement rate</span><strong>{% if outcomes.improvement_rate != None %}{{ outcomes.improvement_rate }}%{% else %}—{% endif %}</strong></div>
+</div>
+<div class="metric-source">
+    <strong>Source:</strong> {{ outcomes.source }}<br>
+    <strong>Period:</strong> {{ outcomes.period }}
+</div>
+
+<div class="card-grid" style="margin-top: 1.5rem;">
+    {% for row in outcomes.classes %}
+    <div class="card">
+        <h2>{{ row.school_class.name }}</h2>
+        <p>{{ row.outcomes.completed_count }} completed · {{ row.outcomes.improved_count }} / {{ row.outcomes.comparable_count }} comparable improved</p>
+        <p>
+            {% if row.outcomes.improvement_rate != None %}{{ row.outcomes.improvement_rate }}% improvement rate{% else %}No comparable plans yet{% endif %}
+        </p>
+        <a href="{% url 'mastery_class' row.school_class.id term.id %}">View class mastery</a>
+    </div>
+    {% empty %}
+    <div class="card">No classes to report on for this term.</div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">Configure an academic term to begin reporting.</div>
+{% endif %}
+{% endblock %}

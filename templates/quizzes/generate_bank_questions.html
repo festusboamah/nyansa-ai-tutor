@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Generate Bank Questions - Nyansa{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>🤖 Generate Question Bank Questions</h1>
+    <p>Describe what you want, and Claude will create questions for the reusable bank. Each one is reviewed before it can be added to a quiz.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-small">Generate Questions</button>
+    </form>
+</div>
+<a href="{% url 'bank_review_queue' %}" class="btn-small btn-secondary">Go to Review Queue</a>
+{% endblock %}

@@ -1,7 +1,4 @@
-import anthropic
-from django.conf import settings
-
-client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+from ai_core.client import AIError, complete_text
 
 
 def generate_student_report(student, subject, submissions):
@@ -34,10 +31,7 @@ Write a concise, professional performance report (3-4 sentences) for the teacher
 
 Respond with ONLY the report text, no preamble or headers."""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-5",
-        max_tokens=300,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    return response.content[0].text.strip()
+    try:
+        return complete_text(prompt, max_tokens=300)
+    except AIError:
+        return "A performance report could not be generated automatically right now. Review the quiz history above directly."

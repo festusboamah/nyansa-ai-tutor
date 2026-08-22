@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Assign Topics - Nyansa{% endblock %}
+{% block content %}
+<h1>🏷️ Assign Topics</h1>
+<p>{{ offering.subject.name }} · {{ offering.school_class.name }} · {{ offering.term.name }}</p>
+
+<form method="post" class="card">
+    {% csrf_token %}
+    {% for assessment in assessments %}
+    <div class="admin-row">
+        <label for="topic-select-{{ assessment.id }}">{{ assessment.title }}</label>
+        <select id="topic-select-{{ assessment.id }}" name="topic_{{ assessment.id }}">
+            <option value="">No topic</option>
+            {% for topic in topics %}
+            <option value="{{ topic.id }}" {% if assessment.topic_id == topic.id %}selected{% endif %}>{{ topic.strand.name }} · {{ topic.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% empty %}
+    <p>No assessments configured for this offering yet.</p>
+    {% endfor %}
+    <button class="btn-small" type="submit">Save topic assignments</button>
+</form>
+{% endblock %}

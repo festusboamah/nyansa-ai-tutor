@@ -283,15 +283,15 @@ class Command(BaseCommand):
                                          defaults={"amount": fee_item.amount, "posted_by": admin})
 
         policy, _ = EarlyWarningPolicy.objects.update_or_create(
-            school=school, name="Demo attendance follow-up",
-            defaults={"metric": EarlyWarningPolicy.Metric.LOW_ATTENDANCE, "threshold": Decimal("80"),
+            school=school, name="Demo submission follow-up",
+            defaults={"metric": EarlyWarningPolicy.Metric.LOW_SUBMISSION_RATE, "threshold": Decimal("80"),
                       "is_active": True, "created_by": admin},
         )
         RiskSignal.objects.update_or_create(
             policy=policy, student=students[0], school_class=school_class, term=term,
             defaults={"school": school, "observed_value": Decimal("66.67"),
-                      "evidence": {"source": "Submitted attendance register", "period": term.name,
-                      "rule": "Attendance below 80%"}, "status": RiskSignal.Status.OPEN},
+                      "evidence": {"source": "Recorded grade entries against configured assessments", "period": term.name,
+                      "rule": "Submission rate below 80%"}, "status": RiskSignal.Status.OPEN},
         )
 
         self.stdout.write(self.style.SUCCESS(

@@ -8,6 +8,10 @@ class Quiz(models.Model):
         QUIZ = "QUIZ", "Quiz"
         EXAM = "EXAM", "Exam"
 
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Draft"
+        PUBLISHED = "PUBLISHED", "Published"
+
     subject = models.ForeignKey(
         Subject, on_delete=models.CASCADE, related_name="quizzes"
     )
@@ -19,6 +23,7 @@ class Quiz(models.Model):
     assessment_type = models.CharField(
         max_length=10, choices=AssessmentType.choices, default=AssessmentType.QUIZ
     )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PUBLISHED)
     time_limit_minutes = models.PositiveIntegerField(
         default=15, help_text="Time limit for students to complete this quiz, in minutes"
     )
@@ -53,6 +58,9 @@ class Question(models.Model):
         max_length=10, choices=QuestionType.choices, default=QuestionType.MULTIPLE_CHOICE
     )
     order = models.PositiveIntegerField(default=0)
+    topic = models.ForeignKey(
+        "mastery.Topic", null=True, blank=True, on_delete=models.SET_NULL, related_name="questions"
+    )
 
     class Meta:
         ordering = ["order"]
@@ -131,9 +139,6 @@ class Assignment(models.Model):
     )
     title = models.CharField(max_length=200)
     instructions = models.TextField(blank=True)
-    grading_rubric = models.TextField(
-        blank=True, help_text="Optional: describe how this should be graded, for AI reference"
-    )
     deadline = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -145,6 +150,22 @@ class Assignment(models.Model):
             return False
         from django.utils import timezone
         return timezone.now() > self.deadline
+
+
+class RubricCriterion(models.Model):
+    assignment = models.ForeignKey(
+        Assignment, on_delete=models.CASCADE, related_name="criteria"
+    )
+    name = models.CharField(max_length=150)
+    description = models.TextField(blank=True, help_text="What does 'good' look like for this criterion?")
+    max_points = models.FloatField(default=10)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return self.name
 
 
 class AssignmentSubmission(models.Model):
@@ -170,3 +191,82 @@ class AssignmentSubmission(models.Model):
 
     def is_graded(self):
         return self.final_score is not None
+
+
+class CriterionScore(models.Model):
+    submission = models.ForeignKey(
+        AssignmentSubmission, on_delete=models.CASCADE, related_name="criterion_scores"
+    )
+    criterion = models.ForeignKey(RubricCriterion, on_delete=models.CASCADE)
+    ai_score = models.FloatField(null=True, blank=True)
+    ai_feedback = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["submission", "criterion"], name="unique_submission_criterion")
+        ]
+
+    def __str__(self):
+        return f"{self.criterion.name} - {self.submission}"
+
+
+class BankQuestion(models.Model):
+    class Difficulty(models.TextChoices):
+        EASY = "easy", "Easy"
+        MEDIUM = "medium", "Medium"
+        HARD = "hard", "Hard"
+
+    class Status(models.TextChoices):
+        PENDING_REVIEW = "PENDING_REVIEW", "Pending Review"
+        APPROVED = "APPROVED", "Approved"
+        REJECTED = "REJECTED", "Rejected"
+
+    subject = models.ForeignKey(
+        Subject, on_delete=models.CASCADE, related_name="bank_questions"
+    )
+    topic = models.ForeignKey(
+        "mastery.Topic", null=True, blank=True, on_delete=models.SET_NULL, related_name="bank_questions"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bank_questions"
+    )
+    text = models.TextField()
+    question_type = models.CharField(
+        max_length=10, choices=Question.QuestionType.choices, default=Question.QuestionType.MULTIPLE_CHOICE
+    )
+    difficulty = models.CharField(max_length=10, choices=Difficulty.choices, default=Difficulty.MEDIUM)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING_REVIEW)
+    reviewed_by = models.ForeignKey(
+        "schools.SchoolMembership", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="reviewed_bank_questions",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.text[:50]
+
+
+class BankQuestionChoice(models.Model):
+    question = models.ForeignKey(
+        BankQuestion, on_delete=models.CASCADE, related_name="choices"
+    )
+    text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.text
+
+
+class QuizGenerationSettings(models.Model):
+    school = models.OneToOneField(
+        "schools.School", on_delete=models.CASCADE, related_name="quiz_generation_settings"
+    )
+    require_review = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Quiz generation settings ({self.school.name})"

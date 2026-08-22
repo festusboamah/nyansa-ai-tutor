@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ school_class.name }} Mastery{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">{{ term.academic_year.name }} · {{ term.name }}</p>
+        <h1>{{ school_class.name }}</h1>
+        <p>Class mastery by strand and topic, from published approved gradebook entries.</p>
+    </div>
+    <a class="btn-small btn-secondary" href="{% url 'mastery_misconceptions' school_class.id term.id %}">Open Misconceptions</a>
+</div>
+
+{% for row in subject_rows %}
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>{{ row.subject.name }}</h2>
+    {% for strand_row in row.strands %}
+    <h3>{{ strand_row.strand.name }}</h3>
+    <div class="admin-grid">
+        {% for topic in strand_row.topics %}
+        <div class="admin-row">
+            <span>{{ topic.topic.name }}</span>
+            <span>
+                {% if topic.mastery_percentage != None %}{{ topic.mastery_percentage }}%{% else %}No evidence yet{% endif %}
+                · {{ topic.status|title }} · {{ topic.student_count }} students · {{ topic.evidence_count }} entries
+                · <a href="{% url 'mastery_differentiate' school_class.id term.id topic.topic.id %}">Differentiate</a>
+            </span>
+        </div>
+        {% empty %}
+        <p>No topics configured for this strand yet.</p>
+        {% endfor %}
+    </div>
+    {% empty %}
+    <p>No strands configured for this subject yet.</p>
+    {% endfor %}
+</div>
+{% empty %}
+<div class="card">No subject offerings for this class and term yet.</div>
+{% endfor %}
+{% endblock %}

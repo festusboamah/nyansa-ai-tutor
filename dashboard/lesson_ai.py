@@ -1,8 +1,4 @@
-import json
-import anthropic
-from django.conf import settings
-
-client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+from ai_core.client import AIError, complete_json
 
 
 def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator, resources, num_days, **kwargs):
@@ -63,19 +59,6 @@ Respond ONLY with valid JSON in this exact structure, nothing else - no markdown
 Include exactly {num_days} day entries (starting Monday). Each day's content must be specific and practical for {class_level} on the topic "{strand_topic}", building logically day to day. Keep each field's text plain (no markdown, no bullet symbols) since it will be placed directly into table cells."""
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=3000,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw_text = response.content[0].text.strip()
-
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
-            raw_text = raw_text.strip()
-
-        return json.loads(raw_text)
-    except Exception:
+        return complete_json(prompt, max_tokens=3000)
+    except AIError:
         return None

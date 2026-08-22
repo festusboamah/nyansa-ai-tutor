@@ -1,8 +1,18 @@
 {% extends "base.html" %}
 {% block title %}{{ quiz.title }} - Add Questions{% endblock %}
 {% block content %}
-<h1>{{ quiz.title }}</h1>
+<h1>{{ quiz.title }} {% if quiz.status == "DRAFT" %}<span class="badge-enrolled" style="background-color:#fef3c7;color:#92400e;">Draft</span>{% endif %}</h1>
 <p>{{ quiz.description }}</p>
+
+{% if quiz.status == "DRAFT" %}
+<div class="card form-card">
+    <p>This quiz is a draft. Students can't see or take it until you publish it.</p>
+    <form method="post" action="{% url 'publish_quiz' quiz.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-small">Publish this quiz</button>
+    </form>
+</div>
+{% endif %}
 
 {% if existing_questions %}
 <h2>Questions So Far ({{ existing_questions.count }})</h2>
@@ -35,6 +45,7 @@
         {{ choice_formset.management_form }}
         {% for choice_form in choice_formset %}
             <div class="choice-form-row">
+                <label for="{{ choice_form.text.id_for_label }}">Choice {{ forloop.counter }} text</label>
                 {{ choice_form.text }}
                 <label class="choice-correct-label">
                     {{ choice_form.is_correct }} Correct
@@ -46,5 +57,7 @@
     </form>
 </div>
 
+<a href="{% url 'add_bank_questions' quiz.id %}" class="btn-small btn-secondary">Add from Question Bank</a>
+<a href="{% url 'mastery_assign_question_topics' quiz.id %}" class="btn-small btn-secondary">Assign Topics to Questions</a>
 <a href="{% url 'teacher_dashboard' %}" class="btn-small btn-secondary">Done - Back to Dashboard</a>
 {% endblock %}

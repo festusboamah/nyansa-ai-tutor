@@ -13,8 +13,8 @@ from schools.services import has_school_role
 from .forms import InterventionForm, WarningPolicyForm
 from .models import EarlyWarningPolicy, NarrativeSnapshot, RiskSignal
 from .services import (
-    approve_narrative, can_view_class, class_metrics, complete_intervention, create_intervention,
-    create_narrative, generate_risk_signals, offering_metrics, school_metrics,
+    approve_narrative, can_view_class, class_insight_metrics, class_metrics, complete_intervention,
+    create_intervention, create_narrative, generate_risk_signals, offering_metrics, school_metrics,
 )
 
 
@@ -84,11 +84,22 @@ def class_detail(request, class_id, term_id):
         )
         messages.success(request, f"Evaluated warning policies; {len(signals)} signal(s) are active.")
         return redirect("analytics_class", class_id=class_id, term_id=term_id)
+    if request.method == "POST" and request.POST.get("action") == "narrative":
+        create_narrative(
+            school=request.school, term=term, actor=request.school_membership,
+            scope=NarrativeSnapshot.Scope.CLASS, metrics=class_insight_metrics(school_class, term),
+            school_class=school_class,
+        )
+        messages.success(request, "Grounded insight summary created for administrator review.")
+        return redirect("analytics_class", class_id=class_id, term_id=term_id)
     metrics = class_metrics(school_class, term)
     return render(request, "analytics/class_detail.html", {
         "school_class": school_class, "term": term, "metrics": metrics,
         "offerings": SubjectOffering.objects.filter(school_class=school_class, term=term).select_related("subject"),
         "signals": RiskSignal.objects.filter(school_class=school_class, term=term).select_related("student__user", "policy"),
+        "narratives": NarrativeSnapshot.objects.filter(
+            school_class=school_class, term=term
+        ).select_related("generated_by__user"),
     })
 
 

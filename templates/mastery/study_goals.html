@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Study Goals - Nyansa{% endblock %}
+{% block content %}
+<h1>My Study Goals</h1>
+<p>Set a goal on a topic you want to focus on. We'll remind you here when it's time to revise.</p>
+
+<div class="card-grid" style="margin-top: 1.5rem;">
+    {% for row in goal_rows %}
+    <div class="card">
+        <h2>{{ row.goal.topic.strand.subject.name }} · {{ row.goal.topic.strand.name }} · {{ row.goal.topic.name }}</h2>
+        {% if row.goal.note %}<p>{{ row.goal.note }}</p>{% endif %}
+        {% if row.status.mastery %}
+            <p class="submission-date">
+                {% if row.status.mastery.mastery_percentage != None %}{{ row.status.mastery.mastery_percentage }}%{% else %}No evidence yet{% endif %}
+                · {{ row.status.mastery.status|title }}
+            </p>
+        {% endif %}
+        <p class="submission-date">
+            {% if row.status.last_studied_at %}Last studied {{ row.status.last_studied_at|timesince }} ago{% else %}Never studied{% endif %}
+        </p>
+
+        {% if row.status.due %}
+        <form method="post" action="{% url 'tutor_start_session' %}">
+            {% csrf_token %}
+            <input type="hidden" name="mode" value="REVISE_WITH_ME">
+            <input type="hidden" name="subject_id" value="{{ row.goal.topic.strand.subject.id }}">
+            <input type="hidden" name="topic_id" value="{{ row.goal.topic.id }}">
+            <button type="submit" class="btn-small">Revise Now</button>
+        </form>
+        {% endif %}
+
+        <form method="post" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="goal_id" value="{{ row.goal.id }}">
+            <button type="submit" name="action" value="abandon" class="btn-small btn-secondary">Abandon</button>
+            <button type="submit" name="action" value="achieve" class="btn-small">Mark Achieved</button>
+        </form>
+    </div>
+    {% empty %}
+    <div class="card">No active study goals yet - set one below.</div>
+    {% endfor %}
+</div>
+
+<div class="card form-card" style="margin-top: 1.5rem;">
+    <h2>Set a New Goal</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <select name="topic_id" required>
+            <option value="">Choose a topic</option>
+            {% for topic in topics %}
+            <option value="{{ topic.id }}">{{ topic.strand.subject.name }} · {{ topic.strand.name }} · {{ topic.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="note" placeholder="Optional note, e.g. why this matters to you">
+        <button type="submit" class="btn-small">Set Goal</button>
+    </form>
+</div>
+{% endblock %}

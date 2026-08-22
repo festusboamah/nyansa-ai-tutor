@@ -13,6 +13,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("courses/", include("courses.urls")),
     path("quizzes/", include("quizzes.urls")),
+    path("tutor/", include("tutor.urls")),
     path("dashboard/", include("dashboard.urls")),
     path("schools/", include("schools.urls")),
     path("gradebook/", include("gradebook.urls")),
@@ -22,6 +23,9 @@ urlpatterns = [
     path("communications/", include("communications.urls")),
     path("finance/", include("finance.urls")),
     path("analytics/", include("analytics.urls")),
+    path("mastery/", include("mastery.urls")),
+    path("integrations/", include("integrations.urls")),
+    path("api/v1/", include("integrations.api_urls")),
 ]
 
 if settings.DEBUG:

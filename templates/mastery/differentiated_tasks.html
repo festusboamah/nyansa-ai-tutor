@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.name }} - Differentiated Tasks{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">{{ term.academic_year.name }} · {{ term.name }}</p>
+        <h1>{{ school_class.name }} · {{ topic.strand.name }} · {{ topic.name }}</h1>
+        <p>Students grouped by mastery level for this topic. Generate a right-sized practice set for each group, then approve it in the question bank review queue before adding it to a quiz.</p>
+    </div>
+</div>
+
+<div class="card-grid" style="margin-top: 1.5rem;">
+    <div class="card">
+        <h2>Needs Support</h2>
+        {% for entry in bands.NEEDS_SUPPORT %}
+            <div class="admin-row">
+                <span>
+                    {{ entry.student.user.username }} · {{ entry.result.mastery_percentage }}%
+                    {% if entry.unmet_prerequisites %}
+                        <br><small>May actually need: {% for item in entry.unmet_prerequisites %}{{ item.topic.name }} ({{ item.result.status|title }}){% if not forloop.last %}, {% endif %}{% endfor %}</small>
+                    {% endif %}
+                </span>
+                {% if entry.active_plan %}
+                <form method="post" class="inline-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan_id" value="{{ entry.active_plan.id }}">
+                    <label for="outcome-{{ entry.active_plan.id }}"><small>Outcome notes</small></label>
+                    <input type="text" id="outcome-{{ entry.active_plan.id }}" name="outcome" placeholder="Outcome notes">
+                    <button type="submit" name="action" value="cancel_plan" class="btn-small btn-secondary">Cancel</button>
+                    <button type="submit" name="action" value="complete_plan" class="btn-small">Mark Complete</button>
+                </form>
+                {% else %}
+                <form method="post" class="inline-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_plan">
+                    <input type="hidden" name="student_id" value="{{ entry.student.id }}">
+                    <label for="plan-text-{{ entry.student.id }}"><small>Remediation plan</small></label>
+                    <input type="text" id="plan-text-{{ entry.student.id }}" name="plan_text" placeholder="Remediation plan">
+                    <button type="submit" class="btn-small btn-secondary">Create Remediation Plan</button>
+                </form>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p>No students in this band.</p>
+        {% endfor %}
+        {% if bands.NEEDS_SUPPORT %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="NEEDS_SUPPORT">
+            <label for="topic-desc-needs-support"><small>What should these questions cover?</small></label>
+            <input type="text" id="topic-desc-needs-support" name="topic_description" value="{{ topic.name }}" placeholder="What should these questions cover?">
+            <label for="num-questions-needs-support"><small>Number of questions</small></label>
+            <input type="number" id="num-questions-needs-support" name="num_questions" value="3" min="1" max="15">
+            <button type="submit" class="btn-small">Generate easy practice</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Developing</h2>
+        {% for entry in bands.DEVELOPING %}
+            <p>{{ entry.student.user.username }} · {{ entry.result.mastery_percentage }}%</p>
+        {% empty %}
+            <p>No students in this band.</p>
+        {% endfor %}
+        {% if bands.DEVELOPING %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="DEVELOPING">
+            <label for="topic-desc-developing"><small>What should these questions cover?</small></label>
+            <input type="text" id="topic-desc-developing" name="topic_description" value="{{ topic.name }}" placeholder="What should these questions cover?">
+            <label for="num-questions-developing"><small>Number of questions</small></label>
+            <input type="number" id="num-questions-developing" name="num_questions" value="3" min="1" max="15">
+            <button type="submit" class="btn-small">Generate medium practice</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Mastered</h2>
+        {% for entry in bands.MASTERED %}
+            <p>{{ entry.student.user.username }} · {{ entry.result.mastery_percentage }}%</p>
+        {% empty %}
+            <p>No students in this band.</p>
+        {% endfor %}
+        {% if bands.MASTERED %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="MASTERED">
+            <label for="topic-desc-mastered"><small>What should these questions cover?</small></label>
+            <input type="text" id="topic-desc-mastered" name="topic_description" value="{{ topic.name }}" placeholder="What should these questions cover?">
+            <label for="num-questions-mastered"><small>Number of questions</small></label>
+            <input type="number" id="num-questions-mastered" name="num_questions" value="3" min="1" max="15">
+            <button type="submit" class="btn-small">Generate extension challenge</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>No Evidence Yet</h2>
+        {% for entry in bands.NO_EVIDENCE %}
+            <p>{{ entry.student.user.username }}</p>
+        {% empty %}
+            <p>No students in this band.</p>
+        {% endfor %}
+        <p class="submission-date">No mastery signal yet for these students on this topic - nothing to size a difficulty from.</p>
+    </div>
+</div>
+
+<a href="{% url 'bank_review_queue' %}" class="btn-small btn-secondary">Go to Question Bank Review</a>
+<a href="{% url 'mastery_class' school_class.id term.id %}" class="btn-small btn-secondary">Back to Class Mastery</a>
+{% endblock %}

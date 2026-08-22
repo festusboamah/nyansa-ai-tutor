@@ -18,7 +18,7 @@ class GradeSchemeAdmin(admin.ModelAdmin):
 @admin.register(Assessment)
 class AssessmentAdmin(admin.ModelAdmin):
     list_display = ("title", "school", "offering", "category", "max_score", "status")
-    list_filter = ("status", "school", "category")
+    list_filter = ("status", "school", "category", "topic")
 
 
 @admin.register(GradeEntry)

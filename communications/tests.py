@@ -1,13 +1,23 @@
 from unittest.mock import patch
-from datetime import timedelta
+from datetime import date, timedelta
+from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from accounts.models import User
+from courses.models import Subject
+from dashboard.lesson_workflow import record_initial_lesson_version, review_lesson_note, submit_lesson_note
+from dashboard.models import LessonNote
+from gradebook.history import record_grade_entry, review_grade_entry
+from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeReviewDecision, GradeScheme
 from guardians.models import GuardianLink
+from quizzes.models import Assignment, AssignmentSubmission
 from schools.models import School, SchoolMembership
 
 from .models import CommunicationPreference, DeliveryAttempt, MessageIntent, MessageTemplate, Notification
@@ -210,3 +220,234 @@ class CommunicationWorkflowTests(TestCase):
         attempt.error = "changed"
         with self.assertRaisesMessage(ValidationError, "immutable"):
             attempt.save()
+
+
+class GradebookDomainEventReceiverTests(TestCase):
+    """communications listens to gradebook.signals events rather than gradebook
+    importing communications - these tests verify that boundary still produces
+    the same notifications the old direct calls did."""
+
+    def setUp(self):
+        self.school = School.objects.create(name="Signal School", slug="signal-school")
+        self.admin = self._member("signal-admin", SchoolMembership.Role.SCHOOL_ADMIN)
+        self.teacher = self._member("signal-teacher", SchoolMembership.Role.TEACHER)
+        self.student = self._member("signal-student", SchoolMembership.Role.STUDENT)
+        year = AcademicYear.objects.create(
+            school=self.school, name="2026/2027", start_date=date(2026, 9, 1),
+            end_date=date(2027, 7, 31), is_current=True,
+        )
+        term = Term.objects.create(
+            academic_year=year, name="Term 1", order=1,
+            start_date=date(2026, 9, 7), end_date=date(2026, 9, 11),
+        )
+        school_class = SchoolClass.objects.create(school=self.school, academic_year=year, name="Basic 6")
+        ClassEnrollment.objects.create(school_class=school_class, student=self.student)
+        subject = Subject.objects.create(school=self.school, name="Mathematics")
+        self.offering = SubjectOffering.objects.create(
+            school=self.school, school_class=school_class, subject=subject, term=term
+        )
+        scheme = GradeScheme.objects.create(
+            school=self.school, academic_year=year, name="Standard", status=GradeScheme.Status.ACTIVE
+        )
+        category = AssessmentCategory.objects.create(
+            scheme=scheme, name="Coursework", code="coursework", weight=Decimal("100"), order=1
+        )
+        self.assessment = Assessment.objects.create(
+            school=self.school, offering=self.offering, category=category,
+            title="Test one", max_score=Decimal("100"), status=Assessment.Status.PUBLISHED,
+        )
+
+    def _member(self, username, role):
+        user = User.objects.create_user(username=username, password="test-password")
+        return SchoolMembership.objects.create(school=self.school, user=user, role=role)
+
+    def test_publishing_a_grade_entry_notifies_admins(self):
+        entry, _ = record_grade_entry(
+            school=self.school, assessment=self.assessment, student=self.student, actor=self.teacher,
+            score=Decimal("70"), source=GradeEntry.Source.MANUAL, status=GradeEntry.Status.PUBLISHED,
+            reason="Initial entry",
+        )
+        notification = Notification.objects.get(recipient=self.admin, kind=Notification.Kind.GRADE_REVIEW)
+        self.assertEqual(notification.title, "Grade awaiting approval")
+        self.assertIn("signal-teacher", notification.message)
+
+    def test_review_decision_notifies_the_recording_teacher(self):
+        entry, _ = record_grade_entry(
+            school=self.school, assessment=self.assessment, student=self.student, actor=self.teacher,
+            score=Decimal("70"), source=GradeEntry.Source.MANUAL, status=GradeEntry.Status.PUBLISHED,
+            reason="Initial entry",
+        )
+        Notification.objects.filter(recipient=self.admin).delete()
+
+        review_grade_entry(
+            entry=entry, reviewer=self.admin, decision=GradeReviewDecision.Decision.APPROVED,
+        )
+
+        notification = Notification.objects.get(recipient=self.teacher, kind=Notification.Kind.GRADE_REVIEW)
+        self.assertEqual(notification.title, "Grade review completed")
+
+
+class AssignmentSubmissionReceiverTests(TestCase):
+    """communications listens to AssignmentSubmission's own post_save signal
+    rather than quizzes importing communications directly."""
+
+    def setUp(self):
+        self.school = School.objects.create(name="Assignment Signal School", slug="assignment-signal-school")
+        self.teacher_user = User.objects.create_user(
+            username="assignment-signal-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.teacher = SchoolMembership.objects.create(
+            school=self.school, user=self.teacher_user, role=SchoolMembership.Role.TEACHER
+        )
+        self.student_user = User.objects.create_user(username="assignment-signal-student", password="test-password")
+        SchoolMembership.objects.create(
+            school=self.school, user=self.student_user, role=SchoolMembership.Role.STUDENT
+        )
+        subject = Subject.objects.create(school=self.school, name="Mathematics")
+        self.assignment = Assignment.objects.create(subject=subject, teacher=self.teacher_user, title="Essay")
+
+    def _submit(self):
+        return AssignmentSubmission.objects.create(
+            assignment=self.assignment, student=self.student_user,
+            file=SimpleUploadedFile("essay.pdf", b"content", content_type="application/pdf"),
+        )
+
+    def test_submitting_an_assignment_notifies_the_teacher(self):
+        submission = self._submit()
+
+        notification = Notification.objects.get(recipient=self.teacher, kind=Notification.Kind.ASSIGNMENT)
+        self.assertEqual(notification.title, "New assignment submission")
+        self.assertIn("assignment-signal-student", notification.message)
+        self.assertEqual(notification.deduplication_key, f"assignment-submission:{submission.id}")
+
+    def test_resaving_a_submission_does_not_notify_again(self):
+        submission = self._submit()
+        submission.final_score = 80
+        submission.save()
+
+        self.assertEqual(Notification.objects.filter(recipient=self.teacher).count(), 1)
+
+
+class LessonNoteDomainEventReceiverTests(TestCase):
+    """communications listens to dashboard.signals events rather than
+    dashboard importing communications directly."""
+
+    def setUp(self):
+        self.school = School.objects.create(name="Lesson Signal School", slug="lesson-signal-school")
+        self.teacher_user = User.objects.create_user(
+            username="lesson-signal-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.teacher = SchoolMembership.objects.create(
+            school=self.school, user=self.teacher_user, role=SchoolMembership.Role.TEACHER
+        )
+        self.admin_user = User.objects.create_user(username="lesson-signal-admin", password="test-password")
+        self.admin = SchoolMembership.objects.create(
+            school=self.school, user=self.admin_user, role=SchoolMembership.Role.SCHOOL_ADMIN
+        )
+        subject = Subject.objects.create(school=self.school, name="Science")
+        self.note = LessonNote.objects.create(
+            teacher=self.teacher_user, subject=subject, class_level="JHS 1",
+            week_ending=date(2026, 8, 7), strand_topic="Living things",
+            learning_indicator="Classify living things.",
+        )
+        record_initial_lesson_version(note=self.note, actor=self.teacher)
+
+    def test_submitting_a_lesson_note_notifies_admins(self):
+        submit_lesson_note(note=self.note, actor=self.teacher, message="Ready for review")
+
+        notification = Notification.objects.get(recipient=self.admin, kind=Notification.Kind.LESSON_REVIEW)
+        self.assertEqual(notification.title, "Lesson note awaiting review")
+        self.assertIn("Living things", notification.message)
+
+    def test_approving_a_lesson_note_notifies_the_author(self):
+        submit_lesson_note(note=self.note, actor=self.teacher, message="Ready for review")
+        Notification.objects.filter(recipient=self.admin).delete()
+
+        review_lesson_note(note=self.note, actor=self.admin, action="approve")
+
+        notification = Notification.objects.get(recipient=self.teacher, kind=Notification.Kind.LESSON_REVIEW)
+        self.assertEqual(notification.title, "Lesson note review update")
+        self.assertIn("approved", notification.message)
+        self.assertIn("approved", notification.message.lower())
+
+
+class StaffAssignmentReceiverTests(TestCase):
+    """communications listens to TeacherAssignment/SchoolClass post_save/post_delete
+    signals rather than academics importing communications directly."""
+
+    def setUp(self):
+        self.school = School.objects.create(name="Staff Signal School", slug="staff-signal-school")
+        self.teacher = self._member("staff-signal-teacher")
+        self.other_teacher = self._member("staff-signal-other-teacher")
+        self.year = AcademicYear.objects.create(
+            school=self.school, name="2026/2027", start_date=date(2026, 9, 1),
+            end_date=date(2027, 7, 31), is_current=True,
+        )
+        self.term = Term.objects.create(
+            academic_year=self.year, name="Term 1", order=1,
+            start_date=date(2026, 9, 7), end_date=date(2026, 9, 11),
+        )
+        self.school_class = SchoolClass.objects.create(
+            school=self.school, academic_year=self.year, name="Basic 6"
+        )
+        subject = Subject.objects.create(school=self.school, name="Mathematics")
+        self.offering = SubjectOffering.objects.create(
+            school=self.school, school_class=self.school_class, subject=subject, term=self.term
+        )
+
+    def _member(self, username):
+        user = User.objects.create_user(username=username, password="test-password")
+        return SchoolMembership.objects.create(school=self.school, user=user, role=SchoolMembership.Role.TEACHER)
+
+    def test_creating_a_teacher_assignment_notifies_the_teacher(self):
+        assignment = TeacherAssignment.objects.create(offering=self.offering, teacher=self.teacher, is_lead=True)
+
+        notification = Notification.objects.get(recipient=self.teacher, kind=Notification.Kind.STAFF_ASSIGNMENT)
+        self.assertEqual(notification.title, "New subject assignment")
+        self.assertIn("Mathematics", notification.message)
+        self.assertIn("lead teacher", notification.message)
+        self.assertEqual(notification.deduplication_key, f"teacher-assignment:{assignment.id}:created")
+
+    def test_deleting_a_teacher_assignment_notifies_the_teacher(self):
+        assignment = TeacherAssignment.objects.create(offering=self.offering, teacher=self.teacher)
+        Notification.objects.filter(recipient=self.teacher).delete()
+
+        assignment.delete()
+
+        notification = Notification.objects.get(recipient=self.teacher, kind=Notification.Kind.STAFF_ASSIGNMENT)
+        self.assertEqual(notification.title, "Subject assignment removed")
+        self.assertIn("Mathematics", notification.message)
+
+    def test_assigning_a_class_teacher_notifies_the_new_teacher(self):
+        self.school_class.class_teacher = self.teacher
+        self.school_class.save()
+
+        notification = Notification.objects.get(recipient=self.teacher, kind=Notification.Kind.STAFF_ASSIGNMENT)
+        self.assertEqual(notification.title, "New class-teacher assignment")
+
+    def test_reassigning_class_teacher_notifies_previous_and_new_teacher(self):
+        self.school_class.class_teacher = self.teacher
+        self.school_class.save()
+        Notification.objects.all().delete()
+
+        self.school_class.class_teacher = self.other_teacher
+        self.school_class.save()
+
+        new_notification = Notification.objects.get(
+            recipient=self.other_teacher, kind=Notification.Kind.STAFF_ASSIGNMENT
+        )
+        self.assertEqual(new_notification.title, "New class-teacher assignment")
+        previous_notification = Notification.objects.get(
+            recipient=self.teacher, kind=Notification.Kind.STAFF_ASSIGNMENT
+        )
+        self.assertEqual(previous_notification.title, "Class-teacher assignment changed")
+
+    def test_resaving_school_class_without_changing_teacher_does_not_notify_again(self):
+        self.school_class.class_teacher = self.teacher
+        self.school_class.save()
+        self.assertEqual(Notification.objects.filter(recipient=self.teacher).count(), 1)
+
+        self.school_class.capacity = 40
+        self.school_class.save()
+
+        self.assertEqual(Notification.objects.filter(recipient=self.teacher).count(), 1)

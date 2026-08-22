@@ -1,13 +1,18 @@
-<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="nyansaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4f46e5"/>
-      <stop offset="100%" stop-color="#06b6d4"/>
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="8" fill="url(#nyansaGradient)"/>
-  <path d="M8 10c2.5-1.5 5-1.5 8 0 3-1.5 5.5-1.5 8 0v11c-2.5-1.5-5-1.5-8 0-3-1.5-5.5-1.5-8 0V10z"
-        fill="none" stroke="white" stroke-width="1.6" stroke-linejoin="round"/>
-  <line x1="16" y1="10" x2="16" y2="21" stroke="white" stroke-width="1.6"/>
-  <circle cx="24" cy="8" r="2.2" fill="#fde68a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 45 280 215">
+<defs>
+  <linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0B2E83"/><stop offset="1" stop-color="#135DD8"/></linearGradient>
+  <linearGradient id="o" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF9A1F"/><stop offset="1" stop-color="#FF5A00"/></linearGradient>
+</defs>
+<g transform="translate(20 24)">
+  <path d="M18 54C58 45 95 55 124 79V190C91 168 58 159 18 166Z" fill="url(#o)"/>
+  <path d="M30 68C65 61 93 68 116 84V174C88 158 61 151 30 155Z" fill="#fff"/>
+  <path d="M34 74C67 67 91 74 110 88V162C86 149 61 143 34 147Z" fill="#FF6A00"/>
+  <path d="M124 79C151 55 186 45 224 54V166C185 159 153 168 124 190Z" fill="url(#b)"/>
+  <path d="M124 84C145 47 184 30 220 38C256 46 280 77 280 113C280 135 272 151 258 165V187C258 194 252 200 245 200H219C206 217 188 228 166 228H124Z" fill="url(#b)"/>
+  <path d="M159 101C172 82 188 72 207 66M159 101C182 101 199 101 216 86M159 101C173 116 189 125 212 129" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="159" cy="101" r="11" fill="#FFB000" stroke="#fff" stroke-width="4"/>
+  <circle cx="207" cy="66" r="10" fill="#FFB000" stroke="#fff" stroke-width="4"/>
+  <circle cx="216" cy="86" r="10" fill="#FFB000" stroke="#fff" stroke-width="4"/>
+  <circle cx="212" cy="129" r="10" fill="#fff"/>
+</g>
 </svg>

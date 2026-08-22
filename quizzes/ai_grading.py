@@ -1,7 +1,4 @@
-import anthropic
-from django.conf import settings
-
-client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+from ai_core.client import AIError, complete_json, complete_text
 
 
 def grade_short_answer(question_text, student_answer):
@@ -22,20 +19,12 @@ Evaluate whether the answer is substantially correct. Respond ONLY with valid JS
 """
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=200,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw_text = response.content[0].text.strip()
-
-        import json
-        result = json.loads(raw_text)
+        result = complete_json(prompt, max_tokens=200)
         return {
             "is_correct": result.get("is_correct", False),
             "feedback": result.get("feedback", "Answer recorded."),
         }
-    except Exception:
+    except AIError:
         return {
             "is_correct": None,
             "feedback": "Your answer was saved, but automatic grading is temporarily unavailable. Your teacher will review it.",
@@ -56,11 +45,6 @@ Here is a breakdown of their answers:
 Write a short, encouraging 2-3 sentence overall summary for the student. Mention what they did well and one area to focus on if applicable. Keep it warm and motivating, suitable for a student-facing dashboard. Respond with ONLY the summary text, no preamble."""
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=200,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return response.content[0].text.strip()
-    except Exception:
+        return complete_text(prompt, max_tokens=200)
+    except AIError:
         return "Great effort completing this quiz! Keep practicing to strengthen your understanding."

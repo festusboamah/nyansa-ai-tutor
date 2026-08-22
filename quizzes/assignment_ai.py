@@ -1,9 +1,6 @@
-import json
-import anthropic
 from pypdf import PdfReader
-from django.conf import settings
 
-client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+from ai_core.client import AIError, complete_json
 
 
 def extract_text_from_file(file_field):
@@ -24,52 +21,62 @@ def extract_text_from_file(file_field):
         return ""
 
 
-def suggest_assignment_grade(assignment_title, instructions, rubric, student_text, max_score):
+def suggest_assignment_grade(assignment_title, instructions, criteria, student_text, max_score):
     """
-    Returns a dict: {"score": float, "feedback": str}
+    `criteria` is an iterable of objects with .name/.description/.max_points.
+    Returns a dict: {"criteria": [{"score": float, "feedback": str}, ...], "overall_feedback": str}
+    The "criteria" list is always positionally aligned with the input `criteria`.
     """
+    criteria = list(criteria)
+
+    if not criteria:
+        return {"criteria": [], "overall_feedback": "No rubric criteria defined."}
+
     if not student_text.strip():
         return {
-            "score": None,
-            "feedback": "Could not extract readable text from this submission. Manual review needed.",
+            "criteria": [{"score": None, "feedback": "Could not extract readable text."} for _ in criteria],
+            "overall_feedback": "Could not extract readable text from this submission. Manual review needed.",
         }
 
     truncated_text = student_text[:12000]
 
-    prompt = f"""You are assisting a teacher in grading a student assignment submission. Your suggestion will be reviewed by the teacher before being finalized - you are not making the final decision.
+    criteria_description = "\n".join(
+        f"{i + 1}. {c.name} (max {c.max_points} points): {c.description or 'No further description.'}"
+        for i, c in enumerate(criteria)
+    )
+
+    prompt = f"""You are assisting a teacher in grading a student assignment submission against a rubric. Your suggestion will be reviewed by the teacher before being finalized - you are not making the final decision.
 
 Assignment: {assignment_title}
 Instructions: {instructions}
-Grading rubric: {rubric or "No specific rubric provided - use general academic standards appropriate for the assignment"}
 Maximum possible score: {max_score}
+
+Grading rubric ({len(criteria)} criteria, in order):
+{criteria_description}
 
 Student's submission (extracted text):
 {truncated_text}
 
-Evaluate this submission and respond ONLY with valid JSON in this exact format, nothing else:
-{{"score": a number between 0 and {max_score}, "feedback": "2-4 sentences of constructive, specific feedback covering strengths and areas for improvement"}}"""
+Evaluate this submission against EACH criterion above, in the same order. Respond ONLY with valid JSON in this exact format, nothing else:
+{{
+  "criteria": [
+    {{"score": "a number between 0 and that criterion's max points", "feedback": "1-2 sentences specific to this criterion"}}
+  ],
+  "overall_feedback": "2-3 sentences summarizing strengths and areas for improvement across the whole submission"
+}}
+The "criteria" array must have exactly {len(criteria)} entries, in the same order as the rubric above."""
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=500,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw_text = response.content[0].text.strip()
-
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
-            raw_text = raw_text.strip()
-
-        result = json.loads(raw_text)
+        result = complete_json(prompt, max_tokens=800)
         return {
-            "score": result.get("score"),
-            "feedback": result.get("feedback", ""),
+            "criteria": [
+                {"score": item.get("score"), "feedback": item.get("feedback", "")}
+                for item in result.get("criteria", [])
+            ],
+            "overall_feedback": result.get("overall_feedback", ""),
         }
-    except Exception:
+    except AIError:
         return {
-            "score": None,
-            "feedback": "AI suggestion unavailable. Please grade manually.",
+            "criteria": [{"score": None, "feedback": "AI suggestion unavailable."} for _ in criteria],
+            "overall_feedback": "AI suggestion unavailable. Please grade manually.",
         }

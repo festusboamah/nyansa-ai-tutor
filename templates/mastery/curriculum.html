@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Curriculum - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">Mastery foundations</p>
+        <h1>Curriculum</h1>
+        <p>Strands and topics are the taxonomy mastery evidence is computed against.</p>
+    </div>
+</div>
+
+<div class="admin-grid">
+    <form method="post" class="card">
+        {% csrf_token %}
+        <input type="hidden" name="form" value="strand">
+        <h2>New strand</h2>
+        {{ strand_form.as_p }}
+        <button class="btn-small" type="submit">Save strand</button>
+    </form>
+
+    <form method="post" class="card">
+        {% csrf_token %}
+        <input type="hidden" name="form" value="topic">
+        <h2>New topic</h2>
+        {{ topic_form.as_p }}
+        <button class="btn-small" type="submit">Save topic</button>
+    </form>
+</div>
+
+<article class="card" style="margin-top: 1.5rem;">
+    <h2>Strands and topics</h2>
+    {% for strand in strands %}
+    <h3>{{ strand.subject.name }} · {{ strand.name }}</h3>
+    {% for topic in strand.topics.all %}
+    <div class="admin-row">
+        <span>
+            {{ topic.name }}
+            {% if topic.prerequisites.all %}
+                <br><small>Requires: {% for prereq in topic.prerequisites.all %}{{ prereq.name }}
+                    <form method="post" class="inline-form" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="remove_prerequisite">
+                        <input type="hidden" name="topic_id" value="{{ topic.id }}">
+                        <input type="hidden" name="prerequisite_id" value="{{ prereq.id }}">
+                        <button type="submit" class="link-button">(remove)</button>
+                    </form>{% if not forloop.last %}, {% endif %}{% endfor %}</small>
+            {% endif %}
+        </span>
+        <form method="post" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_prerequisite">
+            <input type="hidden" name="topic_id" value="{{ topic.id }}">
+            <select name="prerequisite_id">
+                {% for candidate in all_topics %}
+                    {% if candidate.id != topic.id and candidate not in topic.prerequisites.all %}
+                        <option value="{{ candidate.id }}">{{ candidate.strand.name }} · {{ candidate.name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-small btn-secondary">Add prerequisite</button>
+        </form>
+        <form method="post" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit_topic">
+            <input type="hidden" name="topic_id" value="{{ topic.id }}">
+            <label for="topic-name-{{ topic.id }}"><small>Topic name</small></label>
+            <input type="text" id="topic-name-{{ topic.id }}" name="name" value="{{ topic.name }}">
+            <label for="topic-strand-{{ topic.id }}"><small>Strand</small></label>
+            <select id="topic-strand-{{ topic.id }}" name="strand_id">
+                {% for candidate_strand in strands %}
+                    <option value="{{ candidate_strand.id }}" {% if candidate_strand.id == strand.id %}selected{% endif %}>{{ candidate_strand.subject.name }} · {{ candidate_strand.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="reason" placeholder="Reason for this change" required>
+            <button type="submit" class="btn-small">Save edit</button>
+        </form>
+        {% if topic.revisions.all %}
+        <small>History:
+            {% for revision in topic.revisions.all %}
+                {{ revision.previous_name }} → {{ revision.new_name }} ({{ revision.reason }}, {{ revision.changed_by.user.username }}, {{ revision.changed_at|date:"M d, Y" }}){% if not forloop.last %}; {% endif %}
+            {% endfor %}
+        </small>
+        {% endif %}
+    </div>
+    {% empty %}
+    <p>No topics yet.</p>
+    {% endfor %}
+    {% empty %}
+    <p>No strands configured yet.</p>
+    {% endfor %}
+</article>
+{% endblock %}

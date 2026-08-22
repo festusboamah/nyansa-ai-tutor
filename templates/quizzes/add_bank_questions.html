@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} - Add from Bank{% endblock %}
+{% block content %}
+<h1>{{ quiz.title }} · Add from Question Bank</h1>
+<p>Only approved bank questions for {{ quiz.subject.name }} are shown. Adding one copies it into this quiz - the bank question stays available for other quizzes.</p>
+
+{% if approved_questions %}
+<form method="post">
+    {% csrf_token %}
+    <div class="card-grid">
+        {% for item in approved_questions %}
+        <div class="card">
+            <label>
+                <input type="checkbox" name="bank_question_id" value="{{ item.id }}">
+                <h2>{{ item.text }}</h2>
+            </label>
+            <p class="submission-date">{% if item.topic %}{{ item.topic.strand.name }} · {{ item.topic.name }} · {% endif %}{{ item.get_difficulty_display }}</p>
+            {% if item.question_type == "MCQ" %}
+                <ul class="choice-review-list">
+                    {% for choice in item.choices.all %}
+                        <li class="{% if choice.is_correct %}choice-correct{% endif %}">
+                            {{ choice.text }} {% if choice.is_correct %}✓{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <button type="submit" class="btn-small">Add Selected Questions</button>
+</form>
+{% else %}
+<div class="card">No approved bank questions for this subject yet.</div>
+{% endif %}
+
+<a href="{% url 'add_question' quiz.id %}" class="btn-small btn-secondary">Back to Quiz</a>
+{% endblock %}

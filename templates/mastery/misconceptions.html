@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ school_class.name }} Misconceptions{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">{{ term.academic_year.name }} · {{ term.name }}</p>
+        <h1>{{ school_class.name }} · Open Misconceptions</h1>
+        <p>Each of these is the AI's hypothesis from an Explain My Mistake session, not a confirmed diagnosis. Dismiss it if it's wrong, or resolve it once the gap is addressed.</p>
+    </div>
+</div>
+
+{% if patterns %}
+<h2 style="margin-top: 1.5rem;">Recurring Patterns</h2>
+<p>These topics have a misconception shared by multiple students, or recurring for the same student across sessions.</p>
+<div class="card-grid">
+    {% for pattern in patterns %}
+    <div class="card">
+        <h2>{{ pattern.topic.strand.name }} · {{ pattern.topic.name }}</h2>
+        <p>{{ pattern.student_count }} student{{ pattern.student_count|pluralize }} · {{ pattern.misconception_count }} open misconception{{ pattern.misconception_count|pluralize }}</p>
+        <ul>
+            {% for row in pattern.students %}
+            <li>{{ row.student.user.username }}{% if row.items|length > 1 %} ({{ row.items|length }}×){% endif %}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for item in misconceptions %}
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>{{ item.student.user.username }}{% if item.topic %} · {{ item.topic.strand.name }} · {{ item.topic.name }}{% endif %}</h2>
+    <p><strong>Student described:</strong> {{ item.student_description }}</p>
+    <p><strong>AI hypothesis:</strong> {{ item.hypothesis }}</p>
+    <p class="submission-date">Recorded {{ item.created_at|date:"M d, Y" }}</p>
+    <form method="post" class="inline-form">
+        {% csrf_token %}
+        <input type="hidden" name="misconception_id" value="{{ item.id }}">
+        <button type="submit" name="action" value="dismiss" class="btn-small btn-secondary">Dismiss</button>
+        <button type="submit" name="action" value="resolve" class="btn-small">Resolve</button>
+    </form>
+</div>
+{% empty %}
+<div class="card">No open misconceptions for this class right now.</div>
+{% endfor %}
+{% endblock %}

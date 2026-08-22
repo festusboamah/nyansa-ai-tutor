@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ assignment.title }} - Grading Rubric{% endblock %}
+{% block content %}
+<h1>{{ assignment.title }} · Grading Rubric</h1>
+<p>Add scored criteria for this assignment. When a student submits, AI grading feedback will be broken down against each criterion below.</p>
+
+<div class="card form-card">
+    <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        {% for form in formset %}
+            <div class="choice-form-row" style="flex-direction: column; align-items: stretch;">
+                {{ form.id }}
+                {{ form.as_p }}
+                {% if form.instance.pk %}
+                    <label class="choice-correct-label">{{ form.DELETE }} Delete this criterion</label>
+                {% endif %}
+            </div>
+            <hr>
+        {% endfor %}
+        <button type="submit" class="btn-small">Save Rubric</button>
+    </form>
+</div>
+
+<a href="{% url 'assignment_detail' assignment.id %}" class="btn-small btn-secondary">Done</a>
+{% endblock %}

@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from academics.models import ClassEnrollment, SubjectOffering, TeacherAssignment
 from attendance.services import student_attendance_summary
-from gradebook.models import GradeEntry, GradeScheme
+from gradebook.evidence import active_scheme_for, category_evidence
 from schools.models import SchoolMembership
 
 from .models import ReportPolicy, ReportWorkflowEvent, TermReport
@@ -56,33 +56,22 @@ def can_prepare_reports(actor, school_class, term):
 
 
 def _subject_result(student, offering, scheme, pass_mark):
-    entries = GradeEntry.objects.filter(
-        student=student,
-        assessment__offering=offering,
-        assessment__category__scheme=scheme,
-        status=GradeEntry.Status.PUBLISHED,
-        review_status=GradeEntry.ReviewStatus.APPROVED,
-    ).select_related("assessment__category")
-    grouped = {}
-    for entry in entries:
-        grouped.setdefault(entry.assessment.category_id, []).append(entry.percentage)
     weighted, categories = Decimal("0"), []
     class_score = exam_score = None
-    for category in scheme.categories.all():
-        values = grouped.get(category.pk, [])
-        average = (sum(values, Decimal("0")) / len(values)) if values else None
+    for row in category_evidence(student, offering, scheme):
+        average = row["average"]
         contribution = None
         if average is not None:
-            weighted += average * category.weight
-            contribution = (average * category.weight / Decimal("100")).quantize(Decimal("0.01"))
-            category_key = f"{category.code} {category.name}".lower()
+            weighted += average * row["weight"]
+            contribution = (average * row["weight"] / Decimal("100")).quantize(Decimal("0.01"))
+            category_key = f"{row['code']} {row['name']}".lower()
             if any(label in category_key for label in ("continuous", "class score", "term work")):
                 class_score = contribution
             elif any(label in category_key for label in ("end-of-term", "exam")):
                 exam_score = contribution
         categories.append({
-            "name": category.name,
-            "weight": str(category.weight),
+            "name": row["name"],
+            "weight": str(row["weight"]),
             "average": str(average.quantize(Decimal("0.01"))) if average is not None else None,
             "contribution": str(contribution) if contribution is not None else None,
         })
@@ -102,9 +91,7 @@ def _subject_result(student, offering, scheme, pass_mark):
 
 def build_snapshot(*, student, school_class, term, policy):
     school = school_class.school
-    scheme = GradeScheme.objects.filter(
-        school=school, academic_year=term.academic_year, status=GradeScheme.Status.ACTIVE
-    ).prefetch_related("categories").first()
+    scheme = active_scheme_for(school, term.academic_year)
     if not scheme:
         raise ValidationError("Activate a grade scheme for this academic year before generating reports.")
     offerings = list(SubjectOffering.objects.filter(

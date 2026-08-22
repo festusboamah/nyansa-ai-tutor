@@ -34,6 +34,7 @@ class Material(models.Model):
     video_url = models.URLField(blank=True, help_text="Use this for YouTube/Vimeo links")
     description = models.TextField(blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    extracted_text = models.TextField(blank=True)
 
     def __str__(self):
         return f"{self.title} ({self.subject.name})"

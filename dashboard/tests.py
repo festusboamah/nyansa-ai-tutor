@@ -1,14 +1,16 @@
 from datetime import date
 
 from django.test import TestCase, override_settings
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from django.urls import reverse
 from django.core.exceptions import PermissionDenied, ValidationError
 
 from accounts.models import User
 from courses.models import Subject
+from quizzes.models import Quiz, Submission
 from schools.models import School, SchoolMembership
 
+from . import ai_reports, lesson_ai
 from .lesson_workflow import (
     add_lesson_comment,
     record_initial_lesson_version,
@@ -17,6 +19,10 @@ from .lesson_workflow import (
     submit_lesson_note,
 )
 from .models import LessonNote, LessonNoteEvent, LessonNoteNotification, LessonNoteVersion
+
+
+def _fake_response(text):
+    return Mock(content=[Mock(text=text)])
 
 
 class LessonNoteAccessBaselineTests(TestCase):
@@ -275,3 +281,47 @@ class LessonNoteApprovalWorkflowTests(TestCase):
         self.assertRedirects(response, reverse("lesson_note_detail", args=[self.note.pk]), fetch_redirect_response=False)
         self.note.refresh_from_db()
         self.assertEqual(self.note.status, LessonNote.Status.PENDING_REVIEW)
+
+
+class DashboardAIHelpersTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="AI Reports School", slug="ai-reports-school")
+        self.teacher = User.objects.create_user(
+            username="ai-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.student = User.objects.create_user(
+            username="ai-student", password="test-password", role=User.Role.STUDENT
+        )
+        self.subject = Subject.objects.create(school=self.school, name="Mathematics")
+
+    @patch("ai_core.client.client")
+    def test_generate_lesson_note_returns_parsed_dict_on_success(self, mock_client):
+        mock_client.messages.create.return_value = _fake_response('{"content_standard": "Understand fractions"}')
+        result = lesson_ai.generate_lesson_note(
+            "Basic 6", "Mathematics", "2026-09-12", "Fractions", "", "Add fractions", "", "", "", 3,
+        )
+        self.assertEqual(result, {"content_standard": "Understand fractions"})
+
+    @patch("ai_core.client.client")
+    def test_generate_lesson_note_falls_back_to_none_on_ai_failure(self, mock_client):
+        mock_client.messages.create.side_effect = RuntimeError("down")
+        result = lesson_ai.generate_lesson_note(
+            "Basic 6", "Mathematics", "2026-09-12", "Fractions", "", "Add fractions", "", "", "", 3,
+        )
+        self.assertIsNone(result)
+
+    @patch("ai_core.client.client")
+    def test_generate_student_report_returns_text_on_success(self, mock_client):
+        quiz = Quiz.objects.create(subject=self.subject, teacher=self.teacher, title="Quiz 1")
+        submission = Submission.objects.create(quiz=quiz, student=self.student, score=80)
+        mock_client.messages.create.return_value = _fake_response("A strong performance overall.")
+        result = ai_reports.generate_student_report(self.student, self.subject, [submission])
+        self.assertEqual(result, "A strong performance overall.")
+
+    @patch("ai_core.client.client")
+    def test_generate_student_report_falls_back_instead_of_raising(self, mock_client):
+        quiz = Quiz.objects.create(subject=self.subject, teacher=self.teacher, title="Quiz 1")
+        submission = Submission.objects.create(quiz=quiz, student=self.student, score=80)
+        mock_client.messages.create.side_effect = RuntimeError("down")
+        result = ai_reports.generate_student_report(self.student, self.subject, [submission])
+        self.assertIn("could not be generated", result)

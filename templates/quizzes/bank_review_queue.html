@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Question Bank Review - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <h1>Question Bank · Pending Review</h1>
+        <p>Approve a question to make it reusable across quizzes, or reject it to keep it out of the bank.</p>
+    </div>
+</div>
+
+{% for item in pending_questions %}
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>{{ item.subject.name }}{% if item.topic %} · {{ item.topic.strand.name }} · {{ item.topic.name }}{% endif %} · {{ item.get_difficulty_display }}</h2>
+    <p>{{ item.text }}</p>
+    {% if item.question_type == "MCQ" %}
+        <ul class="choice-review-list">
+            {% for choice in item.choices.all %}
+                <li class="{% if choice.is_correct %}choice-correct{% endif %}">
+                    {{ choice.text }} {% if choice.is_correct %}✓{% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <form method="post" class="inline-form">
+        {% csrf_token %}
+        <input type="hidden" name="bank_question_id" value="{{ item.id }}">
+        <input type="text" name="review_note" placeholder="Optional review note">
+        <button type="submit" name="action" value="reject" class="btn-small btn-secondary">Reject</button>
+        <button type="submit" name="action" value="approve" class="btn-small">Approve</button>
+    </form>
+</div>
+{% empty %}
+<div class="card">No bank questions waiting for review right now.</div>
+{% endfor %}
+
+<a href="{% url 'generate_bank_questions' %}" class="btn-small btn-secondary">Generate More Questions</a>
+{% endblock %}

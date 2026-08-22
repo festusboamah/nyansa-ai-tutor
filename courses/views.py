@@ -4,7 +4,7 @@ from django.contrib import messages
 from .models import Subject, Enrollment, Material, StudyDocument, StudyQuestion
 from .forms import SubjectForm, MaterialForm
 from .study_ai import extract_text_from_pdf, generate_summary, answer_question_about_document
-from quizzes.models import Submission
+from quizzes.models import Quiz, Submission
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
@@ -48,9 +48,18 @@ def dashboard_view(request):
 
     upcoming_items.sort(key=lambda x: x["deadline"])
 
+    from mastery.models import StudyGoal
+    from mastery.services import goal_revision_status
+
+    active_goals = StudyGoal.objects.filter(
+        student=request.school_membership, status=StudyGoal.Status.ACTIVE,
+    )
+    due_goal_count = sum(1 for goal in active_goals if goal_revision_status(goal, term=None)["due"])
+
     return render(request, "courses/student_dashboard.html", {
         "subjects_with_grades": subjects_with_grades,
         "upcoming_items": upcoming_items[:5],
+        "due_goal_count": due_goal_count,
     })
 
 
@@ -89,6 +98,8 @@ def subject_detail_view(request, subject_id):
 
     materials = subject.materials.all()
     quizzes = subject.quizzes.all()
+    if not has_school_role(request, SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN):
+        quizzes = quizzes.exclude(status=Quiz.Status.DRAFT)
     assignments = subject.assignments.all()
     return render(request, "courses/subject_detail.html", {
         "subject": subject,

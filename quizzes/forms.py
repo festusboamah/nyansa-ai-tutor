@@ -57,3 +57,30 @@ class AIQuizGenerationForm(forms.Form):
         self.fields["subject"].queryset = (
             Subject.objects.filter(school=school) if school else Subject.objects.none()
         )
+
+
+class BankQuestionGenerationForm(forms.Form):
+    subject = forms.ModelChoiceField(queryset=None)
+    mastery_topic = forms.ModelChoiceField(queryset=None, required=False, label="Mastery topic (optional tag)")
+    topic_description = forms.CharField(
+        max_length=300,
+        help_text="What should these questions cover? e.g. 'Basic algebra: solving for x'"
+    )
+    num_questions = forms.IntegerField(min_value=1, max_value=15, initial=5)
+    difficulty = forms.ChoiceField(choices=[
+        ("easy", "Easy"),
+        ("medium", "Medium"),
+        ("hard", "Hard"),
+    ])
+
+    def __init__(self, *args, school=None, **kwargs):
+        from courses.models import Subject
+        from mastery.models import Topic
+        super().__init__(*args, **kwargs)
+        self.fields["subject"].queryset = (
+            Subject.objects.filter(school=school) if school else Subject.objects.none()
+        )
+        self.fields["mastery_topic"].queryset = (
+            Topic.objects.filter(strand__subject__school=school).select_related("strand")
+            if school else Topic.objects.none()
+        )
