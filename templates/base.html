@@ -105,10 +105,22 @@
         <span>{{ user.username }}</span>
         <small>{% if request.school_membership %}{{ request.school_membership.get_role_display }}{% else %}{{ user.get_role_display }}{% endif %}</small>
     </a>
-    <form method="post" action="{% url 'logout' %}" class="inline-form">
+    <form method="post" action="{% url 'logout' %}" class="inline-form" id="logout-form">
         {% csrf_token %}
         <button type="submit" class="link-button">Logout</button>
     </form>
+    <script>
+        var logoutForm = document.getElementById("logout-form");
+        if (logoutForm) {
+            logoutForm.addEventListener("submit", function () {
+                if ("caches" in window) {
+                    caches.keys().then(function (names) {
+                        names.forEach(function (name) { caches.delete(name); });
+                    });
+                }
+            });
+        }
+    </script>
 {% else %}
     <a href="{% url 'login' %}">Login</a>
     <a href="{% url 'signup' %}" class="btn-signup">Sign Up</a>

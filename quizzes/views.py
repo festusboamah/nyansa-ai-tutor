@@ -49,6 +49,10 @@ def quiz_take_view(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, subject__school=request.school)
     questions = quiz.questions.prefetch_related("choices").all()
 
+    if quiz.status == Quiz.Status.DRAFT:
+        messages.error(request, "This quiz hasn't been published by your teacher yet.")
+        return redirect("dashboard")
+
     if quiz.is_past_deadline():
         messages.error(request, "The deadline for this quiz has passed.")
         return redirect("quiz_start", quiz_id=quiz.id)

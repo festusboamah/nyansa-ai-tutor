@@ -227,6 +227,33 @@ class QuizGenerationReviewTests(TestCase):
 
         self.assertRedirects(response, reverse("dashboard"), fetch_redirect_response=False)
 
+    def test_student_cannot_open_take_page_for_a_draft_quiz(self):
+        quiz = Quiz.objects.create(
+            subject=self.subject, teacher=self.teacher, title="Draft Quiz", status=Quiz.Status.DRAFT,
+        )
+        self.client.force_login(self.student)
+
+        response = self.client.get(reverse("quiz_take", args=[quiz.pk]), secure=True)
+
+        self.assertRedirects(response, reverse("dashboard"), fetch_redirect_response=False)
+
+    def test_student_cannot_submit_answers_for_a_draft_quiz(self):
+        quiz = Quiz.objects.create(
+            subject=self.subject, teacher=self.teacher, title="Draft Quiz", status=Quiz.Status.DRAFT,
+        )
+        question = Question.objects.create(
+            quiz=quiz, text="1/2 + 1/2 = ?", question_type=Question.QuestionType.MULTIPLE_CHOICE, order=1,
+        )
+        Choice.objects.create(question=question, text="1", is_correct=True)
+        self.client.force_login(self.student)
+
+        response = self.client.post(
+            reverse("quiz_take", args=[quiz.pk]), {f"question_{question.id}": "1"}, secure=True
+        )
+
+        self.assertRedirects(response, reverse("dashboard"), fetch_redirect_response=False)
+        self.assertFalse(Submission.objects.filter(quiz=quiz, student=self.student).exists())
+
     def test_owning_teacher_can_publish_and_student_can_then_start_it(self):
         quiz = Quiz.objects.create(
             subject=self.subject, teacher=self.teacher, title="Draft Quiz", status=Quiz.Status.DRAFT,

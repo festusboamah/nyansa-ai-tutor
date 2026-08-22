@@ -1,5 +1,5 @@
 {% load static %}
-const CACHE_NAME = "nyansa-shell-v1";
+const CACHE_NAME = "nyansa-shell-v2";
 const STATIC_URL = "{{ static_url }}";
 
 const PRECACHE_URLS = [
@@ -41,18 +41,12 @@ self.addEventListener("fetch", (event) => {
     }
 
     if (request.mode === "navigate") {
+        // Authenticated pages (dashboards, grades, quiz results, tutor sessions) are
+        // never cached or replayed here - on a shared device, a stale cached page for
+        // one user could otherwise be served to whoever is logged in next. Only the
+        // generic, non-personalized offline shell is available when the network fails.
         event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    const copy = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-                    return response;
-                })
-                .catch(() =>
-                    caches.match(request).then(
-                        (cached) => cached || caches.match("{% static 'offline.html' %}")
-                    )
-                )
+            fetch(request).catch(() => caches.match("{% static 'offline.html' %}"))
         );
         return;
     }
