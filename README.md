@@ -4,6 +4,8 @@ Nyansa (Twi for "wisdom") is a Django learning management system built for an M.
 
 > Technology should sharpen human wisdom, not replace it.
 
+**Product direction:** Nyansa AI is the teaching-and-learning layer of the PagezTech education ecosystem, not a full school-management system. See [`docs/product-boundary.md`](docs/product-boundary.md) for what's in and out of scope, and [`docs/delivery-roadmap.md`](docs/delivery-roadmap.md) for the current phased plan.
+
 ## Features
 
 ### Students
