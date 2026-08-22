@@ -274,6 +274,73 @@ class MaterialTextExtractionTests(TestCase):
         self.assertEqual(study_ai.get_or_extract_material_text(material), "")
 
 
+class MaterialTextViewTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Text View School", slug="text-view-school")
+        self.teacher = User.objects.create_user(
+            username="text-view-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.student = User.objects.create_user(username="text-view-student", password="test-password")
+        SchoolMembership.objects.create(
+            school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER
+        )
+        SchoolMembership.objects.create(
+            school=self.school, user=self.student, role=SchoolMembership.Role.STUDENT
+        )
+        self.subject = Subject.objects.create(school=self.school, name="History")
+        self.material = Material.objects.create(
+            subject=self.subject, teacher=self.teacher, title="Notes",
+            material_type=Material.MaterialType.DOCUMENT, file="materials/notes.pdf",
+            extracted_text="Already extracted text.",
+        )
+
+    def test_enrolled_student_can_view_extracted_text(self):
+        Enrollment.objects.create(student=self.student, subject=self.subject)
+        self.client.force_login(self.student)
+
+        response = self.client.get(
+            reverse("material_text", args=[self.material.id]), secure=True
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Already extracted text.")
+
+    def test_unenrolled_student_is_redirected(self):
+        self.client.force_login(self.student)
+
+        response = self.client.get(
+            reverse("material_text", args=[self.material.id]), secure=True
+        )
+
+        self.assertRedirects(response, reverse("browse_subjects"), fetch_redirect_response=False)
+
+    def test_teacher_can_view_extracted_text_without_enrollment(self):
+        self.client.force_login(self.teacher)
+
+        response = self.client.get(
+            reverse("material_text", args=[self.material.id]), secure=True
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Already extracted text.")
+
+    def test_extracts_lazily_when_not_yet_cached(self):
+        material = Material.objects.create(
+            subject=self.subject, teacher=self.teacher, title="Fresh Notes",
+            material_type=Material.MaterialType.DOCUMENT, file="materials/fresh.pdf",
+        )
+        Enrollment.objects.create(student=self.student, subject=self.subject)
+        self.client.force_login(self.student)
+
+        with patch.object(study_ai, "extract_text_from_pdf", return_value="Freshly extracted.") as mock_extract:
+            response = self.client.get(
+                reverse("material_text", args=[material.id]), secure=True
+            )
+
+        mock_extract.assert_called_once()
+        self.assertContains(response, "Freshly extracted.")
+
+
 class DraftQuizVisibilityTests(TestCase):
     def setUp(self):
         self.student = User.objects.create_user(username="draft-student", password="test-password")

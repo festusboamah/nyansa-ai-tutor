@@ -46,6 +46,20 @@ class HealthEndpointTests(TestCase):
         self.assertEqual(response.status_code, 503)
 
 
+class ServiceWorkerTests(TestCase):
+    def test_service_worker_is_served_from_domain_root_with_correct_content_type(self):
+        response = self.client.get(reverse("service_worker"), secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/javascript")
+        self.assertEqual(response["Cache-Control"], "no-cache")
+        self.assertContains(response, "self.addEventListener(\"install\"")
+
+    def test_service_worker_does_not_require_authentication(self):
+        response = self.client.get(reverse("service_worker"), secure=True)
+        self.assertEqual(response.status_code, 200)
+
+
 class NavigationTests(TestCase):
     def test_school_admin_navigation_is_grouped_and_uses_membership_role(self):
         school = School.objects.create(name="Demo School", slug="demo-school")

@@ -1440,6 +1440,25 @@ h2 {
     display: block;
     white-space: nowrap;
 }
+.material-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.6;
+}
+.low-data-toggle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.view-text-link {
+    display: none;
+}
+[data-low-data="on"] .download-link {
+    display: none;
+}
+[data-low-data="on"] .view-text-link {
+    display: inline-block;
+}
 .review-locked,
 .review-waiting {
     display: inline-block;

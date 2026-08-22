@@ -29,10 +29,39 @@
 </form>
 
 <script>
-document.getElementById('quiz-form').addEventListener('submit', function() {
-    const btn = document.getElementById('submit-btn');
-    btn.disabled = true;
-    btn.textContent = 'Submitting...';
+const quizForm = document.getElementById('quiz-form');
+const submitBtn = document.getElementById('submit-btn');
+const quizId = {{ quiz.id }};
+const quizTitle = "{{ quiz.title|escapejs }}";
+
+function submitQuiz() {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    const formData = new FormData(quizForm);
+    fetch(quizForm.action || window.location.href, {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: formData,
+    }).then(function (response) {
+        if (response.redirected) {
+            window.location.href = response.url;
+        } else {
+            window.location.reload();
+        }
+    }).catch(function () {
+        window.NyansaOfflineQueue.enqueue(quizId, quizTitle, formData);
+        submitBtn.textContent = 'Saved — will submit when back online';
+        const notice = document.createElement('div');
+        notice.className = 'alert alert-success';
+        notice.textContent = "You're offline. Your answers were saved on this device and will submit automatically once you're back online.";
+        quizForm.insertAdjacentElement('beforebegin', notice);
+    });
+}
+
+quizForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    submitQuiz();
 });
 
 let totalSeconds = {{ quiz.time_limit_minutes }} * 60;
@@ -51,7 +80,7 @@ function updateTimer() {
     if (totalSeconds <= 0) {
         clearInterval(timerInterval);
         alert("Time's up! Submitting your quiz automatically.");
-        document.getElementById('quiz-form').submit();
+        submitQuiz();
         return;
     }
     totalSeconds--;

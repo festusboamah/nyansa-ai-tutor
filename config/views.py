@@ -1,5 +1,16 @@
+from django.conf import settings
 from django.db import connection
 from django.http import JsonResponse
+from django.shortcuts import render
+
+
+def service_worker_view(request):
+    response = render(
+        request, "service-worker.js", {"static_url": settings.STATIC_URL},
+        content_type="application/javascript",
+    )
+    response["Cache-Control"] = "no-cache"
+    return response
 
 
 def health_live(request):

@@ -6,10 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Nyansa{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#4f46e5">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <script src="{% static 'js/navigation.js' %}" defer></script>
+    <script src="{% static 'js/offline-queue.js' %}" defer></script>
+    <script src="{% static 'js/low-data-mode.js' %}" defer></script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", function () {
+                navigator.serviceWorker.register("/service-worker.js");
+            });
+        }
+    </script>
 </head>
 <body>
+    <div id="offline-notices" class="messages"></div>
 
     {% if nyansa_demo_mode %}
     <div class="demo-banner" role="status">
@@ -25,6 +38,7 @@
 </a>
         </div>
         <div class="navbar-links">
+            <a href="#" id="low-data-toggle" class="low-data-toggle">Low-data mode: Off</a>
             {% if user.is_authenticated %}
     {% if request.school_membership.role == "STUDENT" %}
     <a href="{% url 'dashboard' %}">Dashboard</a>

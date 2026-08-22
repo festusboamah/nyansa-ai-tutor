@@ -13,7 +13,8 @@
         {% if material.material_type == "VIDEO" and material.video_url %}
             <a href="{{ material.video_url }}" target="_blank" class="btn-small">▶ Watch Video</a>
         {% elif material.file %}
-            <a href="{{ material.file.url }}" target="_blank" class="btn-small">📄 Download</a>
+            <a href="{{ material.file.url }}" target="_blank" class="btn-small download-link">📄 Download</a>
+            <a href="{% url 'material_text' material.id %}" class="btn-small view-text-link">📝 View as Text</a>
         {% endif %}
     </div>
     {% empty %}

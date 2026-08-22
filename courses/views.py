@@ -3,7 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Subject, Enrollment, Material, StudyDocument, StudyQuestion
 from .forms import SubjectForm, MaterialForm
-from .study_ai import extract_text_from_pdf, generate_summary, answer_question_about_document
+from .study_ai import (
+    extract_text_from_pdf,
+    generate_summary,
+    answer_question_about_document,
+    get_or_extract_material_text,
+)
 from quizzes.models import Quiz, Submission
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -106,6 +111,24 @@ def subject_detail_view(request, subject_id):
         "materials": materials,
         "quizzes": quizzes,
         "assignments": assignments,
+    })
+
+
+@login_required
+def material_text_view(request, material_id):
+    material = get_object_or_404(Material, id=material_id, subject__school=request.school)
+    is_enrolled = Enrollment.objects.filter(student=request.user, subject=material.subject).exists()
+
+    if not is_enrolled and not has_school_role(
+        request, SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN
+    ):
+        messages.error(request, "You need to enroll in this subject first.")
+        return redirect("browse_subjects")
+
+    text = get_or_extract_material_text(material)
+    return render(request, "courses/material_text.html", {
+        "material": material,
+        "text": text,
     })
 
 

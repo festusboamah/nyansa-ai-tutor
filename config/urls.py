@@ -3,10 +3,11 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from accounts.views import home_view
-from config.views import health_live, health_ready
+from config.views import health_live, health_ready, service_worker_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("service-worker.js", service_worker_view, name="service_worker"),
     path("health/live/", health_live, name="health_live"),
     path("health/ready/", health_ready, name="health_ready"),
     path("", home_view, name="home"),

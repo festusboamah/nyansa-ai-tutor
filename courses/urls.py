@@ -6,6 +6,7 @@ urlpatterns = [
     path("browse/", views.browse_subjects_view, name="browse_subjects"),
     path("enroll/<int:subject_id>/", views.enroll_view, name="enroll_subject"),
     path("subject/<int:subject_id>/", views.subject_detail_view, name="subject_detail"),
+    path("material/<int:material_id>/text/", views.material_text_view, name="material_text"),
     path("create-subject/", views.create_subject_view, name="create_subject"),
     path("create-material/", views.create_material_view, name="create_material"),
     path("study/", views.study_documents_view, name="study_documents"),
