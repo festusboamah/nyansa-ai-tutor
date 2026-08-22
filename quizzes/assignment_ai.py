@@ -21,7 +21,7 @@ def extract_text_from_file(file_field):
         return ""
 
 
-def suggest_assignment_grade(assignment_title, instructions, criteria, student_text, max_score):
+def suggest_assignment_grade(assignment_title, instructions, criteria, student_text, max_score, *, school=None):
     """
     `criteria` is an iterable of objects with .name/.description/.max_points.
     Returns a dict: {"criteria": [{"score": float, "feedback": str}, ...], "overall_feedback": str}
@@ -67,7 +67,7 @@ Evaluate this submission against EACH criterion above, in the same order. Respon
 The "criteria" array must have exactly {len(criteria)} entries, in the same order as the rubric above."""
 
     try:
-        result = complete_json(prompt, max_tokens=800)
+        result = complete_json(prompt, max_tokens=800, school=school, source="assignment_grading")
         return {
             "criteria": [
                 {"score": item.get("score"), "feedback": item.get("feedback", "")}

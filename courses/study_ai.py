@@ -35,7 +35,7 @@ def get_or_extract_material_text(material):
     return material.extracted_text
 
 
-def generate_summary(extracted_text):
+def generate_summary(extracted_text, *, school=None):
     """
     Sends extracted PDF text to Claude and returns a clear, structured summary.
     """
@@ -56,12 +56,12 @@ Write a clear, well-organized summary of this document for a student. Include:
 Keep it concise but informative. Respond with ONLY the summary, no preamble."""
 
     try:
-        return complete_text(prompt, max_tokens=800)
+        return complete_text(prompt, max_tokens=800, school=school, source="study_ai")
     except AIError:
         return "Summary generation is temporarily unavailable. Please try again later."
 
 
-def answer_question_about_document(extracted_text, question, previous_qa=None):
+def answer_question_about_document(extracted_text, question, previous_qa=None, *, school=None):
     """
     Answers a student's question using the document's content as context.
     previous_qa: optional list of (question, answer) tuples for conversation continuity.
@@ -84,6 +84,6 @@ The student's new question: {question}
 Answer clearly and helpfully, using only information from the document above. If the answer isn't in the document, say so honestly rather than making something up. Keep your answer focused and student-friendly."""
 
     try:
-        return complete_text(prompt, max_tokens=500)
+        return complete_text(prompt, max_tokens=500, school=school, source="study_ai")
     except AIError:
         return "Sorry, I couldn't process your question right now. Please try again."

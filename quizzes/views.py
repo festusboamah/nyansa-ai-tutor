@@ -95,7 +95,7 @@ def quiz_take_view(request, quiz_id):
                     text_answer = request.POST.get(answer_key, "")
                     total_graded += 1
 
-                    ai_result = grade_short_answer(question.text, text_answer)
+                    ai_result = grade_short_answer(question.text, text_answer, school=quiz.subject.school)
                     if ai_result["is_correct"]:
                         correct_count += 1
 
@@ -111,7 +111,9 @@ def quiz_take_view(request, quiz_id):
             score_percent = round((correct_count / total_graded) * 100, 1) if total_graded > 0 else None
             submission.score = score_percent
 
-            overall_feedback = generate_submission_feedback(quiz.title, score_percent, answer_summaries)
+            overall_feedback = generate_submission_feedback(
+                quiz.title, score_percent, answer_summaries, school=quiz.subject.school
+            )
             submission.ai_feedback = overall_feedback
             submission.save()
 
@@ -281,6 +283,7 @@ def ai_generate_quiz_view(request):
                 form.cleaned_data["topic"],
                 form.cleaned_data["num_questions"],
                 form.cleaned_data["difficulty"],
+                school=request.school,
             )
 
             if not generated:
@@ -496,6 +499,7 @@ def assignment_detail_view(request, assignment_id):
                     ai_result = suggest_assignment_grade(
                         assignment.title, assignment.instructions, criteria,
                         extracted_text, submission.max_score,
+                        school=assignment.subject.school,
                     )
                     created_scores = [
                         CriterionScore.objects.create(

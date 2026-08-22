@@ -220,7 +220,7 @@ def upload_study_document_view(request):
         document.file.seek(0)
         extracted = extract_text_from_pdf(document.file)
         document.extracted_text = extracted
-        document.summary = generate_summary(extracted)
+        document.summary = generate_summary(extracted, school=request.school)
         document.save()
 
         messages.success(request, "Document uploaded and summarized!")
@@ -241,7 +241,7 @@ def study_document_detail_view(request, document_id):
         if question_text:
             previous_qa = [(q.question, q.answer) for q in previous_questions]
             answer = answer_question_about_document(
-                document.extracted_text, question_text, previous_qa
+                document.extracted_text, question_text, previous_qa, school=request.school
             )
             StudyQuestion.objects.create(
                 document=document, question=question_text, answer=answer

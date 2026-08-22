@@ -9,6 +9,8 @@ import logging
 
 import anthropic
 from django.conf import settings
+from django.db.models import Sum
+from django.utils import timezone
 
 logger = logging.getLogger("nyansa")
 
@@ -20,21 +22,57 @@ class AIError(Exception):
     decide their own fallback - this never returns a partial/guessed result."""
 
 
-def complete_text(prompt, *, max_tokens, model=None):
+def _daily_tokens_used(school):
+    from ai_core.models import AIUsageEvent
+
+    totals = AIUsageEvent.objects.filter(
+        school=school, created_at__date=timezone.localdate()
+    ).aggregate(input_total=Sum("input_tokens"), output_total=Sum("output_tokens"))
+    return (totals["input_total"] or 0) + (totals["output_total"] or 0)
+
+
+def _log_usage(*, school, source, model, input_tokens=None, output_tokens=None, succeeded=True, error_message=""):
+    from ai_core.models import AIUsageEvent
+
+    AIUsageEvent.objects.create(
+        school=school,
+        source=source,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        succeeded=succeeded,
+        error_message=error_message,
+    )
+
+
+def complete_text(prompt, *, max_tokens, model=None, school=None, source=None):
+    resolved_model = model or settings.NYANSA_AI_MODEL
+
+    if school is not None and _daily_tokens_used(school) >= settings.AI_DAILY_TOKEN_CAP_PER_SCHOOL:
+        raise AIError("Daily AI usage limit reached for this school. Try again tomorrow.")
+
     try:
         response = client.messages.create(
-            model=model or settings.NYANSA_AI_MODEL,
+            model=resolved_model,
             max_tokens=max_tokens,
             messages=[{"role": "user", "content": prompt}],
         )
+        if school is not None:
+            _log_usage(
+                school=school, source=source, model=resolved_model,
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+            )
         return response.content[0].text.strip()
     except Exception as exc:
         logger.warning("AI completion failed: %s", exc)
+        if school is not None:
+            _log_usage(school=school, source=source, model=resolved_model, succeeded=False, error_message=str(exc))
         raise AIError(str(exc)) from exc
 
 
-def complete_json(prompt, *, max_tokens, model=None):
-    raw_text = complete_text(prompt, max_tokens=max_tokens, model=model)
+def complete_json(prompt, *, max_tokens, model=None, school=None, source=None):
+    raw_text = complete_text(prompt, max_tokens=max_tokens, model=model, school=school, source=source)
 
     stripped = raw_text
     if stripped.startswith("```"):

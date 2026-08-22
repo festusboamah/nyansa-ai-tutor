@@ -32,6 +32,6 @@ Write a concise, professional performance report (3-4 sentences) for the teacher
 Respond with ONLY the report text, no preamble or headers."""
 
     try:
-        return complete_text(prompt, max_tokens=300)
+        return complete_text(prompt, max_tokens=300, school=subject.school, source="student_reports")
     except AIError:
         return "A performance report could not be generated automatically right now. Review the quiz history above directly."

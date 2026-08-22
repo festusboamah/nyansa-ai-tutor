@@ -3,7 +3,7 @@ from django.db import transaction
 from ai_core.client import AIError, complete_json
 
 
-def generate_quiz_questions(topic, num_questions, difficulty):
+def generate_quiz_questions(topic, num_questions, difficulty, *, school=None):
     """
     Returns a list of dicts like:
     [{"text": "...", "question_type": "MCQ", "choices": [{"text": "...", "is_correct": True}, ...]}, ...]
@@ -33,7 +33,7 @@ Respond ONLY with valid JSON in this exact structure, no other text:
 }}"""
 
     try:
-        result = complete_json(prompt, max_tokens=2000)
+        result = complete_json(prompt, max_tokens=2000, school=school, source="quiz_generation")
         return result.get("questions", [])
     except AIError:
         return []
@@ -46,7 +46,7 @@ def create_bank_questions(subject, topic, difficulty, topic_description, num_que
     """
     from .models import BankQuestion, BankQuestionChoice, Question
 
-    generated = generate_quiz_questions(topic_description, num_questions, difficulty)
+    generated = generate_quiz_questions(topic_description, num_questions, difficulty, school=subject.school)
 
     created = []
     with transaction.atomic():

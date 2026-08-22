@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # our apps
+    'ai_core',
     'accounts',
     'courses',
     'quizzes',
@@ -120,6 +121,7 @@ ANALYTICS_AI_NARRATIVES = os.getenv("ANALYTICS_AI_NARRATIVES", "False").lower() 
 ANALYTICS_AI_MODEL = os.getenv("ANALYTICS_AI_MODEL", "claude-sonnet-4-5")
 TUTOR_AI_MODEL = os.getenv("TUTOR_AI_MODEL", "claude-sonnet-4-5")
 NYANSA_AI_MODEL = os.getenv("NYANSA_AI_MODEL", "claude-sonnet-4-5")
+AI_DAILY_TOKEN_CAP_PER_SCHOOL = int(os.getenv("AI_DAILY_TOKEN_CAP_PER_SCHOOL", "500000"))
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

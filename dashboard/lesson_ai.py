@@ -22,7 +22,7 @@ def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator,
 
 def generate_lesson_note(class_level, subject_name, week_ending, strand_topic,
                           content_standard, learning_indicator, performance_indicator,
-                          reference, resources, num_days):
+                          reference, resources, num_days, *, school=None):
     """
     Returns a dict: {"header": {...}, "days": [{"day": "Monday", "starter": "...", "main": "...", "reflection": "..."}, ...]}
     """
@@ -59,6 +59,6 @@ Respond ONLY with valid JSON in this exact structure, nothing else - no markdown
 Include exactly {num_days} day entries (starting Monday). Each day's content must be specific and practical for {class_level} on the topic "{strand_topic}", building logically day to day. Keep each field's text plain (no markdown, no bullet symbols) since it will be placed directly into table cells."""
 
     try:
-        return complete_json(prompt, max_tokens=3000)
+        return complete_json(prompt, max_tokens=3000, school=school, source="lesson_ai")
     except AIError:
         return None

@@ -125,6 +125,7 @@ def create_lesson_note_view(request):
                 reference=lesson_note.reference,
                 resources=lesson_note.resources,
                 num_days=lesson_note.num_days,
+                school=request.school,
             )
 
             used_demo_fallback = False

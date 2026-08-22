@@ -5,6 +5,7 @@ from django.db import IntegrityError
 from django.urls import reverse
 
 from accounts.models import User
+from ai_core.models import AIUsageEvent
 from quizzes.models import Assignment, AssignmentSubmission, Quiz, Submission
 from schools.models import School, SchoolMembership
 
@@ -14,7 +15,7 @@ from . import study_ai
 
 
 def _fake_response(text):
-    return Mock(content=[Mock(text=text)])
+    return Mock(content=[Mock(text=text)], usage=Mock(input_tokens=10, output_tokens=20))
 
 
 class LetterGradeTests(TestCase):
@@ -233,6 +234,17 @@ class StudyAITests(TestCase):
         mock_client.messages.create.side_effect = RuntimeError("down")
         result = study_ai.answer_question_about_document("document text", "What is the answer?")
         self.assertEqual(result, "Sorry, I couldn't process your question right now. Please try again.")
+
+    @patch("ai_core.client.client")
+    def test_generate_summary_logs_usage_event_when_school_given(self, mock_client):
+        mock_client.messages.create.return_value = _fake_response("A tidy summary.")
+        school = School.objects.create(name="Usage School", slug="study-ai-usage-school")
+
+        study_ai.generate_summary("some extracted text", school=school)
+
+        event = AIUsageEvent.objects.get(school=school)
+        self.assertEqual(event.source, AIUsageEvent.Source.STUDY_AI)
+        self.assertEqual(event.input_tokens, 10)
 
 
 class MaterialTextExtractionTests(TestCase):

@@ -1,7 +1,7 @@
 from ai_core.client import AIError, complete_json, complete_text
 
 
-def grade_short_answer(question_text, student_answer):
+def grade_short_answer(question_text, student_answer, *, school=None):
     """
     Sends a short-answer question + student's response to Claude,
     and returns a dict: {"is_correct": bool, "feedback": str}
@@ -19,7 +19,7 @@ Evaluate whether the answer is substantially correct. Respond ONLY with valid JS
 """
 
     try:
-        result = complete_json(prompt, max_tokens=200)
+        result = complete_json(prompt, max_tokens=200, school=school, source="quiz_grading")
         return {
             "is_correct": result.get("is_correct", False),
             "feedback": result.get("feedback", "Answer recorded."),
@@ -31,7 +31,7 @@ Evaluate whether the answer is substantially correct. Respond ONLY with valid JS
         }
 
 
-def generate_submission_feedback(quiz_title, score, answer_summaries):
+def generate_submission_feedback(quiz_title, score, answer_summaries, *, school=None):
     """
     Generates an overall encouraging summary feedback for the whole quiz submission.
     """
@@ -45,6 +45,6 @@ Here is a breakdown of their answers:
 Write a short, encouraging 2-3 sentence overall summary for the student. Mention what they did well and one area to focus on if applicable. Keep it warm and motivating, suitable for a student-facing dashboard. Respond with ONLY the summary text, no preamble."""
 
     try:
-        return complete_text(prompt, max_tokens=200)
+        return complete_text(prompt, max_tokens=200, school=school, source="quiz_grading")
     except AIError:
         return "Great effort completing this quiz! Keep practicing to strengthen your understanding."

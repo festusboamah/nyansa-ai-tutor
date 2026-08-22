@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.core.exceptions import PermissionDenied, ValidationError
 
 from accounts.models import User
+from ai_core.models import AIUsageEvent
 from courses.models import Subject
 from quizzes.models import Quiz, Submission
 from schools.models import School, SchoolMembership
@@ -22,7 +23,7 @@ from .models import LessonNote, LessonNoteEvent, LessonNoteNotification, LessonN
 
 
 def _fake_response(text):
-    return Mock(content=[Mock(text=text)])
+    return Mock(content=[Mock(text=text)], usage=Mock(input_tokens=10, output_tokens=20))
 
 
 class LessonNoteAccessBaselineTests(TestCase):
@@ -325,3 +326,14 @@ class DashboardAIHelpersTests(TestCase):
         mock_client.messages.create.side_effect = RuntimeError("down")
         result = ai_reports.generate_student_report(self.student, self.subject, [submission])
         self.assertIn("could not be generated", result)
+
+    @patch("ai_core.client.client")
+    def test_generate_student_report_logs_usage_event_for_subjects_school(self, mock_client):
+        quiz = Quiz.objects.create(subject=self.subject, teacher=self.teacher, title="Quiz 1")
+        submission = Submission.objects.create(quiz=quiz, student=self.student, score=80)
+        mock_client.messages.create.return_value = _fake_response("A strong performance overall.")
+
+        ai_reports.generate_student_report(self.student, self.subject, [submission])
+
+        event = AIUsageEvent.objects.get(school=self.school)
+        self.assertEqual(event.source, AIUsageEvent.Source.STUDENT_REPORTS)

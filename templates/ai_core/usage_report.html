@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}AI Usage - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">Cost visibility</p>
+        <h1>AI Usage</h1>
+        <p>Claude API usage and estimated cost for this school, by feature.</p>
+    </div>
+</div>
+
+<div class="metric-source">
+    <strong>Period:</strong> {{ usage.start }} to {{ usage.end }}<br>
+    <strong>Failed calls in this period:</strong> {{ usage.failed_calls }}
+</div>
+
+<div class="report-summary">
+    <div><span>Total calls</span><strong>{{ usage.total_calls }}</strong></div>
+    <div><span>Input tokens</span><strong>{{ usage.total_input_tokens }}</strong></div>
+    <div><span>Output tokens</span><strong>{{ usage.total_output_tokens }}</strong></div>
+    <div><span>Estimated cost</span><strong>{% if usage.total_cost != None %}${{ usage.total_cost }}{% else %}—{% endif %}</strong></div>
+</div>
+
+<div class="table-scroll">
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Model</th>
+                <th>Calls</th>
+                <th>Input tokens</th>
+                <th>Output tokens</th>
+                <th>Estimated cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in usage.by_source %}
+            <tr>
+                <td>{{ row.source }}</td>
+                <td>{{ row.model }}</td>
+                <td>{{ row.calls }}</td>
+                <td>{{ row.input_tokens }}</td>
+                <td>{{ row.output_tokens }}</td>
+                <td>{% if row.cost != None %}${{ row.cost }}{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No AI usage recorded for this period yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

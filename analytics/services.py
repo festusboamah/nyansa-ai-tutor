@@ -275,8 +275,10 @@ def create_narrative(*, school, term, actor, scope, metrics, school_class=None, 
     method = "grounded-template"
     selected_generator = generator
     if selected_generator is None and settings.ANALYTICS_AI_NARRATIVES:
+        from functools import partial
+
         from .narrative_ai import generate_ai_narrative
-        selected_generator = generate_ai_narrative
+        selected_generator = partial(generate_ai_narrative, school=school)
         method = f"claude:{settings.ANALYTICS_AI_MODEL}"
     elif selected_generator is not None:
         method = "injected-assisted-generator"
