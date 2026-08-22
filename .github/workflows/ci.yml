@@ -39,6 +39,11 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements.txt
+      - name: Dependency vulnerability scan
+        continue-on-error: true
+        run: |
+          python -m pip install pip-audit
+          python -m pip_audit -r requirements.txt -s osv
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py test --verbosity 1
       - name: Rehearse production release
