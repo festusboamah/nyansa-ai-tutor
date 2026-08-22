@@ -21,7 +21,7 @@
 </div>
 {% endif %}
 
-{% if user.is_student %}
+{% if request.school_membership.role == "STUDENT" %}
     {% if my_submission %}
     <div class="card">
         <h2>Your Submission</h2>

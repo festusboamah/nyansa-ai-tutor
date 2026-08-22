@@ -18,6 +18,7 @@ from dashboard.models import LessonNote, LessonNoteEvent, LessonNoteNotification
 from finance.models import Charge, FeeItem, FeeStructure
 from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
 from guardians.models import GuardianLink
+from mastery.models import Strand, Topic
 from reports.models import TermReport
 from schools.models import School, SchoolMembership
 
@@ -178,6 +179,11 @@ class Command(BaseCommand):
         exam_category, _ = AssessmentCategory.objects.update_or_create(
             scheme=scheme, code="end-of-term", defaults={"name": "Exam Score", "weight": Decimal("50"), "order": 2},
         )
+        curriculum_by_subject = {
+            "English Language": ("Reading and Writing", "Comprehension and Composition"),
+            "Mathematics": ("Number", "Fractions and Decimals"),
+            "Science": ("Living things and their environment", "Ecosystems"),
+        }
         subjects = []
         for subject_name in ("English Language", "Mathematics", "Science"):
             subject, _ = Subject.objects.get_or_create(
@@ -188,16 +194,23 @@ class Command(BaseCommand):
             subjects.append(subject)
             offering, _ = SubjectOffering.objects.get_or_create(school=school, school_class=school_class, subject=subject, term=term)
             TeacherAssignment.objects.update_or_create(offering=offering, teacher=teacher, defaults={"is_lead": True})
+
+            strand_name, topic_name = curriculum_by_subject[subject_name]
+            strand, _ = Strand.objects.update_or_create(
+                school=school, subject=subject, name=strand_name,
+            )
+            topic, _ = Topic.objects.update_or_create(strand=strand, name=topic_name)
+
             Assessment.objects.filter(
                 school=school, offering=offering, category=category, title="Demo Assessment"
             ).update(title="Class assessment")
             assessment, _ = Assessment.objects.update_or_create(
                 school=school, offering=offering, category=category, title="Class assessment",
-                defaults={"max_score": Decimal("100"), "status": Assessment.Status.CLOSED},
+                defaults={"max_score": Decimal("100"), "status": Assessment.Status.CLOSED, "topic": topic},
             )
             exam_assessment, _ = Assessment.objects.update_or_create(
                 school=school, offering=offering, category=exam_category, title="End-of-term examination",
-                defaults={"max_score": Decimal("100"), "status": Assessment.Status.CLOSED},
+                defaults={"max_score": Decimal("100"), "status": Assessment.Status.CLOSED, "topic": topic},
             )
             for index, student in enumerate(students):
                 GradeEntry.objects.update_or_create(

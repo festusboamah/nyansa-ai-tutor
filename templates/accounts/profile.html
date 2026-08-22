@@ -18,7 +18,7 @@
         <div class="stat-sub">sessions tracked</div>
     </div>
 
-    {% if user.is_student %}
+    {% if request.school_membership.role == "STUDENT" %}
     <div class="card stat-card">
         <div class="stat-icon">📝</div>
         <div class="stat-label">Quizzes Completed</div>
@@ -37,7 +37,7 @@
     {% endif %}
 </div>
 
-{% if user.is_student %}
+{% if request.school_membership.role == "STUDENT" %}
 <h2>🏆 Badges Earned</h2>
 {% if badges %}
 <div class="badges-grid">

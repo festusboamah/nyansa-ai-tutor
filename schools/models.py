@@ -107,7 +107,7 @@ class SchoolMembership(models.Model):
         ordering = ["school_id", "user_id"]
 
     def __str__(self):
-        return f"{self.user} at {self.school} ({self.get_role_display()})"
+        return f"{self.user.username} at {self.school} ({self.get_role_display()})"
 
     @property
     def is_active(self):

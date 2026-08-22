@@ -28,7 +28,7 @@
     <div class="card">
         <h2>{{ quiz.title }}</h2>
         <p>{{ quiz.description|default:"" }}</p>
-        {% if user.is_student %}
+        {% if request.school_membership.role == "STUDENT" %}
     <a href="{% url 'quiz_start' quiz.id %}" class="btn-small">Take Quiz</a>
 {% endif %}
     </div>

@@ -82,8 +82,8 @@ class CommunicationPreference(models.Model):
         "schools.SchoolMembership", on_delete=models.CASCADE, related_name="communication_preference"
     )
     email_enabled = models.BooleanField(default=True)
-    sms_enabled = models.BooleanField(default=False)
-    sms_phone = models.CharField(max_length=30, blank=True)
+    sms_enabled = models.BooleanField("SMS enabled", default=False)
+    sms_phone = models.CharField("SMS phone", max_length=30, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):

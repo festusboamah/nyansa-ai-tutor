@@ -11,8 +11,9 @@ from attendance.models import AttendanceRecord
 from courses.models import Subject
 from dashboard.models import LessonNote, LessonNoteEvent, LessonNoteNotification, LessonNoteVersion
 from finance.models import Charge
-from gradebook.models import GradeEntry
+from gradebook.models import Assessment, GradeEntry
 from guardians.models import GuardianLink
+from mastery.models import Strand, Topic
 from reports.models import TermReport
 from schools.models import School, SchoolMembership
 
@@ -62,6 +63,9 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(LessonNoteEvent.objects.count(), 1)
         self.assertEqual(LessonNoteNotification.objects.count(), 1)
         self.assertEqual(LessonNote.objects.get().status, LessonNote.Status.PENDING_REVIEW)
+        self.assertEqual(Strand.objects.count(), 3)
+        self.assertEqual(Topic.objects.count(), 3)
+        self.assertEqual(Assessment.objects.filter(topic__isnull=False).count(), 6)
 
     @override_settings(NYANSA_DEMO_MODE=True)
     @patch.dict(
