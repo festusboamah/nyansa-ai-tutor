@@ -83,11 +83,12 @@ class NavigationTests(TestCase):
         self.assertContains(response, "NERDS IV Technologies")
         self.assertNotContains(response, "(Teacher)")
 
-    def test_public_home_presents_the_school_platform_direction(self):
+    def test_public_home_presents_the_teaching_and_learning_direction(self):
         response = self.client.get(reverse("home"), secure=True)
 
-        self.assertContains(response, "School intelligence for Ghana")
-        self.assertContains(response, "Academic operations")
-        self.assertContains(response, "Guardian connection")
-        self.assertContains(response, "Fees and payments")
+        self.assertContains(response, "AI teaching &amp; learning for Ghana")
+        self.assertContains(response, "Intelligent Tutor")
+        self.assertContains(response, "Learning Workspace")
+        self.assertContains(response, "Teacher Copilot")
+        self.assertContains(response, "Mastery &amp; Learning Intelligence")
         self.assertContains(response, "Responsible AI")

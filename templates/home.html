@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Nyansa — School Intelligence for Ghana{% endblock %}
+{% block title %}Nyansa — AI Teaching &amp; Learning for Ghana{% endblock %}
 {% block content %}
 
 <section class="platform-hero">
     <div class="platform-hero-copy">
-        <p class="platform-kicker">School intelligence for Ghana</p>
-        <h1>Run your school with <span>clarity, connection, and confidence.</span></h1>
-        <p class="platform-lead">Nyansa brings academics, attendance, reporting, family communication, fees, and responsible AI into one secure school workspace.</p>
+        <p class="platform-kicker">AI teaching &amp; learning for Ghana</p>
+        <h1>Teach with a copilot. <span>Learn with a tutor.</span></h1>
+        <p class="platform-lead">Nyansa is the AI-powered teaching and learning layer for your school — a curriculum-aware tutor for students, a lesson and grading copilot for teachers, and explainable mastery evidence for everyone, all under human review.</p>
         <div class="hero-actions platform-actions">
             {% if not user.is_authenticated %}
                 <a href="{% url 'signup' %}" class="btn-hero-primary">Explore Nyansa</a>
@@ -27,30 +27,30 @@
             <span>Human-reviewed AI</span>
         </div>
     </div>
-    <div class="platform-hero-visual" aria-label="Connected school operations">
+    <div class="platform-hero-visual" aria-label="Connected teaching and learning">
         <div class="platform-orbit platform-orbit-large"></div>
         <div class="platform-orbit platform-orbit-small"></div>
-        <div class="platform-core"><strong>Nyansa</strong><span>One school workspace</span></div>
-        <div class="platform-node node-academics">Academics</div>
-        <div class="platform-node node-families">Families</div>
-        <div class="platform-node node-finance">Finance</div>
-        <div class="platform-node node-insight">Insight</div>
+        <div class="platform-core"><strong>Nyansa</strong><span>AI learning layer</span></div>
+        <div class="platform-node node-academics">Tutor</div>
+        <div class="platform-node node-families">Workspace</div>
+        <div class="platform-node node-finance">Copilot</div>
+        <div class="platform-node node-insight">Mastery</div>
     </div>
 </section>
 
 <section class="platform-section" aria-labelledby="platform-heading">
     <div class="section-heading">
         <p class="platform-kicker">One connected system</p>
-        <h2 id="platform-heading">Built around the work schools do every day</h2>
-        <p>Each workflow shares the same trusted school, people, class, and term context—without scattered spreadsheets or duplicate records.</p>
+        <h2 id="platform-heading">Built around how teaching and learning actually happen</h2>
+        <p>Every workflow shares the same trusted school, class, and term context — so tutoring, coursework, and mastery insight stay connected instead of scattered across separate tools.</p>
     </div>
     <div class="platform-grid">
-        <article class="platform-card"><span>01</span><h3>Academic operations</h3><p>Manage classes, subjects, assessments, grade review, lesson approval, attendance, and term reports.</p></article>
-        <article class="platform-card"><span>02</span><h3>Guardian connection</h3><p>Give verified guardians secure access to published reports, attendance, balances, receipts, and notices.</p></article>
-        <article class="platform-card"><span>03</span><h3>Fees and payments</h3><p>Keep versioned fee structures, immutable ledgers, reconciled Mobile Money payments, and stable receipts.</p></article>
-        <article class="platform-card"><span>04</span><h3>School communication</h3><p>Coordinate privacy-aware portal, email, and SMS messages with delivery history and controlled retries.</p></article>
-        <article class="platform-card"><span>05</span><h3>Explainable analytics</h3><p>See sourced trends, early-warning signals, and intervention outcomes without hiding the evidence.</p></article>
-        <article class="platform-card"><span>06</span><h3>Responsible AI</h3><p>Support teaching, feedback, and reporting while educators retain approval and professional judgment.</p></article>
+        <article class="platform-card"><span>01</span><h3>Intelligent Tutor</h3><p>A conversational, curriculum-aware tutor that guides with questions and hints instead of handing over answers — practice, explanations, and an exam-safe mode, with every session logged.</p></article>
+        <article class="platform-card"><span>02</span><h3>Learning Workspace</h3><p>Subjects, materials, assignments, quizzes, and exams in one place, with deadlines, study goals, and progress a student can actually see.</p></article>
+        <article class="platform-card"><span>03</span><h3>Teacher Copilot</h3><p>Lesson planning support, AI-assisted question banks, rubric-based grading feedback, and ready-made differentiated tasks by mastery level.</p></article>
+        <article class="platform-card"><span>04</span><h3>Mastery &amp; Learning Intelligence</h3><p>Explainable mastery evidence per topic, misconception detection, and progress trends — grounded in real coursework, not guesswork.</p></article>
+        <article class="platform-card"><span>05</span><h3>Built to fit your school</h3><p>Complements your school's existing administrative records rather than duplicating them, so nothing falls out of sync.</p></article>
+        <article class="platform-card"><span>06</span><h3>Responsible AI</h3><p>AI output is advisory by default; teachers and administrators approve anything that touches a grade, a report, or a student record.</p></article>
     </div>
 </section>
 
