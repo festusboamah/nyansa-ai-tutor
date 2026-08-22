@@ -151,21 +151,34 @@ New registrations create `STUDENT` accounts. Create a `TEACHER` account through 
 | `/courses/study/` | Self-Study Hub |
 | `/courses/transcript/` | Student transcript |
 | `/quizzes/create-choice/` | Choose and create a quiz |
+| `/tutor/` | Conversational AI tutor |
+| `/mastery/` | Mastery, misconceptions, and remediation |
 | `/dashboard/` | Teacher dashboard |
+| `/analytics/` | Early-warning signals and narrative insights |
+| `/api/v1/` | Read-only outbound API for the Suku360 integration |
 | `/admin/` | Django administration |
 
 ## Project Structure
 
 ```text
+academics/       Academic years, terms, classes, offerings, and teacher assignments
 accounts/        Custom user model, authentication, and profile views
+ai_core/         Shared Claude client, JSON parsing, and AI error handling
+analytics/       Early-warning risk signals and AI/template narrative snapshots
+attendance/      School calendars, daily registers, corrections, and derived summaries
+communications/  Notification inbox and templated email/SMS delivery
 config/          Django settings, root URLs, ASGI, and WSGI configuration
 courses/         Subjects, enrolments, materials, study documents, transcripts
-dashboard/       Teacher dashboard, reports, email, and lesson notes
-quizzes/         Quizzes, exams, assignments, grading, and AI generation
-schools/         School tenants, memberships, active-school context, and isolation helpers
-academics/       Academic years, terms, classes, offerings, and teacher assignments
+dashboard/       Teacher dashboard, lesson notes, and AI report drafting
+finance/         Fee structures, charges, Mobile Money payments, and receipts
 gradebook/       Configurable grade schemes, assessments, grade entries, and weighted results
-attendance/      School calendars, daily registers, corrections, and derived summaries
+guardians/       Guardian-student links and guardian portal authorization
+integrations/    Read-only outbound API for the Suku360 integration
+mastery/         Curriculum taxonomy, mastery evidence, and remediation plans
+quizzes/         Quizzes, exams, assignments, grading, and AI generation
+reports/         Term-report drafting, approval, and publishing workflow
+schools/         School tenants, memberships, active-school context, and isolation helpers
+tutor/           Conversational AI tutor sessions, modes, and usage tracking
 static/          CSS and image assets
 templates/       Shared and app-specific Django templates
 manage.py        Django management entry point
@@ -174,7 +187,7 @@ requirements.txt Python dependencies
 
 ## Project Roadmap Documentation
 
-Nyansa's planned evolution into a multi-tenant school management system is documented in the [project documentation](docs/README.md). It covers the product vision, requirements, target architecture, domain model, tenancy and security rules, delivery phases, engineering workflow, and architecture decisions.
+Nyansa's product direction and delivery history are documented in the [project documentation](docs/README.md). It covers the product vision, requirements, target architecture, domain model, tenancy and security rules, delivery phases, engineering workflow, and architecture decisions.
 
 ## Tests
 
