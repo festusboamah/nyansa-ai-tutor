@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal
 from urllib.parse import parse_qs, unquote, urlparse
 from dotenv import load_dotenv
 
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # our apps
     'ai_core',
+    'billing',
     'accounts',
     'courses',
     'quizzes',
@@ -122,6 +124,10 @@ ANALYTICS_AI_MODEL = os.getenv("ANALYTICS_AI_MODEL", "claude-sonnet-4-5")
 TUTOR_AI_MODEL = os.getenv("TUTOR_AI_MODEL", "claude-sonnet-4-5")
 NYANSA_AI_MODEL = os.getenv("NYANSA_AI_MODEL", "claude-sonnet-4-5")
 AI_DAILY_TOKEN_CAP_PER_SCHOOL = int(os.getenv("AI_DAILY_TOKEN_CAP_PER_SCHOOL", "500000"))
+# ai_core.pricing estimates AI cost in USD; billing invoices schools in GHS.
+# This is a rough, illustrative placeholder rate (not live FX data) - tune via
+# env var, or replace with a real FX lookup, before this matters at real volume.
+AI_USAGE_USD_TO_GHS_RATE = Decimal(os.getenv("AI_USAGE_USD_TO_GHS_RATE", "12.0"))
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

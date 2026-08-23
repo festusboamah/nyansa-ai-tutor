@@ -27,6 +27,7 @@ urlpatterns = [
     path("mastery/", include("mastery.urls")),
     path("integrations/", include("integrations.urls")),
     path("ai-usage/", include("ai_core.urls")),
+    path("billing/", include("billing.urls")),
     path("api/v1/", include("integrations.api_urls")),
 ]
 

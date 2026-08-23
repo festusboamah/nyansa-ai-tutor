@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Choose a Plan - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">School subscription</p>
+        <h1>Choose a plan</h1>
+        <p>Starting a plan begins a 30-day trial. You'll be invoiced at the end of each period.</p>
+    </div>
+</div>
+
+<div class="card-grid">
+    {% for plan in plans %}
+    <div class="card">
+        <h2>{{ plan.name }}</h2>
+        <p>{{ plan.description }}</p>
+        <p><strong>{{ plan.currency }} {{ plan.base_price }}</strong> / {{ plan.get_billing_period_display|lower }}
+            {% if plan.ai_usage_markup_percent %}+ AI usage at cost + {{ plan.ai_usage_markup_percent }}%{% endif %}
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="plan_id" value="{{ plan.id }}">
+            <button type="submit" class="btn-small">Start trial</button>
+        </form>
+    </div>
+    {% empty %}
+    <p>No plans are available right now.</p>
+    {% endfor %}
+</div>
+{% endblock %}

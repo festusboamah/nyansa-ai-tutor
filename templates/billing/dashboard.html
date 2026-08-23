@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Billing - Nyansa{% endblock %}
+{% block content %}
+<div class="admin-heading">
+    <div>
+        <p class="eyebrow">School subscription</p>
+        <h1>Billing</h1>
+        <p>Your school's Nyansa plan, current usage, and invoice history.</p>
+    </div>
+</div>
+
+{% if license %}
+<div class="report-summary">
+    <div><span>Plan</span><strong>{{ license.plan.name }}</strong></div>
+    <div><span>Status</span><strong>{{ license.get_status_display }}</strong></div>
+    <div><span>Current period</span><strong>{{ license.current_period_start }} - {{ license.current_period_end }}</strong></div>
+    <div><span>Estimated AI cost this month</span><strong>{% if usage.total_cost != None %}${{ usage.total_cost }}{% else %}—{% endif %}</strong></div>
+</div>
+
+<div class="table-scroll">
+    <table>
+        <thead>
+            <tr>
+                <th>Period</th>
+                <th>Base</th>
+                <th>AI usage</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+                <td>{{ invoice.period_start }} - {{ invoice.period_end }}</td>
+                <td>{{ invoice.currency }} {{ invoice.base_amount }}</td>
+                <td>{% if invoice.ai_usage_amount != None %}{{ invoice.currency }} {{ invoice.ai_usage_amount }}{% else %}—{% endif %}</td>
+                <td>{{ invoice.currency }} {{ invoice.total_amount }}</td>
+                <td>{{ invoice.get_status_display }}</td>
+                <td>
+                    {% if invoice.status == "PENDING" %}
+                    <a class="btn-small" href="{% url 'billing_pay_invoice' invoice.id %}">Pay</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No invoices yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <p>Your school doesn't have an active plan yet.</p>
+    <a class="btn-small" href="{% url 'billing_plans' %}">Choose a plan</a>
+</div>
+{% endif %}
+{% endblock %}
