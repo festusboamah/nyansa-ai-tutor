@@ -12,13 +12,14 @@ from django.utils import timezone
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from analytics.models import EarlyWarningPolicy, RiskSignal
 from attendance.models import AttendanceRecord, AttendanceSession
-from courses.models import Subject
+from courses.models import StudyDocument, Subject
 from dashboard.lesson_workflow import record_initial_lesson_version, submit_lesson_note
 from dashboard.models import LessonNote, LessonNoteEvent, LessonNoteNotification, LessonNoteVersion
 from finance.models import Charge, FeeItem, FeeStructure
 from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
 from guardians.models import GuardianLink
 from mastery.models import Strand, Topic
+from quizzes.models import Assignment, AssignmentSubmission
 from reports.models import TermReport
 from schools.models import School, SchoolMembership
 
@@ -251,6 +252,34 @@ class Command(BaseCommand):
                 actor=teacher,
                 message="Synthetic lesson plan ready for administrator review.",
             )
+
+        StudyDocument.objects.update_or_create(
+            school=school, student=students[0].user, title="Fractions Revision Notes",
+            defaults={
+                "file": "study_documents/demo-fractions-notes.pdf",
+                "extracted_text": (
+                    "A fraction represents a part of a whole, written as a numerator over a "
+                    "denominator. To add or subtract fractions, first find a common denominator."
+                ),
+                "summary": "Key ideas: numerator vs denominator, equivalent fractions, and finding a common denominator before adding or subtracting.",
+            },
+        )
+
+        assignment, _ = Assignment.objects.update_or_create(
+            subject=subjects[1], teacher=teacher.user, title="Fractions Practice Set",
+            defaults={
+                "instructions": "Solve the attached fraction problems and show your working.",
+                "deadline": timezone.now() + timedelta(days=14),
+            },
+        )
+        AssignmentSubmission.objects.update_or_create(
+            assignment=assignment, student=students[0].user,
+            defaults={
+                "file": "assignment_submissions/demo-fractions-submission.pdf",
+                "ai_suggested_score": 78.0,
+                "ai_suggested_feedback": "Good grasp of equivalent fractions; review subtraction with unlike denominators.",
+            },
+        )
 
         attendance_dates = []
         attendance_date = term.start_date

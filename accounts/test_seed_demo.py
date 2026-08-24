@@ -8,12 +8,13 @@ from django.test import TestCase, override_settings
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, Term
 from analytics.models import RiskSignal
 from attendance.models import AttendanceRecord
-from courses.models import Subject
+from courses.models import StudyDocument, Subject
 from dashboard.models import LessonNote, LessonNoteEvent, LessonNoteNotification, LessonNoteVersion
 from finance.models import Charge
 from gradebook.models import Assessment, GradeEntry
 from guardians.models import GuardianLink
 from mastery.models import Strand, Topic
+from quizzes.models import Assignment, AssignmentSubmission
 from reports.models import TermReport
 from schools.models import School, SchoolMembership
 
@@ -66,6 +67,9 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(Strand.objects.count(), 3)
         self.assertEqual(Topic.objects.count(), 3)
         self.assertEqual(Assessment.objects.filter(topic__isnull=False).count(), 6)
+        self.assertEqual(StudyDocument.objects.count(), 1)
+        self.assertEqual(Assignment.objects.count(), 1)
+        self.assertEqual(AssignmentSubmission.objects.count(), 1)
 
     @override_settings(NYANSA_DEMO_MODE=True)
     @patch.dict(
