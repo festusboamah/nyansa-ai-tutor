@@ -18,6 +18,7 @@ from schools.services import has_school_role
 
 from .auth import authenticate_request
 from .models import IntegrationCredential
+from .sso_login import login_from_suku360_token
 from .suku360_webhook import process_suku360_credential_webhook
 
 
@@ -62,6 +63,17 @@ def suku360_credential_webhook_view(request):
     except (ValidationError, ValueError, KeyError):
         return JsonResponse({"detail": "Invalid payload"}, status=400)
     return JsonResponse({"status": "accepted"})
+
+
+def suku360_sso_login_view(request):
+    token = request.GET.get("token", "")
+    try:
+        login_from_suku360_token(request, token)
+    except PermissionDenied as exc:
+        return render(request, "integrations/sso_error.html", {"message": str(exc)}, status=401)
+    except (ValidationError, ValueError, KeyError) as exc:
+        return render(request, "integrations/sso_error.html", {"message": str(exc)}, status=400)
+    return redirect("home")
 
 
 def _require_auth(request):

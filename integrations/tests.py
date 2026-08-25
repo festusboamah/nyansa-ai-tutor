@@ -1,6 +1,8 @@
+import base64
 import hashlib
 import hmac
 import json
+import time
 from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
@@ -15,7 +17,7 @@ from courses.models import Subject
 from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
 from schools.models import School, SchoolMembership
 
-from .models import IntegrationCredential, SyncBatch, SyncRecord, Suku360RosterCredential
+from .models import IntegrationCredential, SsoNonce, SyncBatch, SyncRecord, Suku360RosterCredential
 from .suku360_sync import Suku360SyncError, pull_roster
 
 
@@ -429,3 +431,85 @@ class Suku360CredentialWebhookTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Suku360RosterCredential.objects.filter(school=self.school).exists())
+
+
+@override_settings(SUKU360_WEBHOOK_SECRET="test-sso-secret")
+class Suku360SsoLoginTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="SSO Nyansa School", slug="sso-nyansa-school")
+        self.url = reverse("suku360_sso_login")
+
+    def _token(self, secret="test-sso-secret", ttl=60, **overrides):
+        now = int(time.time())
+        payload = {
+            "nyansa_school_slug": "sso-nyansa-school",
+            "role": "teacher",
+            "suku360_id": "501",
+            "first_name": "Ama",
+            "last_name": "Mensah",
+            "email": "ama@example.com",
+            "iat": now,
+            "exp": now + ttl,
+            "nonce": f"nonce-{now}-{overrides.get('nonce_suffix', '0')}",
+        }
+        payload.update({k: v for k, v in overrides.items() if k != "nonce_suffix"})
+        payload_bytes = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        signature = hmac.new(secret.encode("utf-8"), payload_bytes, hashlib.sha512).digest()
+        token = (
+            base64.urlsafe_b64encode(payload_bytes).decode("ascii")
+            + "."
+            + base64.urlsafe_b64encode(signature).decode("ascii")
+        )
+        return token
+
+    def test_valid_token_logs_in_and_jit_creates_teacher(self):
+        response = self.client.get(self.url, {"token": self._token()}, secure=True)
+
+        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
+        membership = SchoolMembership.objects.get(school=self.school, suku360_id="501")
+        self.assertEqual(membership.role, SchoolMembership.Role.TEACHER)
+        self.assertFalse(membership.user.has_usable_password())
+        self.assertEqual(int(self.client.session["_auth_user_id"]), membership.user.pk)
+        self.assertEqual(self.client.session["active_school_id"], self.school.pk)
+
+    def test_valid_token_for_existing_membership_logs_in_without_duplicating(self):
+        self.client.get(self.url, {"token": self._token(nonce_suffix="a")}, secure=True)
+        self.client.logout()
+
+        self.client.get(self.url, {"token": self._token(nonce_suffix="b")}, secure=True)
+
+        self.assertEqual(SchoolMembership.objects.filter(school=self.school, suku360_id="501").count(), 1)
+
+    def test_headteacher_role_maps_to_school_admin(self):
+        response = self.client.get(self.url, {"token": self._token(role="headteacher", suku360_id="999")}, secure=True)
+        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
+        membership = SchoolMembership.objects.get(school=self.school, suku360_id="999")
+        self.assertEqual(membership.role, SchoolMembership.Role.SCHOOL_ADMIN)
+
+    def test_expired_token_is_rejected(self):
+        response = self.client.get(self.url, {"token": self._token(ttl=-10)}, secure=True)
+        self.assertEqual(response.status_code, 401)
+        self.assertFalse(SchoolMembership.objects.filter(school=self.school).exists())
+
+    def test_invalid_signature_is_rejected(self):
+        response = self.client.get(self.url, {"token": self._token(secret="wrong-secret")}, secure=True)
+        self.assertEqual(response.status_code, 401)
+
+    def test_replayed_token_is_rejected_on_second_use(self):
+        token = self._token()
+        first = self.client.get(self.url, {"token": token}, secure=True)
+        self.assertRedirects(first, reverse("home"), fetch_redirect_response=False)
+
+        self.client.logout()
+        second = self.client.get(self.url, {"token": token}, secure=True)
+        self.assertEqual(second.status_code, 401)
+        self.assertEqual(SsoNonce.objects.count(), 1)
+
+    def test_unknown_school_slug_is_rejected(self):
+        response = self.client.get(self.url, {"token": self._token(nyansa_school_slug="does-not-exist")}, secure=True)
+        self.assertEqual(response.status_code, 400)
+
+    def test_missing_secret_configured_rejects_everything(self):
+        with override_settings(SUKU360_WEBHOOK_SECRET=""):
+            response = self.client.get(self.url, {"token": self._token()}, secure=True)
+        self.assertEqual(response.status_code, 401)

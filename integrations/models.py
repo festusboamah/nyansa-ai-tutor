@@ -92,3 +92,14 @@ class IntegrationCredential(models.Model):
 
     def __str__(self):
         return f"API credential for {self.school.name}"
+
+
+class SsoNonce(models.Model):
+    """One row per redeemed Suku360 SSO launch token (integrations/sso_login.py).
+    The token itself is short-lived (60s, checked via its own `exp` claim),
+    but a leaked/logged URL (browser history, a proxy log, a shared
+    screenshot) could still be replayed within that window without this -
+    redemption is get-or-reject on the nonce, not just an expiry check."""
+
+    nonce = models.CharField(max_length=64, unique=True, db_index=True)
+    used_at = models.DateTimeField(auto_now_add=True)

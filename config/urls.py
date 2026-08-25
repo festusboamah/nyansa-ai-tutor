@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from accounts.views import home_view
 from config.views import health_live, health_ready, service_worker_view
-from integrations.views import suku360_credential_webhook_view
+from integrations.views import suku360_credential_webhook_view, suku360_sso_login_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -31,6 +31,7 @@ urlpatterns = [
     path("billing/", include("billing.urls")),
     path("api/v1/", include("integrations.api_urls")),
     path("suku360/webhook/credential/", suku360_credential_webhook_view, name="suku360_credential_webhook"),
+    path("sso/suku360/", suku360_sso_login_view, name="suku360_sso_login"),
 ]
 
 if settings.DEBUG:

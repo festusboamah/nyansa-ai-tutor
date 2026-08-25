@@ -58,25 +58,43 @@ def _record(batch, entity_type, suku360_id, action, nyansa_object_id="", error_m
     )
 
 
-def _get_or_create_person(*, school, batch, entity_type, suku360_id, username_hint, first_name, last_name, email, role):
+def get_or_create_membership(*, school, suku360_id, username_hint, first_name, last_name, email, role):
+    """Role-agnostic core of _get_or_create_person below, factored out so the
+    SSO login handoff (integrations/sso_login.py) can just-in-time create an
+    account the same way the roster pull does, without needing a SyncBatch to
+    record against. Returns (membership, created)."""
     membership = SchoolMembership.objects.filter(school=school, suku360_id=str(suku360_id)).select_related("user").first()
     if membership:
         user = membership.user
         if user.first_name != first_name or user.last_name != last_name:
             user.first_name, user.last_name = first_name, last_name
             user.save(update_fields=["first_name", "last_name"])
-        _record(batch, entity_type, suku360_id, SyncRecord.Action.UNCHANGED, membership.pk)
-        return membership
+        return membership, False
 
     User = get_user_model()
-    user = User(username=_unique_username(school, username_hint), email=email or "", role=User.Role.TEACHER if role == SchoolMembership.Role.TEACHER else User.Role.STUDENT)
+    is_staff_like = role in (SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN)
+    user = User(
+        username=_unique_username(school, username_hint), email=email or "",
+        role=User.Role.TEACHER if is_staff_like else User.Role.STUDENT,
+    )
     user.set_unusable_password()
     user.first_name, user.last_name = first_name, last_name
     user.save()
     membership = SchoolMembership.objects.create(
         school=school, user=user, role=role, suku360_id=str(suku360_id), portal_access_enabled=False,
     )
-    _record(batch, entity_type, suku360_id, SyncRecord.Action.CREATED, membership.pk)
+    return membership, True
+
+
+def _get_or_create_person(*, school, batch, entity_type, suku360_id, username_hint, first_name, last_name, email, role):
+    membership, created = get_or_create_membership(
+        school=school, suku360_id=suku360_id, username_hint=username_hint,
+        first_name=first_name, last_name=last_name, email=email, role=role,
+    )
+    _record(
+        batch, entity_type, suku360_id,
+        SyncRecord.Action.CREATED if created else SyncRecord.Action.UNCHANGED, membership.pk,
+    )
     return membership
 
 
