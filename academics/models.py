@@ -58,10 +58,21 @@ class SchoolClass(models.Model):
     name = models.CharField(max_length=80)
     capacity = models.PositiveIntegerField(null=True, blank=True)
     class_teacher = models.ForeignKey("schools.SchoolMembership", null=True, blank=True, on_delete=models.SET_NULL, related_name="managed_classes")
+    suku360_id = models.CharField(
+        max_length=64, blank=True, null=True, db_index=True,
+        help_text="Suku360's own SchoolClass id, once synced.",
+    )
 
     class Meta:
         ordering = ["name"]
-        constraints = [models.UniqueConstraint(fields=["school", "academic_year", "name"], name="unique_class_per_year")]
+        constraints = [
+            models.UniqueConstraint(fields=["school", "academic_year", "name"], name="unique_class_per_year"),
+            models.UniqueConstraint(
+                fields=["school", "suku360_id"],
+                condition=models.Q(suku360_id__isnull=False),
+                name="unique_school_class_suku360_id",
+            ),
+        ]
 
     def clean(self):
         if self.academic_year_id and self.school_id != self.academic_year.school_id:
@@ -120,6 +131,15 @@ class TeacherAssignment(models.Model):
     offering = models.ForeignKey(SubjectOffering, on_delete=models.CASCADE, related_name="teacher_assignments")
     teacher = models.ForeignKey("schools.SchoolMembership", on_delete=models.CASCADE, related_name="teaching_assignments")
     is_lead = models.BooleanField(default=False)
+    suku360_id = models.CharField(
+        max_length=64, blank=True, null=True, db_index=True,
+        help_text=(
+            "Suku360's own TeachingAssignment id, once synced. Deliberately not unique: "
+            "Suku360 scopes a teaching assignment per academic year, Nyansa scopes it per "
+            "term (via offering) - one Suku360 assignment maps to one Nyansa row per term "
+            "in that year, so the same suku360_id legitimately repeats across terms."
+        ),
+    )
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["offering", "teacher"], name="unique_teacher_offering")]

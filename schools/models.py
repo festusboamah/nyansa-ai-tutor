@@ -35,6 +35,10 @@ class School(models.Model):
             )
         ],
     )
+    suku360_id = models.CharField(
+        max_length=64, blank=True, null=True, unique=True, db_index=True,
+        help_text="Suku360's own school id, once synced. Nyansa-local until then.",
+    )
     address = models.TextField(blank=True)
     phone = models.CharField(max_length=30, blank=True)
     email = models.EmailField(blank=True)
@@ -88,6 +92,10 @@ class SchoolMembership(models.Model):
         blank=True,
         help_text="Optional school-specific staff, student, or guardian identifier.",
     )
+    suku360_id = models.CharField(
+        max_length=64, blank=True, null=True, db_index=True,
+        help_text="Suku360's own Membership/Student id for this person at this school, once synced.",
+    )
     portal_access_enabled = models.BooleanField(default=True)
     joined_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -99,6 +107,11 @@ class SchoolMembership(models.Model):
                 fields=["school", "identifier"],
                 condition=models.Q(identifier__gt=""),
                 name="unique_school_member_identifier",
+            ),
+            models.UniqueConstraint(
+                fields=["school", "suku360_id"],
+                condition=models.Q(suku360_id__isnull=False),
+                name="unique_school_member_suku360_id",
             ),
         ]
         indexes = [

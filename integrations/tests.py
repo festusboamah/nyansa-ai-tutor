@@ -1,18 +1,20 @@
 import hashlib
 from datetime import date
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
 
-from academics.models import AcademicYear, SchoolClass, SubjectOffering, Term
+from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from accounts.models import User
 from analytics.models import EarlyWarningPolicy, RiskSignal
 from courses.models import Subject
 from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
 from schools.models import School, SchoolMembership
 
-from .models import IntegrationCredential
+from .models import IntegrationCredential, SyncBatch, SyncRecord, Suku360RosterCredential
+from .suku360_sync import Suku360SyncError, pull_roster
 
 
 class IntegrationsTestCase(TestCase):
@@ -251,3 +253,96 @@ class RiskSignalsEndpointTests(IntegrationsTestCase):
         data = response.json()
         self.assertEqual(len(data["signals"]), 1)
         self.assertEqual(data["signals"][0]["student_id"], open_signal.student_id)
+
+
+def _fake_roster_payload():
+    return {
+        "school": {"id": 1, "slug": "suku-school", "name": "Suku School"},
+        "academic_years": [
+            {
+                "id": 501, "name": "2026/2027", "status": "active",
+                "start_date": "2026-09-01", "end_date": "2027-07-31",
+                "terms": [
+                    {"id": 601, "name": "Term 1", "status": "active", "start_date": "2026-09-01", "end_date": "2026-12-12"},
+                ],
+                "classes": [
+                    {
+                        "id": 701, "name": "JHS 1", "stream": "", "level_order": 1,
+                        "students": [
+                            {"id": 801, "student_id_number": "S-001", "first_name": "Kofi", "last_name": "Owusu", "email": "", "user_id": None},
+                        ],
+                        "teaching_assignments": [
+                            {
+                                "id": 901, "teacher_id": 851, "teacher_username": "ama.mensah",
+                                "teacher_first_name": "Ama", "teacher_last_name": "Mensah", "teacher_email": "",
+                                "subject_id": 951, "subject_name": "Mathematics",
+                            },
+                        ],
+                    },
+                ],
+            },
+        ],
+    }
+
+
+class PullRosterTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Sync School", slug="sync-school")
+        Suku360RosterCredential.objects.create(
+            school=self.school, token="test-token", base_url="https://suku360.example",
+        )
+
+    def test_no_credential_raises(self):
+        school = School.objects.create(name="No Credential School", slug="no-credential-school")
+        with self.assertRaises(Suku360SyncError):
+            pull_roster(school)
+
+    @patch("integrations.suku360_sync._fetch_roster", side_effect=Suku360SyncError("network down"))
+    def test_fetch_failure_records_failed_batch(self, mock_fetch):
+        batch = pull_roster(self.school)
+        self.assertEqual(batch.status, SyncBatch.Status.FAILED)
+        self.assertIn("network down", batch.error_message)
+
+    @patch("integrations.suku360_sync._fetch_roster", return_value=_fake_roster_payload())
+    def test_full_pull_creates_expected_records(self, mock_fetch):
+        batch = pull_roster(self.school)
+
+        self.assertEqual(batch.status, SyncBatch.Status.COMPLETED)
+        year = AcademicYear.objects.get(school=self.school, name="2026/2027")
+        term = Term.objects.get(academic_year=year, name="Term 1")
+        self.assertEqual(term.order, 1)
+        school_class = SchoolClass.objects.get(school=self.school, suku360_id="701")
+        self.assertEqual(school_class.name, "JHS 1")
+
+        student = SchoolMembership.objects.get(school=self.school, suku360_id="801")
+        self.assertEqual(student.role, SchoolMembership.Role.STUDENT)
+        self.assertTrue(student.user.has_usable_password() is False)
+        self.assertTrue(ClassEnrollment.objects.filter(school_class=school_class, student=student).exists())
+
+        teacher = SchoolMembership.objects.get(school=self.school, suku360_id="851")
+        self.assertEqual(teacher.role, SchoolMembership.Role.TEACHER)
+        subject = Subject.objects.get(school=self.school, name="Mathematics")
+        offering = SubjectOffering.objects.get(school=self.school, school_class=school_class, subject=subject, term=term)
+        self.assertTrue(TeacherAssignment.objects.filter(offering=offering, teacher=teacher, suku360_id="901").exists())
+
+    @patch("integrations.suku360_sync._fetch_roster", return_value=_fake_roster_payload())
+    def test_pulling_twice_is_idempotent(self, mock_fetch):
+        pull_roster(self.school)
+        pull_roster(self.school)
+
+        self.assertEqual(AcademicYear.objects.filter(school=self.school).count(), 1)
+        self.assertEqual(SchoolClass.objects.filter(school=self.school).count(), 1)
+        self.assertEqual(SchoolMembership.objects.filter(school=self.school, suku360_id="801").count(), 1)
+        self.assertEqual(SchoolMembership.objects.filter(school=self.school, suku360_id="851").count(), 1)
+        self.assertEqual(TeacherAssignment.objects.filter(suku360_id="901").count(), 1)
+
+    @patch("integrations.suku360_sync._fetch_roster", return_value=_fake_roster_payload())
+    def test_records_a_sync_record_per_entity(self, mock_fetch):
+        batch = pull_roster(self.school)
+
+        entity_types = set(batch.records.values_list("entity_type", flat=True))
+        self.assertIn(SyncRecord.EntityType.ACADEMIC_YEAR, entity_types)
+        self.assertIn(SyncRecord.EntityType.SCHOOL_CLASS, entity_types)
+        self.assertIn(SyncRecord.EntityType.STUDENT, entity_types)
+        self.assertIn(SyncRecord.EntityType.TEACHER, entity_types)
+        self.assertIn(SyncRecord.EntityType.ENROLLMENT, entity_types)
