@@ -27,6 +27,31 @@ services:
           name: nyansa-ai-demo-db
           property: connectionString
 
+# Periodic re-sync beyond the automatic first pull the Suku360 credential
+# webhook already triggers (integrations/suku360_webhook.py) - catches
+# roster changes made on Suku360's side afterwards (new enrollments,
+# teacher reassignments, etc). Render's Cron Job service type is a paid-tier
+# feature, not available on the free plan this service currently runs on -
+# left commented out until the plan is upgraded, rather than assumed to work.
+# cronJobs:
+#   - type: cron
+#     name: nyansa-pull-suku360-roster
+#     runtime: docker
+#     plan: starter
+#     schedule: "0 3 * * *"
+#     dockerCommand: python manage.py pull_suku360_roster
+#     envVars:
+#       - key: DJANGO_ENV
+#         value: production
+#       - key: DJANGO_DEBUG
+#         value: "False"
+#       - key: DJANGO_SECRET_KEY
+#         sync: false
+#       - key: DATABASE_URL
+#         fromDatabase:
+#           name: nyansa-ai-demo-db
+#           property: connectionString
+
 databases:
   - name: nyansa-ai-demo-db
     plan: free

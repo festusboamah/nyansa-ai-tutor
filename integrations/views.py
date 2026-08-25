@@ -3,9 +3,10 @@ import secrets
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import csrf_exempt
 
 from academics.models import SchoolClass, Term
 from analytics.models import RiskSignal
@@ -17,6 +18,7 @@ from schools.services import has_school_role
 
 from .auth import authenticate_request
 from .models import IntegrationCredential
+from .suku360_webhook import process_suku360_credential_webhook
 
 
 @login_required
@@ -45,6 +47,21 @@ def credential_settings_view(request):
         return redirect("integration_credential_settings")
 
     return render(request, "integrations/credential_settings.html", {"credential": credential})
+
+
+@csrf_exempt
+def suku360_credential_webhook_view(request):
+    if request.method != "POST":
+        return JsonResponse({"detail": "Method not allowed"}, status=405)
+    try:
+        process_suku360_credential_webhook(
+            raw_body=request.body, signature=request.headers.get("x-suku360-signature", "")
+        )
+    except PermissionDenied:
+        return JsonResponse({"detail": "Invalid signature"}, status=401)
+    except (ValidationError, ValueError, KeyError):
+        return JsonResponse({"detail": "Invalid payload"}, status=400)
+    return JsonResponse({"status": "accepted"})
 
 
 def _require_auth(request):

@@ -1,9 +1,11 @@
 import hashlib
+import hmac
+import json
 from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
@@ -346,3 +348,84 @@ class PullRosterTests(TestCase):
         self.assertIn(SyncRecord.EntityType.STUDENT, entity_types)
         self.assertIn(SyncRecord.EntityType.TEACHER, entity_types)
         self.assertIn(SyncRecord.EntityType.ENROLLMENT, entity_types)
+
+
+@override_settings(SUKU360_WEBHOOK_SECRET="test-webhook-secret")
+class Suku360CredentialWebhookTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Webhook School", slug="webhook-school")
+        self.url = reverse("suku360_credential_webhook")
+
+    def _post(self, payload, secret="test-webhook-secret"):
+        raw_body = json.dumps(payload).encode("utf-8")
+        signature = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha512).hexdigest()
+        return self.client.post(
+            self.url, data=raw_body, content_type="application/json",
+            secure=True, HTTP_X_SUKU360_SIGNATURE=signature,
+        )
+
+    def _payload(self, **overrides):
+        payload = {
+            "nyansa_school_slug": "webhook-school",
+            "suku360_school_id": 42,
+            "token": "delivered-token",
+            "base_url": "https://api.suku360.example",
+        }
+        payload.update(overrides)
+        return payload
+
+    @patch("integrations.suku360_webhook.pull_roster")
+    def test_valid_signature_creates_credential_and_triggers_pull(self, mock_pull):
+        response = self._post(self._payload())
+
+        self.assertEqual(response.status_code, 200)
+        credential = Suku360RosterCredential.objects.get(school=self.school)
+        self.assertEqual(credential.token, "delivered-token")
+        self.assertEqual(credential.base_url, "https://api.suku360.example")
+        self.assertTrue(credential.is_active)
+        mock_pull.assert_called_once_with(self.school)
+
+    @patch("integrations.suku360_webhook.pull_roster")
+    def test_delivering_again_updates_the_existing_credential(self, mock_pull):
+        self._post(self._payload())
+        self._post(self._payload(token="rotated-token"))
+
+        self.assertEqual(Suku360RosterCredential.objects.filter(school=self.school).count(), 1)
+        self.assertEqual(Suku360RosterCredential.objects.get(school=self.school).token, "rotated-token")
+
+    @patch("integrations.suku360_webhook.pull_roster")
+    def test_invalid_signature_is_rejected(self, mock_pull):
+        response = self._post(self._payload(), secret="wrong-secret")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertFalse(Suku360RosterCredential.objects.filter(school=self.school).exists())
+        mock_pull.assert_not_called()
+
+    @patch("integrations.suku360_webhook.pull_roster")
+    def test_missing_signature_is_rejected(self, mock_pull):
+        raw_body = json.dumps(self._payload()).encode("utf-8")
+        response = self.client.post(self.url, data=raw_body, content_type="application/json", secure=True)
+
+        self.assertEqual(response.status_code, 401)
+        mock_pull.assert_not_called()
+
+    @override_settings(SUKU360_WEBHOOK_SECRET="")
+    @patch("integrations.suku360_webhook.pull_roster")
+    def test_unconfigured_secret_rejects_everything(self, mock_pull):
+        response = self._post(self._payload())
+        self.assertEqual(response.status_code, 401)
+        mock_pull.assert_not_called()
+
+    @patch("integrations.suku360_webhook.pull_roster")
+    def test_unknown_school_slug_returns_400(self, mock_pull):
+        response = self._post(self._payload(nyansa_school_slug="does-not-exist"))
+
+        self.assertEqual(response.status_code, 400)
+        mock_pull.assert_not_called()
+
+    @patch("integrations.suku360_webhook.pull_roster", side_effect=Suku360SyncError("could not reach suku360"))
+    def test_pull_failure_does_not_prevent_credential_save(self, mock_pull):
+        response = self._post(self._payload())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Suku360RosterCredential.objects.filter(school=self.school).exists())

@@ -178,6 +178,12 @@ ARKESEL_API_KEY = os.getenv("ARKESEL_API_KEY", "")
 ARKESEL_SENDER_ID = os.getenv("ARKESEL_SENDER_ID", "Nyansa")
 ARKESEL_SMS_ENDPOINT = os.getenv("ARKESEL_SMS_ENDPOINT", "https://sms.arkesel.com/api/v2/sms/send")
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
+# Verifies the one-time "here's a new roster credential" push from Suku360's
+# PartnerCredentialAdmin (domains.integrations.webhook_push on that side) -
+# same shared-secret-HMAC-SHA512-of-raw-body scheme as the Paystack webhooks
+# above, just a separate secret. Unset in dev/CI - the webhook then 401s and
+# the credential has to be entered into Suku360RosterCredential by hand.
+SUKU360_WEBHOOK_SECRET = os.getenv("SUKU360_WEBHOOK_SECRET", "")
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = Path(os.getenv("NYANSA_MEDIA_ROOT", BASE_DIR / "media"))
