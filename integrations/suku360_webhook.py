@@ -29,6 +29,15 @@ def process_suku360_credential_webhook(*, raw_body, signature):
     if school is None:
         raise ValidationError(f"Unknown Nyansa school slug: {slug}")
 
+    # This payload is the only place Nyansa ever learns Suku360's own id for
+    # this school - record it now so the reverse direction (credential_
+    # settings_view pushing a fresh IntegrationCredential back to Suku360)
+    # has somewhere to send it.
+    suku360_school_id = str(payload["suku360_school_id"])
+    if school.suku360_id != suku360_school_id:
+        school.suku360_id = suku360_school_id
+        school.save(update_fields=["suku360_id"])
+
     credential, _ = Suku360RosterCredential.objects.update_or_create(
         school=school,
         defaults={"token": payload["token"], "base_url": payload["base_url"], "is_active": True},

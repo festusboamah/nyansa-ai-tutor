@@ -19,6 +19,7 @@ from schools.services import has_school_role
 from .auth import authenticate_request
 from .models import IntegrationCredential
 from .sso_login import login_from_suku360_token
+from .suku360_credential_push import CredentialPushError, push_credential_to_suku360
 from .suku360_webhook import process_suku360_credential_webhook
 
 
@@ -45,6 +46,17 @@ def credential_settings_view(request):
             request,
             f"New API token generated: {token} — copy it now, it will not be shown again.",
         )
+        if request.school.suku360_id:
+            try:
+                push_credential_to_suku360(suku360_school_id=request.school.suku360_id, raw_token=token)
+            except CredentialPushError as exc:
+                messages.warning(
+                    request,
+                    f"Could not auto-deliver this token to Suku360 ({exc}) - the token above still works, "
+                    "but you'll need to paste it into Suku360's admin by hand.",
+                )
+            else:
+                messages.success(request, "Token delivered to Suku360 automatically - no manual copy needed.")
         return redirect("integration_credential_settings")
 
     return render(request, "integrations/credential_settings.html", {"credential": credential})

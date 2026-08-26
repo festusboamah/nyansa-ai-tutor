@@ -6,6 +6,7 @@ import time
 from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
+from urllib.error import URLError
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -18,6 +19,7 @@ from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeSc
 from schools.models import School, SchoolMembership
 
 from .models import IntegrationCredential, SsoNonce, SyncBatch, SyncRecord, Suku360RosterCredential
+from .suku360_credential_push import CredentialPushError
 from .suku360_sync import Suku360SyncError, pull_roster
 
 
@@ -108,6 +110,42 @@ class CredentialSettingsViewTests(IntegrationsTestCase):
             reverse("api_evidence"), {"term": self.term.pk}, secure=True, **self._auth_headers(first_token)
         )
         self.assertEqual(response.status_code, 401)
+
+    def test_school_without_suku360_id_does_not_attempt_a_push(self):
+        with patch("integrations.views.push_credential_to_suku360") as mock_push:
+            self._generate_token()
+        mock_push.assert_not_called()
+
+    @override_settings(SUKU360_WEBHOOK_SECRET="test-secret", SUKU360_BASE_URL="https://suku360.example.com")
+    @patch("integrations.views.push_credential_to_suku360")
+    def test_school_with_suku360_id_triggers_the_push(self, mock_push):
+        self.school.suku360_id = "3"
+        self.school.save(update_fields=["suku360_id"])
+
+        self._login(self.admin)
+        response = self.client.post(
+            reverse("integration_credential_settings"), {"action": "generate"}, secure=True, follow=True,
+        )
+
+        mock_push.assert_called_once()
+        _, kwargs = mock_push.call_args
+        self.assertEqual(kwargs["suku360_school_id"], "3")
+        messages_text = [str(m) for m in response.context["messages"]]
+        self.assertTrue(any("delivered to Suku360 automatically" in m for m in messages_text))
+
+    @patch("integrations.views.push_credential_to_suku360", side_effect=CredentialPushError("could not reach Suku360"))
+    def test_push_failure_still_saves_the_credential(self, mock_push):
+        self.school.suku360_id = "3"
+        self.school.save(update_fields=["suku360_id"])
+
+        self._login(self.admin)
+        response = self.client.post(
+            reverse("integration_credential_settings"), {"action": "generate"}, secure=True, follow=True,
+        )
+
+        self.assertTrue(IntegrationCredential.objects.filter(school=self.school).exists())
+        messages_text = [str(m) for m in response.context["messages"]]
+        self.assertTrue(any("Could not auto-deliver" in m for m in messages_text))
 
 
 class ApiAuthTests(IntegrationsTestCase):
@@ -403,6 +441,9 @@ class Suku360CredentialWebhookTests(TestCase):
         self.assertTrue(credential.is_active)
         mock_pull.assert_called_once_with(self.school)
 
+        self.school.refresh_from_db()
+        self.assertEqual(self.school.suku360_id, "42")
+
     @patch("integrations.suku360_webhook.pull_roster")
     def test_delivering_again_updates_the_existing_credential(self, mock_pull):
         self._post(self._payload())
@@ -529,3 +570,31 @@ class Suku360SsoLoginTests(TestCase):
         with override_settings(SUKU360_WEBHOOK_SECRET=""):
             response = self.client.get(self.url, {"token": self._token()}, secure=True)
         self.assertEqual(response.status_code, 401)
+
+
+class PushCredentialToSuku360Tests(TestCase):
+    def test_not_configured_raises(self):
+        from integrations.suku360_credential_push import push_credential_to_suku360
+        with self.assertRaises(CredentialPushError):
+            push_credential_to_suku360(suku360_school_id="3", raw_token="tok")
+
+    @override_settings(SUKU360_WEBHOOK_SECRET="test-secret", SUKU360_BASE_URL="https://suku360.example.com")
+    @patch("integrations.suku360_credential_push.urllib_request.urlopen")
+    def test_success_signs_the_payload(self, mock_urlopen):
+        from integrations.suku360_credential_push import push_credential_to_suku360
+        push_credential_to_suku360(suku360_school_id="3", raw_token="the-raw-token")
+
+        mock_urlopen.assert_called_once()
+        (req,), kwargs = mock_urlopen.call_args
+        self.assertEqual(req.full_url, "https://suku360.example.com/api/v1/integrations/webhook/credential/")
+        body = json.loads(req.data.decode("utf-8"))
+        self.assertEqual(body, {"suku360_school_id": "3", "token": "the-raw-token"})
+        expected_signature = hmac.new(b"test-secret", req.data, hashlib.sha512).hexdigest()
+        self.assertEqual(req.headers["X-nyansa-signature"], expected_signature)
+
+    @override_settings(SUKU360_WEBHOOK_SECRET="test-secret", SUKU360_BASE_URL="https://suku360.example.com")
+    @patch("integrations.suku360_credential_push.urllib_request.urlopen", side_effect=URLError("connection refused"))
+    def test_unreachable_raises_credential_push_error(self, mock_urlopen):
+        from integrations.suku360_credential_push import push_credential_to_suku360
+        with self.assertRaises(CredentialPushError):
+            push_credential_to_suku360(suku360_school_id="3", raw_token="tok")

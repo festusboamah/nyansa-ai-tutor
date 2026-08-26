@@ -184,6 +184,10 @@ PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
 # above, just a separate secret. Unset in dev/CI - the webhook then 401s and
 # the credential has to be entered into Suku360RosterCredential by hand.
 SUKU360_WEBHOOK_SECRET = os.getenv("SUKU360_WEBHOOK_SECRET", "")
+# Where credential_settings_view pushes a freshly generated IntegrationCredential
+# back to (integrations/suku360_credential_push.py) - there's exactly one
+# Suku360 deployment, same reasoning as NYANSA_BASE_URL on Suku360's side.
+SUKU360_BASE_URL = os.getenv("SUKU360_BASE_URL", "")
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = Path(os.getenv("NYANSA_MEDIA_ROOT", BASE_DIR / "media"))
