@@ -93,11 +93,31 @@ def _require_term(request, school):
     return term, None
 
 
+def _require_term_by_name(request, school):
+    # Suku360 (the one real caller of this endpoint) has no way to know
+    # Nyansa's internal Term.pk - there's no suku360_id-style mapping for
+    # Term/AcademicYear, only for School/SchoolMembership/SchoolClass/
+    # TeacherAssignment. Matched by name instead, same as the roster sync
+    # itself already matches years/terms by name, not id.
+    academic_year_name = request.GET.get("academic_year")
+    term_name = request.GET.get("term")
+    if not academic_year_name or not term_name:
+        return None, JsonResponse(
+            {"detail": "Both 'academic_year' and 'term' query parameters (names, not ids) are required."}, status=400,
+        )
+    term = Term.objects.filter(
+        academic_year__school=school, academic_year__name=academic_year_name, name=term_name,
+    ).first()
+    if term is None:
+        return None, JsonResponse({"detail": "Unknown academic year/term for this school."}, status=400)
+    return term, None
+
+
 def evidence_view(request):
     school, error = _require_auth(request)
     if error:
         return error
-    term, error = _require_term(request, school)
+    term, error = _require_term_by_name(request, school)
     if error:
         return error
 
@@ -108,6 +128,7 @@ def evidence_view(request):
         "evidence": [
             {
                 "student_id": entry.student_id,
+                "student_suku360_id": entry.student.suku360_id or None,
                 "student_username": entry.student.user.username,
                 "assessment_id": entry.assessment_id,
                 "assessment_title": entry.assessment.title,

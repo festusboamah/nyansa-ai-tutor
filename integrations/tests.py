@@ -145,14 +145,29 @@ class EvidenceEndpointTests(IntegrationsTestCase):
         token = self._generate_token()
 
         response = self.client.get(
-            reverse("api_evidence"), {"term": self.term.pk}, secure=True, **self._auth_headers(token)
+            reverse("api_evidence"), {"academic_year": self.year.name, "term": self.term.name},
+            secure=True, **self._auth_headers(token),
         )
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data["evidence"]), 1)
         self.assertEqual(data["evidence"][0]["student_id"], self.student.pk)
+        self.assertIsNone(data["evidence"][0]["student_suku360_id"])
         self.assertEqual(data["evidence"][0]["score"], "80.00")
+
+    def test_evidence_includes_student_suku360_id_when_roster_synced(self):
+        self.student.suku360_id = "701"
+        self.student.save(update_fields=["suku360_id"])
+        token = self._generate_token()
+
+        response = self.client.get(
+            reverse("api_evidence"), {"academic_year": self.year.name, "term": self.term.name},
+            secure=True, **self._auth_headers(token),
+        )
+
+        data = response.json()
+        self.assertEqual(data["evidence"][0]["student_suku360_id"], "701")
 
     def test_missing_term_returns_400(self):
         token = self._generate_token()
@@ -165,17 +180,18 @@ class EvidenceEndpointTests(IntegrationsTestCase):
         other_school = School.objects.create(name="Other School", slug="other-integration-school")
         other_admin = self._member("other-integration-admin", SchoolMembership.Role.SCHOOL_ADMIN, school=other_school)
         other_year = AcademicYear.objects.create(
-            school=other_school, name="2026/2027", start_date=date(2026, 9, 1),
-            end_date=date(2027, 7, 31), is_current=True,
+            school=other_school, name="2099/2100", start_date=date(2099, 9, 1),
+            end_date=date(2100, 7, 31), is_current=True,
         )
         other_term = Term.objects.create(
-            academic_year=other_year, name="Term 1", order=1,
-            start_date=date(2026, 9, 7), end_date=date(2026, 9, 11),
+            academic_year=other_year, name="Other Term", order=1,
+            start_date=date(2099, 9, 7), end_date=date(2099, 9, 11),
         )
         token = self._generate_token()
 
         response = self.client.get(
-            reverse("api_evidence"), {"term": other_term.pk}, secure=True, **self._auth_headers(token)
+            reverse("api_evidence"), {"academic_year": other_year.name, "term": other_term.name},
+            secure=True, **self._auth_headers(token),
         )
 
         self.assertEqual(response.status_code, 400)
