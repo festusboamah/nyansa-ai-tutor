@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Terms of Service | Nyansa{% endblock %}
+{% block content %}
+<div class="legal-page">
+    <p class="legal-kicker">Legal</p>
+    <h1>Terms of Service</h1>
+    <p class="legal-updated">Last updated: 28 August 2026</p>
+
+    <section>
+        <h2>1. Acceptance of these terms</h2>
+        <p>By creating an account, accessing, or using Nyansa (the "Service"), a school, teacher, student, or parent or guardian agrees to these Terms of Service. If you are accepting on behalf of a school, you confirm you have authority to bind that school.</p>
+    </section>
+
+    <section>
+        <h2>2. What Nyansa is</h2>
+        <p>Nyansa is a teaching and learning platform for schools in Ghana. Its core is an AI tutor for students, a lesson planning and grading copilot for teachers, and mastery evidence that shows what a student actually understands. Some schools also use Nyansa's attendance, fee collection, guardian communication, and term report tools, though these are being progressively handed over to Suku360, a partner school operations platform run by the same company, as described in Section 7.</p>
+    </section>
+
+    <section>
+        <h2>3. Accounts and access</h2>
+        <p>A school's administrator manages staff accounts and access levels within that school's workspace. Teachers, students, and parents or guardians each see only what their role needs. Each person is responsible for keeping their own login credentials confidential and for activity that happens under their account.</p>
+    </section>
+
+    <section>
+        <h2>4. AI generated content and human review</h2>
+        <p>Nyansa uses AI to tutor students, draft lesson notes, generate quiz and question bank items, and offer grading feedback. This output is advisory by default. A teacher or administrator must review and approve anything an AI produces before it becomes part of a grade, a report, or a permanent student record. Tutor sessions are logged so teachers and administrators can review what a student was told.</p>
+    </section>
+
+    <section>
+        <h2>5. Payments and subscriptions</h2>
+        <p>Schools subscribe to Nyansa under a plan agreed at signup, typically starting with a trial period and invoiced at the end of each billing period. Where a school enables online fee payments to itself, parent and guardian payments are processed by a third party payment provider and settle to the school's own account; Nyansa does not hold or take a cut of those funds. Subscription fees paid by the school to Nyansa are processed by the same third party payment provider, which is shared with Suku360, the partner platform mentioned in Section 7, since both are operated by the same company.</p>
+    </section>
+
+    <section>
+        <h2>6. Acceptable use</h2>
+        <p>The Service may not be used to store or transmit unlawful content, to misrepresent a learner's records, to bypass the human review required by Section 4, or to access data belonging to a school or student you are not authorized to access.</p>
+    </section>
+
+    <section>
+        <h2>7. Data ownership and the Suku360 integration</h2>
+        <p>Schools own the student, staff, and academic data they enter into Nyansa. Nyansa acts as a processor of that data on the school's behalf. Where a school also uses Suku360 for institutional record keeping and links the two systems, Nyansa receives a limited set of student and staff identity and class assignment records from Suku360 so accounts can be created and lessons matched to the right class, and Nyansa sends assessment scores and topic mastery evidence back so it can inform that student's official record. This linkage only happens for schools that explicitly enable it. See our <a href="{% url 'privacy' %}">Privacy Policy</a> for the specific data involved.</p>
+    </section>
+
+    <section>
+        <h2>8. Termination</h2>
+        <p>A school may stop using the Service at any time. Nyansa may suspend or terminate access for non-payment, misuse, or violation of these terms, with reasonable notice where practical.</p>
+    </section>
+
+    <section>
+        <h2>9. Limitation of liability</h2>
+        <p>To the fullest extent permitted by law, Nyansa is not liable for indirect or consequential losses arising from use of the Service. Nothing in these terms limits liability that cannot lawfully be limited.</p>
+    </section>
+
+    <section>
+        <h2>10. Governing law</h2>
+        <p>These terms are intended to be governed by the laws of Ghana.</p>
+    </section>
+
+    <section>
+        <h2>11. Changes to these terms</h2>
+        <p>We may update these terms as the Service evolves. Material changes will be communicated to school administrators.</p>
+    </section>
+
+    <section>
+        <h2>12. Contact</h2>
+        <p>Questions about these terms can be sent to <a href="mailto:hello@nyansa.com">hello@nyansa.com</a>.</p>
+    </section>
+</div>
+{% endblock %}
