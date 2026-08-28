@@ -511,6 +511,15 @@ h2 {
     letter-spacing: 0.05em;
 }
 
+.footer-credit a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.footer-credit a:hover {
+    text-decoration: underline;
+}
+
 .platform-kicker {
     margin-bottom: 0.8rem;
     color: var(--primary);
