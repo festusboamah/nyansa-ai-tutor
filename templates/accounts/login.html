@@ -1,9 +1,13 @@
 {% extends "base.html" %}
+{% block title %}Login - Nyansa{% endblock %}
 {% block content %}
-<h2>Login</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Login</button>
-</form>
+<div class="card form-card">
+    <h1>Login</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-small">Login</button>
+    </form>
+    <p><a href="{% url 'password_reset' %}">Forgot your password?</a></p>
+</div>
 {% endblock %}
