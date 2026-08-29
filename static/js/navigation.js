@@ -1,63 +1,48 @@
 (() => {
-    const menus = Array.from(document.querySelectorAll(".nav-menu"));
-    const supportsHover = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const closeTimers = new WeakMap();
+    // Sidebar group expand/collapse (admin's "Academics" / "School Operations" sections).
+    document.querySelectorAll(".sidebar-group-toggle").forEach((toggle) => {
+        toggle.addEventListener("click", () => {
+            const group = toggle.closest(".sidebar-group");
+            if (group) group.classList.toggle("open");
+        });
+    });
 
-    const cancelClose = (menu) => {
-        const timer = closeTimers.get(menu);
-        if (timer) window.clearTimeout(timer);
-        closeTimers.delete(menu);
+    // Auto-expand a group that contains the current page, so the active link is visible.
+    document.querySelectorAll(".sidebar-group").forEach((group) => {
+        if (group.querySelector(".sidebar-link.active")) {
+            group.classList.add("open");
+        }
+    });
+
+    // Mobile off-canvas sidebar drawer.
+    const sidebarToggle = document.getElementById("sidebar-toggle");
+    const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+
+    const closeSidebar = () => {
+        document.body.classList.remove("sidebar-open");
+        if (sidebarToggle) sidebarToggle.setAttribute("aria-expanded", "false");
     };
 
-    const closeOthers = (activeMenu) => {
-        menus.forEach((menu) => {
-            if (menu !== activeMenu) {
-                cancelClose(menu);
-                menu.removeAttribute("open");
+    const openSidebar = () => {
+        document.body.classList.add("sidebar-open");
+        if (sidebarToggle) sidebarToggle.setAttribute("aria-expanded", "true");
+    };
+
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener("click", () => {
+            if (document.body.classList.contains("sidebar-open")) {
+                closeSidebar();
+            } else {
+                openSidebar();
             }
         });
-    };
+    }
 
-    menus.forEach((menu) => {
-        menu.querySelector("summary").addEventListener("click", (event) => {
-            if (!supportsHover.matches) return;
-            event.preventDefault();
-            closeOthers(menu);
-            menu.setAttribute("open", "");
-        });
-
-        menu.addEventListener("toggle", () => {
-            if (menu.open) closeOthers(menu);
-        });
-
-        menu.addEventListener("mouseenter", () => {
-            if (!supportsHover.matches) return;
-            cancelClose(menu);
-            closeOthers(menu);
-            menu.setAttribute("open", "");
-        });
-
-        menu.addEventListener("mouseleave", () => {
-            if (!supportsHover.matches) return;
-            cancelClose(menu);
-            closeTimers.set(
-                menu,
-                window.setTimeout(() => {
-                    menu.removeAttribute("open");
-                    closeTimers.delete(menu);
-                }, 220),
-            );
-        });
-    });
-
-    document.addEventListener("click", (event) => {
-        if (!event.target.closest(".nav-menu")) closeOthers(null);
-    });
+    if (sidebarBackdrop) {
+        sidebarBackdrop.addEventListener("click", closeSidebar);
+    }
 
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-            closeOthers(null);
-            document.querySelector(".nav-menu summary:focus")?.blur();
-        }
+        if (event.key === "Escape") closeSidebar();
     });
 })();

@@ -45,16 +45,54 @@
         <p>Every workflow shares the same trusted school, class, and term context, so tutoring, coursework, and mastery insight stay connected instead of scattered across separate tools.</p>
     </div>
     <div class="platform-grid">
-        <article class="platform-card"><span>01</span><h3>Intelligent Tutor</h3><p>A conversational tutor that knows the curriculum and guides with questions and hints instead of handing over answers. Practice, explanations, and a safe mode for exams, with every session logged.</p></article>
-        <article class="platform-card"><span>02</span><h3>Learning Workspace</h3><p>Subjects, materials, assignments, quizzes, and exams in one place, with deadlines, study goals, and progress a student can actually see.</p></article>
-        <article class="platform-card"><span>03</span><h3>Teacher Copilot</h3><p>Lesson planning support, question banks built with AI, grading feedback based on rubrics, and differentiated tasks by mastery level, ready to use.</p></article>
-        <article class="platform-card"><span>04</span><h3>Mastery &amp; Learning Intelligence</h3><p>Explainable mastery evidence per topic, misconception detection, and progress trends, grounded in real coursework, not guesswork.</p></article>
-        <article class="platform-card"><span>05</span><h3>Built to fit your school</h3><p>Complements your school's existing administrative records rather than duplicating them, so nothing falls out of sync.</p></article>
-        <article class="platform-card"><span>06</span><h3>Responsible AI</h3><p>AI output is advisory by default; teachers and administrators approve anything that touches a grade, a report, or a student record.</p></article>
+        <article class="platform-card reveal"><span>01</span><h3>Intelligent Tutor</h3><p>A conversational tutor that knows the curriculum and guides with questions and hints instead of handing over answers. Practice, explanations, and a safe mode for exams, with every session logged.</p></article>
+        <article class="platform-card reveal"><span>02</span><h3>Learning Workspace</h3><p>Subjects, materials, assignments, quizzes, and exams in one place, with deadlines, study goals, and progress a student can actually see.</p></article>
+        <article class="platform-card reveal"><span>03</span><h3>Teacher Copilot</h3><p>Lesson planning support, question banks built with AI, grading feedback based on rubrics, and differentiated tasks by mastery level, ready to use.</p></article>
+        <article class="platform-card reveal"><span>04</span><h3>Mastery &amp; Learning Intelligence</h3><p>Explainable mastery evidence per topic, misconception detection, and progress trends, grounded in real coursework, not guesswork.</p></article>
+        <article class="platform-card reveal"><span>05</span><h3>Built to fit your school</h3><p>Complements your school's existing administrative records rather than duplicating them, so nothing falls out of sync.</p></article>
+        <article class="platform-card reveal"><span>06</span><h3>Responsible AI</h3><p>AI output is advisory by default; teachers and administrators approve anything that touches a grade, a report, or a student record.</p></article>
     </div>
 </section>
 
-<section class="platform-promise">
+<section class="quotes-section reveal" aria-label="Voices on education">
+    <p class="platform-kicker" style="text-align:center;">In good company</p>
+    <div class="quotes-carousel" id="quotes-carousel">
+        <blockquote class="quote-slide is-active">
+            <p>“Knowledge is power. Information is liberating. Education is the premise of progress, in every society, in every family.”</p>
+            <cite>Kofi Annan</cite>
+        </blockquote>
+        <blockquote class="quote-slide">
+            <p>“Education is the most powerful weapon which you can use to change the world.”</p>
+            <cite>Nelson Mandela</cite>
+        </blockquote>
+        <blockquote class="quote-slide">
+            <p>“The roots of education are bitter, but the fruit is sweet.”</p>
+            <cite>Aristotle</cite>
+        </blockquote>
+        <blockquote class="quote-slide">
+            <p>“Education is the passport to the future, for tomorrow belongs to those who prepare for it today.”</p>
+            <cite>Malcolm X</cite>
+        </blockquote>
+        <blockquote class="quote-slide">
+            <p>“Live as if you were to die tomorrow. Learn as if you were to live forever.”</p>
+            <cite>Mahatma Gandhi</cite>
+        </blockquote>
+        <blockquote class="quote-slide">
+            <p>“An investment in knowledge pays the best interest.”</p>
+            <cite>Benjamin Franklin</cite>
+        </blockquote>
+    </div>
+    <div class="quote-dots" id="quote-dots" role="tablist" aria-label="Choose a quote">
+        <button class="quote-dot is-active" type="button" data-index="0" aria-label="Quote 1"></button>
+        <button class="quote-dot" type="button" data-index="1" aria-label="Quote 2"></button>
+        <button class="quote-dot" type="button" data-index="2" aria-label="Quote 3"></button>
+        <button class="quote-dot" type="button" data-index="3" aria-label="Quote 4"></button>
+        <button class="quote-dot" type="button" data-index="4" aria-label="Quote 5"></button>
+        <button class="quote-dot" type="button" data-index="5" aria-label="Quote 6"></button>
+    </div>
+</section>
+
+<section class="platform-promise reveal">
     <div>
         <p class="platform-kicker">Wisdom, not automation at any cost</p>
         <h2>Technology should sharpen human judgment, not replace it.</h2>
@@ -62,4 +100,50 @@
     <p>Nyansa means “wisdom” in Twi. Every important academic and administrative decision remains visible, accountable, and under the control of the school.</p>
 </section>
 
+<script>
+(function () {
+    "use strict";
+
+    var carousel = document.getElementById("quotes-carousel");
+    if (!carousel) return;
+
+    var slides = Array.from(carousel.querySelectorAll(".quote-slide"));
+    var dots = Array.from(document.querySelectorAll("#quote-dots .quote-dot"));
+    var current = 0;
+    var timer = null;
+    var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function show(index) {
+        slides[current].classList.remove("is-active");
+        dots[current].classList.remove("is-active");
+        current = (index + slides.length) % slides.length;
+        slides[current].classList.add("is-active");
+        dots[current].classList.add("is-active");
+    }
+
+    function startAutoplay() {
+        if (prefersReducedMotion) return;
+        stopAutoplay();
+        timer = window.setInterval(function () { show(current + 1); }, 6000);
+    }
+
+    function stopAutoplay() {
+        if (timer) window.clearInterval(timer);
+    }
+
+    dots.forEach(function (dot, i) {
+        dot.addEventListener("click", function () {
+            show(i);
+            startAutoplay();
+        });
+    });
+
+    carousel.addEventListener("mouseenter", stopAutoplay);
+    carousel.addEventListener("mouseleave", startAutoplay);
+
+    startAutoplay();
+    // Scroll-reveal for `.reveal` elements on this page is handled globally
+    // by static/js/scroll-reveal.js (loaded in base.html).
+})();
+</script>
 {% endblock %}

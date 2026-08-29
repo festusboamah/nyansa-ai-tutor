@@ -15,7 +15,7 @@
 </div>
 
 {% for data in subject_data %}
-<div class="card">
+<div class="card reveal">
     <h2>{{ data.subject.name }}</h2>
     <p>{{ data.student_count }} student{{ data.student_count|pluralize }} enrolled</p>
 
@@ -51,7 +51,7 @@
 <h2>📄 My Assignments</h2>
 <div class="card-grid">
     {% for assignment in assignments %}
-    <div class="card">
+    <div class="card reveal">
         <h2>{{ assignment.title }}</h2>
         <p class="submission-date">{{ assignment.subject.name }}</p>
         <p>{{ assignment.submissions.count }} submission{{ assignment.submissions.count|pluralize }}</p>

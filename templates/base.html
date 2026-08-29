@@ -5,14 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Nyansa{% endblock %}</title>
-    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+    <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
+    <link rel="icon" type="image/png" href="{% static 'images/favicon-32.png' %}" sizes="32x32">
+    <link rel="icon" type="image/png" href="{% static 'images/favicon-16.png' %}" sizes="16x16">
+    <link rel="apple-touch-icon" href="{% static 'images/favicon-192.png' %}">
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <meta name="theme-color" content="#0f766e">
+    <meta name="theme-color" content="#CF5123">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <script src="{% static 'js/navigation.js' %}" defer></script>
     <script src="{% static 'js/offline-queue.js' %}" defer></script>
     <script src="{% static 'js/low-data-mode.js' %}" defer></script>
+    <script src="{% static 'js/scroll-reveal.js' %}" defer></script>
     <script>
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function () {
@@ -21,7 +25,7 @@
         }
     </script>
 </head>
-<body>
+<body class="{% if user.is_authenticated %}has-sidebar{% endif %}">
     <div id="offline-notices" class="messages"></div>
 
     {% if nyansa_demo_mode %}
@@ -30,105 +34,138 @@
     </div>
     {% endif %}
 
+    {% if user.is_authenticated %}
+    <div class="app-shell">
+        <button type="button" id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="sidebar">
+            <span></span><span></span><span></span>
+        </button>
+        <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <a href="{% url 'home' %}" class="brand-link">
+                    <img src="{% static 'images/logo.png' %}" alt="Nyansa logo" class="brand-logo">
+                    <span>Nyansa <span class="brand-ai">AI</span></span>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                {% if request.school_membership.role == "STUDENT" %}
+                    <a href="{% url 'dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'dashboard' %} active{% endif %}"><span class="sidebar-icon">🏠</span> Dashboard</a>
+                    <a href="{% url 'browse_subjects' %}" class="sidebar-link{% if request.resolver_match.url_name == 'browse_subjects' %} active{% endif %}"><span class="sidebar-icon">📚</span> Browse Subjects</a>
+                    <a href="{% url 'tutor_home' %}" class="sidebar-link{% if request.resolver_match.url_name == 'tutor_home' %} active{% endif %}"><span class="sidebar-icon">💬</span> Tutor</a>
+                    <a href="{% url 'study_documents' %}" class="sidebar-link{% if request.resolver_match.url_name == 'study_documents' %} active{% endif %}"><span class="sidebar-icon">🗂️</span> Study Hub</a>
+                    <a href="{% url 'mastery_overview' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_overview' %} active{% endif %}"><span class="sidebar-icon">🎯</span> Mastery</a>
+                    <a href="{% url 'mastery_study_goals' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_study_goals' %} active{% endif %}"><span class="sidebar-icon">📌</span> Study Goals</a>
+                    <a href="{% url 'transcript' %}" class="sidebar-link{% if request.resolver_match.url_name == 'transcript' %} active{% endif %}"><span class="sidebar-icon">📜</span> Transcript</a>
+                {% endif %}
+
+                {% if request.school_membership.role == "TEACHER" %}
+                    <a href="{% url 'teacher_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'teacher_dashboard' %} active{% endif %}"><span class="sidebar-icon">🏠</span> Dashboard</a>
+                    <a href="{% url 'gradebook_offerings' %}" class="sidebar-link{% if request.resolver_match.url_name == 'gradebook_offerings' %} active{% endif %}"><span class="sidebar-icon">📊</span> Gradebook</a>
+                    <a href="{% url 'attendance_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'attendance_dashboard' %} active{% endif %}"><span class="sidebar-icon">✅</span> Attendance</a>
+                    <a href="{% url 'term_report_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'term_report_dashboard' %} active{% endif %}"><span class="sidebar-icon">📈</span> Reports</a>
+                    <a href="{% url 'analytics_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'analytics_dashboard' %} active{% endif %}"><span class="sidebar-icon">📉</span> Analytics</a>
+                    <a href="{% url 'mastery_overview' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_overview' %} active{% endif %}"><span class="sidebar-icon">🎯</span> Mastery</a>
+                    <a href="{% url 'generate_bank_questions' %}" class="sidebar-link{% if request.resolver_match.url_name == 'generate_bank_questions' %} active{% endif %}"><span class="sidebar-icon">🗃️</span> Question Bank</a>
+                    <a href="{% url 'mastery_improvement_report' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_improvement_report' %} active{% endif %}"><span class="sidebar-icon">📈</span> Improvement Report</a>
+                {% endif %}
+
+                {% if request.school_membership.role == "SCHOOL_ADMIN" %}
+                    <a href="{% url 'school_admin_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'school_admin_dashboard' %} active{% endif %}"><span class="sidebar-icon">🏠</span> Overview</a>
+
+                    <div class="sidebar-group">
+                        <button type="button" class="sidebar-group-toggle">
+                            <span class="sidebar-icon">🎓</span> <span class="sidebar-group-label">Academics</span> <span class="sidebar-chevron" aria-hidden="true">▾</span>
+                        </button>
+                        <div class="sidebar-group-panel">
+                            <a href="{% url 'gradebook_settings' %}" class="sidebar-link">Grade Settings</a>
+                            <a href="{% url 'gradebook_review_queue' %}" class="sidebar-link">Grade Review</a>
+                            <a href="{% url 'lesson_review_queue' %}" class="sidebar-link">Lesson Review</a>
+                            <a href="{% url 'attendance_dashboard' %}" class="sidebar-link">Attendance</a>
+                            <a href="{% url 'term_report_dashboard' %}" class="sidebar-link">Term Reports</a>
+                            <a href="{% url 'analytics_dashboard' %}" class="sidebar-link">Analytics</a>
+                            <a href="{% url 'mastery_overview' %}" class="sidebar-link">Mastery</a>
+                            <a href="{% url 'mastery_curriculum' %}" class="sidebar-link">Curriculum</a>
+                            <a href="{% url 'tutor_settings' %}" class="sidebar-link">Tutor Settings</a>
+                            <a href="{% url 'quiz_generation_settings' %}" class="sidebar-link">Quiz AI Settings</a>
+                            <a href="{% url 'bank_review_queue' %}" class="sidebar-link">Question Bank Review</a>
+                            <a href="{% url 'mastery_improvement_report' %}" class="sidebar-link">Improvement Report</a>
+                            <a href="{% url 'ai_usage_report' %}" class="sidebar-link">AI Usage</a>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-group">
+                        <button type="button" class="sidebar-group-toggle">
+                            <span class="sidebar-icon">🏫</span> <span class="sidebar-group-label">School Operations</span> <span class="sidebar-chevron" aria-hidden="true">▾</span>
+                        </button>
+                        <div class="sidebar-group-panel">
+                            <a href="{% url 'school_onboarding' %}" class="sidebar-link">School Setup</a>
+                            <a href="{% url 'teacher_assignment_management' %}" class="sidebar-link">Teacher Assignments</a>
+                            <a href="{% url 'people_directory' %}" class="sidebar-link">People &amp; Class Rosters</a>
+                            <a href="{% url 'guardian_links' %}" class="sidebar-link">Guardians</a>
+                            <a href="{% url 'communications_dashboard' %}" class="sidebar-link">Messages</a>
+                            <a href="{% url 'finance_dashboard' %}" class="sidebar-link">Finance</a>
+                            <a href="{% url 'integration_credential_settings' %}" class="sidebar-link">API Access</a>
+                            <a href="{% url 'billing_dashboard' %}" class="sidebar-link">Billing</a>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if request.school_membership.role == "PARENT" %}
+                    <a href="{% url 'guardian_portal' %}" class="sidebar-link{% if request.resolver_match.url_name == 'guardian_portal' %} active{% endif %}"><span class="sidebar-icon">👪</span> My Children</a>
+                    <a href="{% url 'communication_preferences' %}" class="sidebar-link{% if request.resolver_match.url_name == 'communication_preferences' %} active{% endif %}"><span class="sidebar-icon">⚙️</span> Message Preferences</a>
+                {% endif %}
+
+                {% if request.school_membership.role == "TEACHER" or request.school_membership.role == "SCHOOL_ADMIN" %}
+                    <a href="{% url 'notification_center' %}" class="sidebar-link notification-link{% if request.resolver_match.url_name == 'notification_center' %} active{% endif %}" aria-label="Notifications">
+                        <span class="sidebar-icon" aria-hidden="true">🔔</span> Alerts
+                        {% if staff_notification_unread_count %}<span class="notification-badge">{{ staff_notification_unread_count }}</span>{% endif %}
+                    </a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="#" id="low-data-toggle" class="low-data-toggle sidebar-link">Low-data mode: Off</a>
+                <a href="{% url 'profile' %}" class="sidebar-user">
+                    <span class="sidebar-user-name">{{ user.username }}</span>
+                    <small>{% if request.school_membership %}{{ request.school_membership.get_role_display }}{% else %}{{ user.get_role_display }}{% endif %}</small>
+                </a>
+                <form method="post" action="{% url 'logout' %}" class="inline-form" id="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="link-button">Logout</button>
+                </form>
+                <script>
+                    var logoutForm = document.getElementById("logout-form");
+                    if (logoutForm) {
+                        logoutForm.addEventListener("submit", function () {
+                            if ("caches" in window) {
+                                caches.keys().then(function (names) {
+                                    names.forEach(function (name) { caches.delete(name); });
+                                });
+                            }
+                        });
+                    }
+                </script>
+            </div>
+        </aside>
+
+        <div class="app-main">
+    {% else %}
     <nav class="navbar">
         <div class="navbar-brand">
             <a href="{% url 'home' %}" class="brand-link">
-    <img src="{% static 'images/logo.svg' %}" alt="Nyansa logo" class="brand-logo">
-    Nyansa <span class="brand-ai">AI</span>
-</a>
+                <img src="{% static 'images/logo.png' %}" alt="Nyansa logo" class="brand-logo">
+                Nyansa <span class="brand-ai">AI</span>
+            </a>
         </div>
         <div class="navbar-links">
             <a href="#" id="low-data-toggle" class="low-data-toggle">Low-data mode: Off</a>
-            {% if user.is_authenticated %}
-    {% if request.school_membership.role == "STUDENT" %}
-    <a href="{% url 'dashboard' %}">Dashboard</a>
-    <a href="{% url 'browse_subjects' %}">Browse Subjects</a>
-    <a href="{% url 'tutor_home' %}">Tutor</a>
-    <a href="{% url 'study_documents' %}">Study Hub</a>
-    <a href="{% url 'mastery_overview' %}">Mastery</a>
-    <a href="{% url 'mastery_study_goals' %}">Study Goals</a>
-    <a href="{% url 'transcript' %}">Transcript</a>
-{% endif %}
-    {% if request.school_membership.role == "TEACHER" %}
-        <a href="{% url 'teacher_dashboard' %}">Dashboard</a>
-        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'gradebook_offerings' %}">Gradebook</a>{% endif %}
-        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'attendance_dashboard' %}">Attendance</a>{% endif %}
-        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'term_report_dashboard' %}">Reports</a>{% endif %}
-        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'analytics_dashboard' %}">Analytics</a>{% endif %}
-        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'mastery_overview' %}">Mastery</a>{% endif %}
-        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'generate_bank_questions' %}">Question Bank</a>{% endif %}
-        {% if request.school_membership.role == "TEACHER" %}<a href="{% url 'mastery_improvement_report' %}">Improvement Report</a>{% endif %}
-    {% endif %}
-    {% if request.school_membership.role == "SCHOOL_ADMIN" %}
-        <a href="{% url 'school_admin_dashboard' %}">Overview</a>
-        <details class="nav-menu">
-            <summary>Academics</summary>
-            <div class="nav-menu-panel">
-                <a href="{% url 'gradebook_settings' %}">Grade Settings</a>
-                <a href="{% url 'gradebook_review_queue' %}">Grade Review</a>
-                <a href="{% url 'lesson_review_queue' %}">Lesson Review</a>
-                <a href="{% url 'attendance_dashboard' %}">Attendance</a>
-                <a href="{% url 'term_report_dashboard' %}">Term Reports</a>
-                <a href="{% url 'analytics_dashboard' %}">Analytics</a>
-                <a href="{% url 'mastery_overview' %}">Mastery</a>
-                <a href="{% url 'mastery_curriculum' %}">Curriculum</a>
-                <a href="{% url 'tutor_settings' %}">Tutor Settings</a>
-                <a href="{% url 'quiz_generation_settings' %}">Quiz AI Settings</a>
-                <a href="{% url 'bank_review_queue' %}">Question Bank Review</a>
-                <a href="{% url 'mastery_improvement_report' %}">Improvement Report</a>
-                <a href="{% url 'ai_usage_report' %}">AI Usage</a>
-            </div>
-        </details>
-        <details class="nav-menu">
-            <summary>School Operations</summary>
-            <div class="nav-menu-panel">
-                <a href="{% url 'school_onboarding' %}">School Setup</a>
-                <a href="{% url 'teacher_assignment_management' %}">Teacher Assignments</a>
-                <a href="{% url 'people_directory' %}">People &amp; Class Rosters</a>
-                <a href="{% url 'guardian_links' %}">Guardians</a>
-                <a href="{% url 'communications_dashboard' %}">Messages</a>
-                <a href="{% url 'finance_dashboard' %}">Finance</a>
-                <a href="{% url 'integration_credential_settings' %}">API Access</a>
-                <a href="{% url 'billing_dashboard' %}">Billing</a>
-            </div>
-        </details>
-    {% endif %}
-    {% if request.school_membership.role == "PARENT" %}
-        <a href="{% url 'guardian_portal' %}">My Children</a>
-        <a href="{% url 'communication_preferences' %}">Message Preferences</a>
-    {% endif %}
-    {% if request.school_membership.role == "TEACHER" or request.school_membership.role == "SCHOOL_ADMIN" %}
-        <a href="{% url 'notification_center' %}" class="notification-link" aria-label="Notifications">
-            <span aria-hidden="true">&#128276;</span> Alerts
-            {% if staff_notification_unread_count %}<span class="notification-badge">{{ staff_notification_unread_count }}</span>{% endif %}
-        </a>
-    {% endif %}
-    <a href="{% url 'profile' %}" class="welcome-text">
-        <span>{{ user.username }}</span>
-        <small>{% if request.school_membership %}{{ request.school_membership.get_role_display }}{% else %}{{ user.get_role_display }}{% endif %}</small>
-    </a>
-    <form method="post" action="{% url 'logout' %}" class="inline-form" id="logout-form">
-        {% csrf_token %}
-        <button type="submit" class="link-button">Logout</button>
-    </form>
-    <script>
-        var logoutForm = document.getElementById("logout-form");
-        if (logoutForm) {
-            logoutForm.addEventListener("submit", function () {
-                if ("caches" in window) {
-                    caches.keys().then(function (names) {
-                        names.forEach(function (name) { caches.delete(name); });
-                    });
-                }
-            });
-        }
-    </script>
-{% else %}
-    <a href="{% url 'login' %}">Login</a>
-    <a href="{% url 'signup' %}" class="btn-signup">Sign Up</a>
-{% endif %}
+            <a href="{% url 'login' %}">Login</a>
+            <a href="{% url 'signup' %}" class="btn-signup">Sign Up</a>
         </div>
     </nav>
+    {% endif %}
 
     <main class="main-content">
         {% if messages %}
@@ -144,10 +181,16 @@
     </main>
 
     <footer class="footer">
-        <p>&copy; 2026 Nyansa. School intelligence</p>
-        <p class="footer-links"><a href="{% url 'terms' %}">Terms</a> · <a href="{% url 'privacy' %}">Privacy</a></p>
-        <p class="footer-credit">Developed by <a href="https://nerdsiv.com" target="_blank" rel="noreferrer"><strong>NERDS IV Technologies</strong></a></p>
+        <div class="footer-row">
+            <p class="footer-copy">&copy; 2026 Nyansa. School intelligence</p>
+            <p class="footer-links"><a href="{% url 'terms' %}">Terms</a> · <a href="{% url 'privacy' %}">Privacy</a></p>
+            <p class="footer-credit">Developed by <a href="https://nerdsiv.com" target="_blank" rel="noreferrer"><strong>NERDS IV Technologies</strong></a></p>
+        </div>
     </footer>
 
+    {% if user.is_authenticated %}
+        </div>
+    </div>
+    {% endif %}
 </body>
 </html>
