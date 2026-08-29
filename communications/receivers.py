@@ -6,8 +6,10 @@ apps free of any dependency on the notification app.
 """
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from academics.models import SchoolClass, TeacherAssignment
+from billing.signals import trial_ending_soon, trial_expired
 from dashboard.signals import lesson_note_author_notified, lesson_note_needs_review
 from gradebook.signals import grade_entry_published, grade_review_decided
 from quizzes.models import AssignmentSubmission
@@ -153,3 +155,33 @@ def notify_author_of_lesson_note(sender, note, message, **kwargs):
             target_url="/dashboard/lesson-notes/",
             deduplication_key=f"lesson:{note.id}:author:{note.current_version}:{note.status}",
         )
+
+
+@receiver(trial_ending_soon)
+def notify_admins_trial_ending_soon(sender, license, **kwargs):
+    days_left = (license.current_period_end - timezone.localdate()).days
+    notify_school_role(
+        school=license.school,
+        role=SchoolMembership.Role.SCHOOL_ADMIN,
+        kind=Notification.Kind.BILLING,
+        title="Your trial is ending soon",
+        message=(
+            f"Your {license.plan.name} plan trial ends in {days_left} day{'s' if days_left != 1 else ''} "
+            f"(on {license.current_period_end.strftime('%B %d, %Y')}). Subscribe to keep access."
+        ),
+        target_url="/billing/",
+        deduplication_key=f"billing-trial-ending:{license.id}",
+    )
+
+
+@receiver(trial_expired)
+def notify_admins_trial_expired(sender, license, **kwargs):
+    notify_school_role(
+        school=license.school,
+        role=SchoolMembership.Role.SCHOOL_ADMIN,
+        kind=Notification.Kind.BILLING,
+        title="Your trial has ended",
+        message=f"Your {license.plan.name} plan trial has ended. Subscribe to restore full access.",
+        target_url="/billing/",
+        deduplication_key=f"billing-trial-expired:{license.id}",
+    )

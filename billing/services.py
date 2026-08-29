@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import secrets
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -13,6 +14,41 @@ from ai_core.services import school_ai_usage
 
 from .gateways import PaystackGateway
 from .models import BillingProviderEvent, LicenseInvoice, LicensePayment, SchoolLicense
+from .signals import trial_ending_soon, trial_expired
+
+# Matches Suku360's trial length.
+TRIAL_LENGTH_DAYS = 14
+# How many days before a trial ends to send the "please subscribe" reminder.
+TRIAL_REMINDER_DAYS_BEFORE = 3
+
+
+def check_trial_statuses():
+    """
+    Run daily (see billing/management/commands/check_trial_status.py): sends a
+    reminder as a TRIAL license approaches its end, and moves an already-ended
+    TRIAL to PAST_DUE. Reminder delivery is idempotent via create_notification's
+    own deduplication_key, not tracked here - safe to call more than once a day.
+    """
+    today = timezone.localdate()
+    reminder_cutoff = today + timedelta(days=TRIAL_REMINDER_DAYS_BEFORE)
+
+    ending_soon = SchoolLicense.objects.filter(
+        status=SchoolLicense.Status.TRIAL,
+        current_period_end__gt=today,
+        current_period_end__lte=reminder_cutoff,
+    ).select_related("plan", "school")
+    for license in ending_soon:
+        trial_ending_soon.send(sender=SchoolLicense, license=license)
+
+    expired = SchoolLicense.objects.filter(
+        status=SchoolLicense.Status.TRIAL, current_period_end__lt=today,
+    ).select_related("plan", "school")
+    for license in expired:
+        license.status = SchoolLicense.Status.PAST_DUE
+        license.save(update_fields=["status"])
+        trial_expired.send(sender=SchoolLicense, license=license)
+
+    return {"reminded": len(ending_soon), "expired": len(expired)}
 
 
 @transaction.atomic

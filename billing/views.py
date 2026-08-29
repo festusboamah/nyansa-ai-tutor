@@ -14,7 +14,7 @@ from schools.models import SchoolMembership
 from schools.services import has_school_role
 
 from .models import LicenseInvoice, LicensePayment, LicensePlan, SchoolLicense
-from .services import generate_invoice, initiate_license_payment, process_paystack_webhook
+from .services import TRIAL_LENGTH_DAYS, generate_invoice, initiate_license_payment, process_paystack_webhook
 
 
 def _admin(request):
@@ -47,7 +47,7 @@ def plans_view(request):
         today = timezone.localdate()
         SchoolLicense.objects.create(
             school=request.school, plan=plan, status=SchoolLicense.Status.TRIAL,
-            current_period_start=today, current_period_end=today + timedelta(days=30),
+            current_period_start=today, current_period_end=today + timedelta(days=TRIAL_LENGTH_DAYS),
         )
         messages.success(request, f"Started a trial of the {plan.name} plan.")
         return redirect("billing_dashboard")

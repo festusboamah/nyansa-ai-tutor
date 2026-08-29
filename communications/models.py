@@ -12,6 +12,7 @@ class Notification(models.Model):
         REPORT_REVIEW = "REPORT_REVIEW", "Report review"
         FINANCE = "FINANCE", "Finance alert"
         ANALYTICS = "ANALYTICS", "Analytics alert"
+        BILLING = "BILLING", "Billing"
 
     school = models.ForeignKey("schools.School", on_delete=models.CASCADE, related_name="notifications")
     recipient = models.ForeignKey(
