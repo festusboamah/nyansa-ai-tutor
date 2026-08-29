@@ -3,6 +3,8 @@ set -eu
 
 python manage.py migrate --noinput
 python manage.py production_check
+python manage.py ensure_superuser
+python manage.py sync_course_enrollments
 python manage.py seed_demo
 exec gunicorn config.wsgi:application \
     --bind "0.0.0.0:${PORT:-8000}" \
