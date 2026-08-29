@@ -34,7 +34,7 @@
       <div class="curriculum-generator">
         <h3>Generate the school’s classes</h3>
         <p>Nyansa will use the education levels and stream structure selected in School profile.</p>
-        <p><strong>Levels:</strong> {% if request.school.offers_kg %}KG {% endif %}{% if request.school.offers_primary %}Primary {% endif %}{% if request.school.offers_jhs %}JHS{% endif %}<br><strong>Streams:</strong> {{ request.school.get_stream_structure_display }}</p>
+        <p><strong>Levels:</strong> {% if request.school.offers_kg %}KG {% endif %}{% if request.school.offers_primary %}Primary {% endif %}{% if request.school.offers_jhs %}JHS {% endif %}{% if request.school.offers_shs %}SHS {% endif %}{% if request.school.offers_stem %}STEM {% endif %}{% if request.school.offers_tvet %}TVET{% endif %}<br><strong>Streams:</strong> {{ request.school.get_stream_structure_display }}</p>
         <form method="post">{% csrf_token %}<input type="hidden" name="step" value="class"><button type="submit" name="action" value="generate_classes" class="btn-small">Generate all classes</button></form>
         <p><small>Existing and custom classes will not be deleted.</small></p>
       </div>
@@ -43,8 +43,8 @@
       {% if current_step == "subject" %}
       <div class="curriculum-generator">
         <h3>Use the Ghana standard curriculum</h3>
-        <p>Nyansa can create the appropriate subjects and all class-term offerings from the KG, Primary, and JHS levels selected in the School profile.</p>
-        <p><strong>Selected:</strong> {% if request.school.offers_kg %}KG {% endif %}{% if request.school.offers_primary %}Primary {% endif %}{% if request.school.offers_jhs %}JHS{% endif %}</p>
+        <p>Nyansa can create the appropriate subjects and all class-term offerings from the education levels selected in the School profile. For SHS, STEM, and TVET this creates the compulsory core subjects only — electives and trade specializations vary per school and are added separately.</p>
+        <p><strong>Selected:</strong> {% if request.school.offers_kg %}KG {% endif %}{% if request.school.offers_primary %}Primary {% endif %}{% if request.school.offers_jhs %}JHS {% endif %}{% if request.school.offers_shs %}SHS {% endif %}{% if request.school.offers_stem %}STEM {% endif %}{% if request.school.offers_tvet %}TVET{% endif %}</p>
         <form method="post">{% csrf_token %}<input type="hidden" name="step" value="subject"><button type="submit" name="action" value="generate_curriculum" class="btn-small">Generate subjects and offerings</button></form>
         <p><small>This keeps custom subjects and will not create duplicates.</small></p>
       </div>

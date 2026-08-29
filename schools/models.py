@@ -51,6 +51,14 @@ class School(models.Model):
     offers_kg = models.BooleanField(default=False)
     offers_primary = models.BooleanField(default=True)
     offers_jhs = models.BooleanField(default=False)
+    offers_shs = models.BooleanField(default=False, help_text="General Senior High School (SHS 1-3).")
+    offers_stem = models.BooleanField(
+        default=False, help_text="A dedicated STEM-focused senior high programme, distinct from general SHS.",
+    )
+    offers_tvet = models.BooleanField(
+        default=False,
+        help_text="Technical and Vocational Education and Training - a separate institution type from SHS/STEM.",
+    )
     stream_structure = models.CharField(
         max_length=8, choices=StreamStructure.choices, default=StreamStructure.SINGLE
     )

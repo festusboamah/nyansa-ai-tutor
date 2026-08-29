@@ -30,13 +30,17 @@ class SchoolProfileForm(forms.ModelForm):
         model = School
         fields = [
             "name", "address", "phone", "email", "timezone", "student_access_mode",
-            "offers_kg", "offers_primary", "offers_jhs", "stream_structure", "logo", "official_stamp",
+            "offers_kg", "offers_primary", "offers_jhs", "offers_shs", "offers_stem", "offers_tvet",
+            "stream_structure", "logo", "official_stamp",
             "headteacher_name", "headteacher_signature",
         ]
         labels = {
             "offers_kg": "Kindergarten (KG 1–2)",
             "offers_primary": "Primary (Basic 1–6)",
             "offers_jhs": "Junior High School (JHS 1–3)",
+            "offers_shs": "Senior High School (SHS 1–3)",
+            "offers_stem": "STEM-focused senior high programme",
+            "offers_tvet": "TVET (Technical and Vocational Education and Training)",
             "stream_structure": "Class streams",
             "headteacher_name": "Headteacher name",
             "headteacher_signature": "Headteacher signature",

@@ -21,10 +21,23 @@ JHS_SUBJECTS = (
     "Creative Arts and Design", "Career Technology", "Ghanaian Language", "French",
 )
 
+# SHS, STEM, and TVET are programme-based (a school offering them typically runs
+# several elective tracks/trades, which vary too much per school to guess safely).
+# These lists are deliberately just the compulsory subjects every student in that
+# programme takes regardless of track/trade - electives and trade specializations
+# are added by the school itself through the normal "Add offering" flow, same as
+# any custom subject today.
+SHS_CORE_SUBJECTS = ("English Language", "Core Mathematics", "Integrated Science", "Social Studies")
+STEM_CORE_SUBJECTS = SHS_CORE_SUBJECTS + ("Elective Mathematics", "Computing")
+TVET_CORE_SUBJECTS = ("English Language", "Mathematics", "ICT")
+
 LEVEL_CLASS_NAMES = {
     "kg": ("KG 1", "KG 2"),
     "primary": tuple(f"Basic {level}" for level in range(1, 7)),
     "jhs": tuple(f"JHS {level}" for level in range(1, 4)),
+    "shs": ("SHS 1", "SHS 2", "SHS 3"),
+    "stem": ("STEM 1", "STEM 2", "STEM 3"),
+    "tvet": ("TVET 1", "TVET 2", "TVET 3"),
 }
 
 
@@ -42,6 +55,12 @@ def generate_school_classes(*, school):
         selected_phases.append("primary")
     if school.offers_jhs:
         selected_phases.append("jhs")
+    if school.offers_shs:
+        selected_phases.append("shs")
+    if school.offers_stem:
+        selected_phases.append("stem")
+    if school.offers_tvet:
+        selected_phases.append("tvet")
     suffixes = ("A", "B") if school.stream_structure == school.StreamStructure.DOUBLE else ("",)
     created_count = 0
     for phase in selected_phases:
@@ -67,6 +86,15 @@ def class_phase(class_name):
     match = re.search(r"jhs\s*([1-3])", normalised)
     if match:
         return "jhs", int(match.group(1))
+    match = re.search(r"stem\s*([1-3])", normalised)
+    if match:
+        return "stem", int(match.group(1))
+    match = re.search(r"tvet\s*([1-3])", normalised)
+    if match:
+        return "tvet", int(match.group(1))
+    match = re.search(r"shs\s*([1-3])", normalised)
+    if match:
+        return "shs", int(match.group(1))
     return None, None
 
 
@@ -79,6 +107,12 @@ def subjects_for_class(school_class):
         return PRIMARY_CORE + (PRIMARY_UPPER_ADDITIONAL if level and level >= 4 else ())
     if phase == "jhs" and school.offers_jhs:
         return JHS_SUBJECTS
+    if phase == "shs" and school.offers_shs:
+        return SHS_CORE_SUBJECTS
+    if phase == "stem" and school.offers_stem:
+        return STEM_CORE_SUBJECTS
+    if phase == "tvet" and school.offers_tvet:
+        return TVET_CORE_SUBJECTS
     return ()
 
 
