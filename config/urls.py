@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
@@ -8,6 +9,18 @@ from config.views import health_live, health_ready, service_worker_view
 from integrations.views import suku360_credential_webhook_view, suku360_sso_login_view
 
 urlpatterns = [
+    # Must precede admin.site.urls: the admin login template only shows a
+    # "Forgotten your password?" link when a URL named "admin_password_reset"
+    # resolves. Reuses the same reset flow/templates as the regular login page.
+    path(
+        "admin/password_reset/",
+        auth_views.PasswordResetView.as_view(
+            template_name="accounts/password_reset.html",
+            email_template_name="accounts/password_reset_email.html",
+            subject_template_name="accounts/password_reset_subject.txt",
+        ),
+        name="admin_password_reset",
+    ),
     path("admin/", admin.site.urls),
     path("service-worker.js", service_worker_view, name="service_worker"),
     path("health/live/", health_live, name="health_live"),
