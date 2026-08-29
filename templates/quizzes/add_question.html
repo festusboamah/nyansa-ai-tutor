@@ -4,6 +4,19 @@
 <h1>{{ quiz.title }} {% if quiz.status == "DRAFT" %}<span class="badge-enrolled" style="background-color:#fef3c7;color:#92400e;">Draft</span>{% endif %}</h1>
 <p>{{ quiz.description }}</p>
 
+{% if quiz.assessment_type == "EXAM" %}
+<div class="card form-card">
+    <h2>Exam Setup</h2>
+    <p>Objective weight: <strong>{{ quiz.objective_weight_percent }}%</strong> | Essay weight: <strong>{{ quiz.essay_weight_percent|default:"0" }}%</strong></p>
+    <p>Results release: <strong>{{ quiz.get_results_release_mode_display }}</strong>{% if quiz.results_release_at %} at {{ quiz.results_release_at|date:"M d, Y - g:i A" }}{% endif %}</p>
+    <p>Anti-cheating: tab-switch/fullscreen-exit logging is always on for exams. Webcam snapshots: <strong>{% if quiz.require_webcam_snapshots %}Required, every {{ quiz.snapshot_interval_seconds }}s{% else %}Off{% endif %}</strong></p>
+    <p>Classes sitting this exam: <strong>{{ quiz.offerings.count }}</strong></p>
+    <a href="{% url 'select_exam_offerings' quiz.id %}" class="btn-small btn-secondary">Choose classes / roster</a>
+    <a href="{% url 'exam_roster' quiz.id %}" class="btn-small btn-secondary">Roster & fee status</a>
+    <a href="{% url 'exam_grading_queue' quiz.id %}" class="btn-small btn-secondary">Grade essays</a>
+</div>
+{% endif %}
+
 {% if quiz.status == "DRAFT" %}
 <div class="card form-card">
     <p>This quiz is a draft. Students can't see or take it until you publish it.</p>
@@ -20,7 +33,7 @@
     {% for q in existing_questions %}
     <div class="card">
         <h2>Q{{ forloop.counter }}. {{ q.text }}</h2>
-        <p class="submission-date">{{ q.get_question_type_display }}</p>
+        <p class="submission-date">{{ q.get_question_type_display }} &middot; {{ q.points }} point{{ q.points|pluralize }}</p>
         {% if q.question_type == "MCQ" %}
             <ul class="choice-review-list">
                 {% for choice in q.choices.all %}

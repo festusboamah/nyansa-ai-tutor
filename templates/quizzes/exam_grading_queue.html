@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Grade Essays - {{ quiz.title }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{% url 'add_question' quiz.id %}">{{ quiz.title }}</a> <span class="breadcrumb-sep">/</span> <span class="breadcrumb-current">Grading Queue</span>
+</nav>
+<h1>📝 Grade Essays: {{ quiz.title }}</h1>
+
+{% if quiz.results_published_at %}
+<p class="badge-enrolled">Results published on {{ quiz.results_published_at|date:"M d, Y - g:i A" }}</p>
+{% else %}
+<div class="card form-card">
+    <form method="post" action="{% url 'publish_exam_results' quiz.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-small">Publish Results Now</button>
+    </form>
+    {% if quiz.results_release_mode == "SCHEDULED" %}
+        <p style="font-size:0.85rem;">Scheduled to auto-release at {{ quiz.results_release_at|date:"M d, Y - g:i A" }}. You can also publish early with the button above.</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<h2>Awaiting Grading ({{ pending_submissions|length }})</h2>
+<table class="student-table">
+    <thead><tr><th>Student</th><th>Submitted</th><th>Action</th></tr></thead>
+    <tbody>
+        {% for submission in pending_submissions %}
+        <tr>
+            <td>{{ submission.student.username }}{% if submission.flagged_for_review %} <span class="feedback-incorrect">⚠</span>{% endif %}</td>
+            <td>{{ submission.submitted_at|date:"M d, Y - g:i A" }}</td>
+            <td><a href="{% url 'exam_attempt_detail' submission.id %}" class="btn-small">Grade</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">Nothing pending.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Graded ({{ graded_submissions|length }})</h2>
+<table class="student-table">
+    <thead><tr><th>Student</th><th>Score</th><th>Action</th></tr></thead>
+    <tbody>
+        {% for submission in graded_submissions %}
+        <tr>
+            <td>{{ submission.student.username }}{% if submission.flagged_for_review %} <span class="feedback-incorrect">⚠</span>{% endif %}</td>
+            <td>{{ submission.score|default:"Pending" }}</td>
+            <td><a href="{% url 'exam_attempt_detail' submission.id %}" class="btn-small">Review</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">No submissions yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

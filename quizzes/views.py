@@ -1,17 +1,27 @@
+from decimal import Decimal
+from datetime import timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.http import HttpResponseBadRequest, HttpResponseNotAllowed, JsonResponse
 from django.utils import timezone
 from .models import Quiz, QuizGenerationSettings, Question, Choice, Submission, Answer, Badge
-from .models import BankQuestion, BankQuestionChoice
+from .models import BankQuestion, BankQuestionChoice, ExamFeeWaiver, ExamIntegrityEvent, ExamSnapshot
 from .ai_grading import grade_short_answer, generate_submission_feedback
 from .forms import QuizForm, QuestionForm, ChoiceFormSet, AIQuizGenerationForm, BankQuestionGenerationForm
 from .ai_quiz_generator import generate_quiz_questions, create_bank_questions
 from .models import Assignment, AssignmentSubmission, CriterionScore
 from .assignment_forms import AssignmentForm, AssignmentSubmissionForm, GradeAssignmentForm, RubricCriterionFormSet
 from .assignment_ai import extract_text_from_file, suggest_assignment_grade
+from .exam_ai import suggest_essay_grade
+from .exam_attempts import exam_start_blocker, create_exam_submission
+from .exam_fees import fee_balance_blocks_exam, get_fee_balance
+from .exam_forms import ExamOfferingsForm, EssayGradingFormSet
+from .exam_roster import eligible_students_for_exam, student_may_sit_exam
+from .exam_scoring import finalize_exam_attempt, recompute_exam_score
 from schools.models import SchoolMembership
 from schools.services import has_school_role
 
@@ -31,6 +41,24 @@ def quiz_start_view(request, quiz_id):
     attempts_used = Submission.objects.filter(quiz=quiz, student=request.user).count()
     attempts_remaining = quiz.max_attempts - attempts_used
 
+    if quiz.assessment_type == Quiz.AssessmentType.EXAM:
+        on_roster = student_may_sit_exam(quiz, request.school_membership)
+        fee_blocked = on_roster and fee_balance_blocks_exam(request.school_membership, quiz)
+        in_progress_submission = Submission.objects.filter(
+            quiz=quiz, student=request.user, submitted_at__isnull=True
+        ).first()
+        return render(request, "quizzes/exam_start.html", {
+            "quiz": quiz,
+            "question_count": question_count,
+            "attempts_used": attempts_used,
+            "attempts_remaining": attempts_remaining,
+            "past_deadline": quiz.is_past_deadline(),
+            "before_start": quiz.is_before_start(),
+            "on_roster": on_roster,
+            "fee_blocked": fee_blocked,
+            "in_progress_submission": in_progress_submission,
+        })
+
     return render(request, "quizzes/quiz_start.html", {
         "quiz": quiz,
         "question_count": question_count,
@@ -41,12 +69,167 @@ def quiz_start_view(request, quiz_id):
 
 
 @login_required
+def start_exam_attempt_view(request, quiz_id):
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
+        messages.error(request, "Only students can take exams.")
+        return redirect("home")
+    if request.method != "POST":
+        return redirect("quiz_start", quiz_id=quiz_id)
+
+    quiz = get_object_or_404(
+        Quiz, id=quiz_id, subject__school=request.school, assessment_type=Quiz.AssessmentType.EXAM
+    )
+    if quiz.status == Quiz.Status.DRAFT:
+        messages.error(request, "This exam hasn't been published yet.")
+        return redirect("dashboard")
+
+    existing = Submission.objects.filter(
+        quiz=quiz, student=request.user, submitted_at__isnull=True
+    ).first()
+    if existing:
+        return redirect("exam_take", quiz_id=quiz.id, submission_id=existing.id)
+
+    if quiz.require_webcam_snapshots:
+        return redirect("exam_consent", quiz_id=quiz.id)
+
+    error = exam_start_blocker(quiz, request.user, request.school_membership)
+    if error:
+        messages.error(request, error)
+        return redirect("quiz_start", quiz_id=quiz.id)
+
+    submission = create_exam_submission(quiz, request.user)
+    return redirect("exam_take", quiz_id=quiz.id, submission_id=submission.id)
+
+
+@login_required
+def exam_consent_view(request, quiz_id):
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
+        messages.error(request, "Only students can take exams.")
+        return redirect("home")
+
+    quiz = get_object_or_404(
+        Quiz, id=quiz_id, subject__school=request.school,
+        assessment_type=Quiz.AssessmentType.EXAM, require_webcam_snapshots=True,
+    )
+    if quiz.status == Quiz.Status.DRAFT:
+        messages.error(request, "This exam hasn't been published yet.")
+        return redirect("dashboard")
+
+    existing = Submission.objects.filter(
+        quiz=quiz, student=request.user, submitted_at__isnull=True
+    ).first()
+    if existing:
+        return redirect("exam_take", quiz_id=quiz.id, submission_id=existing.id)
+
+    error = exam_start_blocker(quiz, request.user, request.school_membership)
+    if error:
+        messages.error(request, error)
+        return redirect("quiz_start", quiz_id=quiz.id)
+
+    if request.method == "POST":
+        if request.POST.get("consent") != "yes":
+            messages.error(request, "You must agree to the exam monitoring policy to begin.")
+            return redirect("quiz_start", quiz_id=quiz.id)
+        submission = create_exam_submission(quiz, request.user, camera_consent_given=True)
+        return redirect("exam_take", quiz_id=quiz.id, submission_id=submission.id)
+
+    return render(request, "quizzes/exam_consent.html", {"quiz": quiz})
+
+
+@login_required
+def exam_take_view(request, quiz_id, submission_id):
+    if not has_school_role(request, SchoolMembership.Role.STUDENT):
+        messages.error(request, "Only students can take exams.")
+        return redirect("home")
+
+    quiz = get_object_or_404(
+        Quiz, id=quiz_id, subject__school=request.school, assessment_type=Quiz.AssessmentType.EXAM
+    )
+    submission = get_object_or_404(Submission, id=submission_id, quiz=quiz, student=request.user)
+
+    if submission.is_finished():
+        return redirect("quiz_result", submission_id=submission.id)
+
+    grace = timedelta(seconds=30)
+    past_cutoff = submission.expires_at is not None and timezone.now() > submission.expires_at + grace
+
+    if request.method == "POST":
+        if past_cutoff:
+            finalize_exam_attempt(quiz, submission, {}, {})
+            messages.error(
+                request,
+                "Time expired before your submission was received. Your exam was submitted with "
+                "whatever answers had already been saved.",
+            )
+        else:
+            finalize_exam_attempt(quiz, submission, request.POST, request.FILES)
+            messages.success(request, "Exam submitted successfully!")
+        return redirect("quiz_result", submission_id=submission.id)
+
+    if submission.is_expired():
+        finalize_exam_attempt(quiz, submission, {}, {})
+        messages.error(request, "Time expired on this attempt; it has been submitted automatically.")
+        return redirect("quiz_result", submission_id=submission.id)
+
+    questions = quiz.questions.prefetch_related("choices").all()
+    return render(request, "quizzes/exam_take.html", {
+        "quiz": quiz,
+        "questions": questions,
+        "submission": submission,
+    })
+
+
+@login_required
+def exam_integrity_event_view(request, submission_id):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    submission = get_object_or_404(
+        Submission, id=submission_id, student=request.user, submitted_at__isnull=True,
+    )
+    event_type = request.POST.get("event_type", "")
+    if event_type not in dict(ExamIntegrityEvent.EventType.choices):
+        return HttpResponseBadRequest("Invalid event_type")
+
+    ExamIntegrityEvent.objects.create(
+        submission=submission, event_type=event_type, detail=request.POST.get("detail", "")[:255],
+    )
+    submission.flagged_for_review = True
+    submission.save(update_fields=["flagged_for_review"])
+    return JsonResponse({"ok": True})
+
+
+@login_required
+def exam_snapshot_upload_view(request, submission_id):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    submission = get_object_or_404(
+        Submission, id=submission_id, student=request.user, submitted_at__isnull=True,
+    )
+    image = request.FILES.get("image")
+    if not image:
+        return HttpResponseBadRequest("Missing image")
+
+    trigger = request.POST.get("trigger", ExamSnapshot.Trigger.INTERVAL)
+    if trigger not in dict(ExamSnapshot.Trigger.choices):
+        trigger = ExamSnapshot.Trigger.INTERVAL
+
+    ExamSnapshot.objects.create(submission=submission, image=image, trigger=trigger)
+    return JsonResponse({"ok": True})
+
+
+@login_required
 def quiz_take_view(request, quiz_id):
     if not has_school_role(request, SchoolMembership.Role.STUDENT):
         messages.error(request, "Only students can take quizzes.")
         return redirect("home")
 
     quiz = get_object_or_404(Quiz, id=quiz_id, subject__school=request.school)
+
+    if quiz.assessment_type == Quiz.AssessmentType.EXAM:
+        return redirect("quiz_start", quiz_id=quiz.id)
+
     questions = quiz.questions.prefetch_related("choices").all()
 
     if quiz.status == Quiz.Status.DRAFT:
@@ -154,10 +337,21 @@ def quiz_result_view(request, submission_id):
         student=request.user,
         quiz__subject__school=request.school,
     )
+    quiz = submission.quiz
     answers = submission.answers.select_related("question", "selected_choice")
 
-    attempts_used = Submission.objects.filter(quiz=submission.quiz, student=request.user).count()
-    attempts_remaining = submission.quiz.max_attempts - attempts_used
+    attempts_used = Submission.objects.filter(quiz=quiz, student=request.user).count()
+    attempts_remaining = quiz.max_attempts - attempts_used
+
+    if quiz.assessment_type == Quiz.AssessmentType.EXAM:
+        results_visible = submission.is_finished() and submission.score is not None and quiz.results_are_visible()
+        return render(request, "quizzes/exam_result.html", {
+            "quiz": quiz,
+            "submission": submission,
+            "answers": answers,
+            "attempts_remaining": attempts_remaining,
+            "results_visible": results_visible,
+        })
 
     return render(request, "quizzes/quiz_result.html", {
         "submission": submission,
@@ -200,7 +394,7 @@ def add_question_view(request, quiz_id):
     )
 
     if request.method == "POST":
-        question_form = QuestionForm(request.POST)
+        question_form = QuestionForm(request.POST, quiz=quiz)
         choice_formset = ChoiceFormSet(request.POST, prefix="choices")
 
         if question_form.is_valid():
@@ -220,7 +414,7 @@ def add_question_view(request, quiz_id):
             messages.success(request, "Question added!")
             return redirect("add_question", quiz_id=quiz.id)
     else:
-        question_form = QuestionForm(initial={"order": quiz.questions.count() + 1})
+        question_form = QuestionForm(initial={"order": quiz.questions.count() + 1}, quiz=quiz)
         choice_formset = ChoiceFormSet(prefix="choices")
 
     return render(request, "quizzes/add_question.html", {
@@ -231,16 +425,227 @@ def add_question_view(request, quiz_id):
     })
 
 
+def _exam_publish_error(quiz):
+    questions = list(quiz.questions.all())
+    if not questions:
+        return "Add at least one question before publishing this exam."
+
+    has_essay = any(q.question_type == Question.QuestionType.ESSAY for q in questions)
+    has_objective = any(q.question_type != Question.QuestionType.ESSAY for q in questions)
+    essay_weight = quiz.essay_weight_percent if quiz.essay_weight_percent is not None else Decimal("0")
+
+    if has_essay and not has_objective and essay_weight < Decimal("100"):
+        return "This exam has only essay questions - set the essay weight to 100."
+    if has_essay and has_objective and essay_weight <= Decimal("0"):
+        return "This exam has essay questions - set an essay weight greater than 0."
+    if not has_essay and essay_weight > Decimal("0"):
+        return "This exam has no essay questions - essay weight must be 0."
+    if quiz.results_release_mode == Quiz.ResultsReleaseMode.SCHEDULED and not quiz.results_release_at:
+        return "Set a results release time, or switch to manual/instant release."
+    if not quiz.offerings.exists():
+        return "Select at least one class to sit this exam before publishing."
+    return None
+
+
 @login_required
 def publish_quiz_view(request, quiz_id):
     quiz = get_object_or_404(
         Quiz, id=quiz_id, teacher=request.user, subject__school=request.school
     )
     if request.method == "POST" and quiz.status == Quiz.Status.DRAFT:
+        if quiz.assessment_type == Quiz.AssessmentType.EXAM:
+            error = _exam_publish_error(quiz)
+            if error:
+                messages.error(request, error)
+                return redirect("add_question", quiz_id=quiz.id)
         quiz.status = Quiz.Status.PUBLISHED
         quiz.save(update_fields=["status"])
         messages.success(request, "Quiz published - students can now take it.")
     return redirect("add_question", quiz_id=quiz.id)
+
+
+@login_required
+def select_exam_offerings_view(request, quiz_id):
+    quiz = get_object_or_404(
+        Quiz, id=quiz_id, teacher=request.user, subject__school=request.school,
+        assessment_type=Quiz.AssessmentType.EXAM,
+    )
+    if request.method == "POST":
+        form = ExamOfferingsForm(
+            request.POST, teacher_membership=request.school_membership, subject=quiz.subject,
+        )
+        if form.is_valid():
+            quiz.offerings.set(form.cleaned_data["offerings"])
+            messages.success(request, "Exam roster updated.")
+            return redirect("add_question", quiz_id=quiz.id)
+    else:
+        form = ExamOfferingsForm(
+            teacher_membership=request.school_membership, subject=quiz.subject,
+            initial={"offerings": quiz.offerings.all()},
+        )
+
+    return render(request, "quizzes/select_exam_offerings.html", {"quiz": quiz, "form": form})
+
+
+@login_required
+def exam_roster_view(request, quiz_id):
+    if not has_school_role(request, SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN):
+        raise PermissionDenied
+
+    quiz = get_object_or_404(
+        Quiz, id=quiz_id, subject__school=request.school, assessment_type=Quiz.AssessmentType.EXAM,
+    )
+    is_admin = has_school_role(request, SchoolMembership.Role.SCHOOL_ADMIN)
+    waivers = {w.student_id: w for w in quiz.fee_waivers.select_related("granted_by__user")}
+    students = eligible_students_for_exam(quiz).select_related("user").order_by("user__username")
+
+    roster = []
+    for student in students:
+        waiver = waivers.get(student.id)
+        balance = Decimal("0") if waiver else get_fee_balance(student)
+        roster.append({"student": student, "balance": balance, "waiver": waiver})
+
+    return render(request, "quizzes/exam_roster.html", {
+        "quiz": quiz, "roster": roster, "is_admin": is_admin,
+    })
+
+
+@login_required
+def grant_exam_fee_waiver_view(request, quiz_id, student_id):
+    if not has_school_role(request, SchoolMembership.Role.SCHOOL_ADMIN):
+        raise PermissionDenied
+
+    quiz = get_object_or_404(
+        Quiz, id=quiz_id, subject__school=request.school, assessment_type=Quiz.AssessmentType.EXAM,
+    )
+    student = get_object_or_404(
+        SchoolMembership, id=student_id, school=request.school, role=SchoolMembership.Role.STUDENT,
+    )
+    if request.method == "POST":
+        reason = request.POST.get("reason", "").strip()
+        if not reason:
+            messages.error(request, "A reason is required to grant a fee waiver.")
+        elif ExamFeeWaiver.objects.filter(student=student, quiz=quiz).exists():
+            messages.error(request, "This student already has a waiver for this exam.")
+        else:
+            ExamFeeWaiver.objects.create(
+                student=student, quiz=quiz, granted_by=request.school_membership, reason=reason,
+            )
+            messages.success(request, f"Fee waiver granted for {student.user.username}.")
+    return redirect("exam_roster", quiz_id=quiz.id)
+
+
+@login_required
+def exam_grading_queue_view(request, quiz_id):
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
+        messages.error(request, "Only teachers can grade exams.")
+        return redirect("home")
+
+    quiz = get_object_or_404(
+        Quiz, id=quiz_id, teacher=request.user, subject__school=request.school,
+        assessment_type=Quiz.AssessmentType.EXAM,
+    )
+    pending_ids = Submission.objects.filter(
+        quiz=quiz, submitted_at__isnull=False,
+        answers__question__question_type=Question.QuestionType.ESSAY,
+        answers__points_awarded__isnull=True,
+    ).values_list("id", flat=True).distinct()
+    pending_submissions = Submission.objects.filter(id__in=pending_ids).select_related("student").order_by("submitted_at")
+    graded_submissions = Submission.objects.filter(
+        quiz=quiz, submitted_at__isnull=False,
+    ).exclude(id__in=pending_ids).select_related("student").order_by("-submitted_at")
+
+    return render(request, "quizzes/exam_grading_queue.html", {
+        "quiz": quiz,
+        "pending_submissions": pending_submissions,
+        "graded_submissions": graded_submissions,
+    })
+
+
+@login_required
+def exam_attempt_detail_view(request, submission_id):
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
+        messages.error(request, "Only teachers can grade exams.")
+        return redirect("home")
+
+    submission = get_object_or_404(
+        Submission, id=submission_id,
+        quiz__teacher=request.user, quiz__subject__school=request.school,
+        quiz__assessment_type=Quiz.AssessmentType.EXAM,
+    )
+    essay_answers = Answer.objects.filter(
+        submission=submission, question__question_type=Question.QuestionType.ESSAY,
+    ).select_related("question").order_by("question__order", "id")
+    objective_answers = submission.answers.exclude(
+        question__question_type=Question.QuestionType.ESSAY,
+    ).select_related("question", "selected_choice").order_by("question__order", "id")
+
+    if request.method == "POST":
+        formset = EssayGradingFormSet(request.POST, queryset=essay_answers, prefix="essay")
+        if formset.is_valid():
+            now = timezone.now()
+            for form in formset:
+                if form.has_changed():
+                    answer = form.save(commit=False)
+                    answer.graded_at = now
+                    answer.save()
+            recompute_exam_score(submission)
+            messages.success(request, "Grades saved.")
+            return redirect("exam_grading_queue", quiz_id=submission.quiz.id)
+    else:
+        initial = [
+            {} if answer.points_awarded is not None else {
+                "points_awarded": answer.ai_suggested_points,
+                "teacher_feedback": answer.ai_suggested_feedback,
+            }
+            for answer in essay_answers
+        ]
+        formset = EssayGradingFormSet(queryset=essay_answers, prefix="essay", initial=initial)
+
+    return render(request, "quizzes/exam_attempt_detail.html", {
+        "submission": submission,
+        "formset": formset,
+        "essay_answers": essay_answers,
+        "objective_answers": objective_answers,
+        "integrity_events": submission.integrity_events.all(),
+        "snapshots": submission.snapshots.all(),
+    })
+
+
+@login_required
+def clear_exam_flag_view(request, submission_id):
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
+        messages.error(request, "Only teachers can review exam attempts.")
+        return redirect("home")
+
+    submission = get_object_or_404(
+        Submission, id=submission_id,
+        quiz__teacher=request.user, quiz__subject__school=request.school,
+        quiz__assessment_type=Quiz.AssessmentType.EXAM,
+    )
+    if request.method == "POST":
+        submission.flagged_for_review = False
+        submission.save(update_fields=["flagged_for_review"])
+        messages.success(request, "Marked as reviewed.")
+    return redirect("exam_attempt_detail", submission_id=submission.id)
+
+
+@login_required
+def publish_exam_results_view(request, quiz_id):
+    if not has_school_role(request, SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN):
+        raise PermissionDenied
+
+    quiz = get_object_or_404(
+        Quiz, id=quiz_id, subject__school=request.school, assessment_type=Quiz.AssessmentType.EXAM,
+    )
+    if has_school_role(request, SchoolMembership.Role.TEACHER) and quiz.teacher_id != request.user.id:
+        raise PermissionDenied
+
+    if request.method == "POST":
+        quiz.results_published_at = timezone.now()
+        quiz.save(update_fields=["results_published_at"])
+        messages.success(request, "Results published - students can now see their exam scores.")
+    return redirect("exam_grading_queue", quiz_id=quiz.id)
 
 
 @login_required
@@ -387,10 +792,16 @@ def add_bank_questions_view(request, quiz_id):
         Quiz, id=quiz_id, teacher=request.user, subject__school=request.school
     )
 
+    bank_filter = {"subject": quiz.subject, "status": BankQuestion.Status.APPROVED}
+    if quiz.assessment_type != Quiz.AssessmentType.EXAM:
+        bank_filter["question_type__in"] = [
+            choice for choice, _ in Question.QuestionType.choices if choice != Question.QuestionType.ESSAY
+        ]
+
     if request.method == "POST":
         selected_ids = request.POST.getlist("bank_question_id")
         bank_questions = BankQuestion.objects.filter(
-            pk__in=selected_ids, subject=quiz.subject, status=BankQuestion.Status.APPROVED,
+            pk__in=selected_ids, **bank_filter,
         ).prefetch_related("choices")
 
         next_order = quiz.questions.count() + 1
@@ -415,7 +826,7 @@ def add_bank_questions_view(request, quiz_id):
         return redirect("add_question", quiz_id=quiz.id)
 
     approved_questions = BankQuestion.objects.filter(
-        subject=quiz.subject, status=BankQuestion.Status.APPROVED,
+        **bank_filter,
     ).select_related("topic__strand").prefetch_related("choices")
 
     return render(request, "quizzes/add_bank_questions.html", {

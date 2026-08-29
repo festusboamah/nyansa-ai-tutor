@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Choose Classes - {{ quiz.title }}{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>Choose Classes for {{ quiz.title }}</h1>
+    <p>Select every class/subject offering that should sit this exam. Every actively enrolled student in the offerings you pick becomes the roster automatically — no separate import needed.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-small">Save</button>
+    </form>
+</div>
+<a href="{% url 'add_question' quiz.id %}" class="btn-small btn-secondary">Back</a>
+{% endblock %}

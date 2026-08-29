@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} - Nyansa{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>{{ quiz.title }}</h1>
+    <p>{{ quiz.description|default:"End-of-term exam." }}</p>
+    <div class="exam-meta-row">
+        <span class="exam-meta-item">📄 <strong>{{ question_count }}</strong> question{{ question_count|pluralize }}</span>
+        <span class="exam-meta-item">⏱ <strong>{{ quiz.time_limit_minutes }} min</strong> time limit</span>
+        <span class="exam-meta-item">🔁 <strong>{{ attempts_used }} / {{ quiz.max_attempts }}</strong> attempts used</span>
+        {% if quiz.starts_at %}<span class="exam-meta-item">🟢 Opens <strong>{{ quiz.starts_at|date:"M d, Y - g:i A" }}</strong></span>{% endif %}
+        {% if quiz.deadline %}<span class="exam-meta-item">📅 Closes <strong>{{ quiz.deadline|date:"M d, Y - g:i A" }}</strong></span>{% endif %}
+        {% if quiz.essay_weight_percent %}<span class="exam-meta-item">📝 Objective {{ quiz.objective_weight_percent }}% + Essay {{ quiz.essay_weight_percent }}%</span>{% endif %}
+    </div>
+
+    {% if not on_roster %}
+        <p class="feedback-incorrect">You are not on the roster for this exam. Contact your teacher if you believe this is an error.</p>
+    {% elif fee_blocked %}
+        <p class="feedback-incorrect">⚠ You have an outstanding fee balance. Please contact the school office before this exam's window opens.</p>
+    {% elif past_deadline %}
+        <p class="feedback-incorrect">This exam has closed. Submissions are no longer accepted.</p>
+    {% elif before_start %}
+        <p>This exam opens at {{ quiz.starts_at|date:"M d, Y - g:i A" }}. Come back then.</p>
+    {% elif in_progress_submission %}
+        <form method="post" action="{% url 'start_exam_attempt' quiz.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-small">Resume Exam</button>
+        </form>
+    {% elif attempts_remaining > 0 %}
+        {% if question_count == 0 %}
+            <p class="feedback-incorrect">This exam doesn't have any questions yet. Check back later.</p>
+        {% else %}
+            <form method="post" action="{% url 'start_exam_attempt' quiz.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-small">Begin Exam</button>
+            </form>
+        {% endif %}
+    {% else %}
+        <p class="feedback-incorrect">You've used all your attempts for this exam.</p>
+    {% endif %}
+</div>
+{% endblock %}

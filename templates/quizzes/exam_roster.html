@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Roster - {{ quiz.title }}{% endblock %}
+{% block content %}
+<h1>📋 Roster: {{ quiz.title }}</h1>
+
+<table class="student-table">
+    <thead>
+        <tr>
+            <th>Student</th>
+            <th>Fee Status</th>
+            {% if is_admin %}<th>Action</th>{% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in roster %}
+        <tr>
+            <td>{{ row.student.user.username }}</td>
+            <td>
+                {% if row.waiver %}
+                    <span class="badge-enrolled">Waived — {{ row.waiver.reason }}</span>
+                {% elif row.balance > 0 %}
+                    <span class="feedback-incorrect">Owes {{ row.balance }}</span>
+                {% else %}
+                    <span class="badge-enrolled">Clear</span>
+                {% endif %}
+            </td>
+            {% if is_admin %}
+            <td>
+                {% if not row.waiver and row.balance > 0 %}
+                <form method="post" action="{% url 'grant_exam_fee_waiver' quiz.id row.student.id %}">
+                    {% csrf_token %}
+                    <input type="text" name="reason" placeholder="Reason for waiver" required>
+                    <button type="submit" class="btn-small">Grant Waiver</button>
+                </form>
+                {% endif %}
+            </td>
+            {% endif %}
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">No students on this exam's roster yet. Choose classes first.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'select_exam_offerings' quiz.id %}" class="btn-small btn-secondary">Choose Classes</a>
+<a href="{% url 'add_question' quiz.id %}" class="btn-small btn-secondary">Back</a>
+{% endblock %}

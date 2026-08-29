@@ -3,6 +3,24 @@ from .models import Quiz, Question, Choice
 
 
 class QuizForm(forms.ModelForm):
+    # Declared explicitly (rather than left to ModelForm auto-derivation) so an
+    # omitted/empty submission - the common case for a plain, non-exam quiz -
+    # cleans to the model's real default instead of "" or None. See clean().
+    results_release_mode = forms.ChoiceField(
+        choices=Quiz.ResultsReleaseMode.choices, required=False,
+        initial=Quiz.ResultsReleaseMode.INSTANT,
+        help_text="Exams only: Instant shows the score as soon as it's ready; Scheduled releases it "
+                   "automatically at a set time; Manual waits for you to publish it.",
+    )
+    require_webcam_snapshots = forms.BooleanField(
+        required=False,
+        help_text="Exams only: periodically capture a webcam snapshot during the exam for you to review afterward.",
+    )
+    snapshot_interval_seconds = forms.IntegerField(
+        required=False, min_value=10, initial=90,
+        help_text="How often to capture a webcam snapshot, in seconds (only used if webcam snapshots are required above).",
+    )
+
     def __init__(self, *args, school=None, **kwargs):
         from courses.models import Subject
 
@@ -13,17 +31,57 @@ class QuizForm(forms.ModelForm):
 
     class Meta:
         model = Quiz
-        fields = ["subject", "title", "description", "assessment_type", "time_limit_minutes", "max_attempts", "deadline"]
+        fields = [
+            "subject", "title", "description", "assessment_type",
+            "time_limit_minutes", "max_attempts", "deadline",
+            "starts_at", "essay_weight_percent",
+            "results_release_mode", "results_release_at",
+            "require_webcam_snapshots", "snapshot_interval_seconds",
+        ]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
             "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "starts_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "results_release_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
         }
+        help_texts = {
+            "starts_at": "Exams only: when students may begin. Leave blank for a plain quiz.",
+            "essay_weight_percent": "Exams with essay questions: essay's share of the combined score (0-100).",
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get("results_release_mode"):
+            cleaned_data["results_release_mode"] = Quiz.ResultsReleaseMode.INSTANT
+        if not cleaned_data.get("snapshot_interval_seconds"):
+            cleaned_data["snapshot_interval_seconds"] = 90
+
+        quiz = Quiz(
+            essay_weight_percent=cleaned_data.get("essay_weight_percent"),
+            results_release_mode=cleaned_data.get("results_release_mode"),
+            results_release_at=cleaned_data.get("results_release_at"),
+            starts_at=cleaned_data.get("starts_at"),
+            deadline=cleaned_data.get("deadline"),
+        )
+        try:
+            quiz.clean()
+        except forms.ValidationError as exc:
+            raise forms.ValidationError(exc.message_dict if hasattr(exc, "message_dict") else exc.messages)
+        return cleaned_data
 
 
 class QuestionForm(forms.ModelForm):
+    def __init__(self, *args, quiz=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if quiz is None or quiz.assessment_type != Quiz.AssessmentType.EXAM:
+            self.fields["question_type"].choices = [
+                choice for choice in self.fields["question_type"].choices
+                if choice[0] != Question.QuestionType.ESSAY
+            ]
+
     class Meta:
         model = Question
-        fields = ["text", "question_type", "order"]
+        fields = ["text", "question_type", "points", "order"]
         widgets = {
             "text": forms.Textarea(attrs={"rows": 2}),
         }

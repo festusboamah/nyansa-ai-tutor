@@ -279,7 +279,7 @@ def transcript_view(request):
         return redirect("home")
 
     submissions = Submission.objects.filter(
-        student=request.user, quiz__subject__school=request.school
+        student=request.user, quiz__subject__school=request.school, submitted_at__isnull=False,
     ).select_related("quiz", "quiz__subject").order_by("quiz__subject__name", "-submitted_at")
 
     subjects_data = {}
@@ -316,7 +316,7 @@ def download_transcript_pdf(request):
         return redirect("home")
 
     submissions = Submission.objects.filter(
-        student=request.user, quiz__subject__school=request.school
+        student=request.user, quiz__subject__school=request.school, submitted_at__isnull=False,
     ).select_related("quiz", "quiz__subject").order_by("quiz__subject__name", "-submitted_at")
 
     subjects_data = {}

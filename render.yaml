@@ -51,6 +51,29 @@ services:
 #         fromDatabase:
 #           name: nyansa-ai-demo-db
 #           property: connectionString
+#
+#   # Publishes results for exams set to scheduled release once their release
+#   # time passes (quizzes/management/commands/release_exam_results.py). A
+#   # teacher/admin can always publish manually as a fallback, so this running
+#   # late (or not at all, on the free plan) degrades gracefully rather than
+#   # silently hiding results forever.
+#   - type: cron
+#     name: nyansa-release-exam-results
+#     runtime: docker
+#     plan: starter
+#     schedule: "*/15 * * * *"
+#     dockerCommand: python manage.py release_exam_results
+#     envVars:
+#       - key: DJANGO_ENV
+#         value: production
+#       - key: DJANGO_DEBUG
+#         value: "False"
+#       - key: DJANGO_SECRET_KEY
+#         sync: false
+#       - key: DATABASE_URL
+#         fromDatabase:
+#           name: nyansa-ai-demo-db
+#           property: connectionString
 
 databases:
   - name: nyansa-ai-demo-db

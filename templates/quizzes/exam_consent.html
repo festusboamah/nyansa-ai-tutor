@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Exam Monitoring - {{ quiz.title }}{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Before you begin: {{ quiz.title }}</h1>
+    <p>This exam uses periodic webcam snapshots as an academic-integrity measure:</p>
+    <ul class="choice-review-list">
+        <li>Your webcam will take a still photo every {{ quiz.snapshot_interval_seconds }} seconds while you're taking this exam, plus whenever you switch tabs or the window loses focus.</li>
+        <li>These are still photos only — there is no continuous video recording and no live monitoring.</li>
+        <li>Photos are visible only to your teacher, for review after the exam.</li>
+        <li>If you don't have a working camera or choose not to allow access, you may still take the exam — this will be noted for your teacher.</li>
+    </ul>
+    <p>You will also be asked to use fullscreen mode, and switching tabs or windows during the exam is logged.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <label class="choice-label">
+            <input type="checkbox" name="consent" value="yes" required>
+            I understand and agree to the exam monitoring policy above.
+        </label>
+        <button type="submit" class="btn-small">Begin Exam</button>
+    </form>
+</div>
+<a href="{% url 'quiz_start' quiz.id %}" class="btn-small btn-secondary">Back</a>
+{% endblock %}

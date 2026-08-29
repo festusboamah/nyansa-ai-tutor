@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Exam Results - Nyansa{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>{{ submission.quiz.title }}</h1>
+    {% if not submission.is_finished %}
+        <p>Your exam is still in progress.</p>
+        <a href="{% url 'exam_take' submission.quiz.id submission.id %}" class="btn-small">Continue Exam</a>
+    {% elif results_visible %}
+        <p class="score-display">Score: <strong>{{ submission.score }}%</strong></p>
+        {% if submission.ai_feedback %}
+        <div class="ai-feedback-box">
+            <strong>🤖 AI Feedback:</strong>
+            <p>{{ submission.ai_feedback }}</p>
+        </div>
+        {% endif %}
+    {% else %}
+        <p>Your exam has been submitted. Results will be available once released by your teacher.</p>
+    {% endif %}
+</div>
+
+{% if results_visible %}
+<h2>Answer Breakdown</h2>
+{% for answer in answers %}
+<div class="card answer-card {% if answer.is_correct == True %}correct{% elif answer.is_correct == False %}incorrect{% endif %}">
+    <h2>{{ answer.question.text }}</h2>
+    {% if answer.question.question_type == "MCQ" %}
+        <p>Your answer: {{ answer.selected_choice.text|default:"No answer selected" }}</p>
+        {% if answer.is_correct %}
+            <p class="feedback-correct">✓ Correct!</p>
+        {% else %}
+            <p class="feedback-incorrect">✗ Incorrect</p>
+        {% endif %}
+    {% elif answer.question.question_type == "ESSAY" %}
+        <p>Your answer: {{ answer.text_answer|default:"(file submitted)" }}</p>
+        {% if answer.file_answer %}<a href="{{ answer.file_answer.url }}" target="_blank">📄 View submitted file</a>{% endif %}
+        <p>Score: {{ answer.points_awarded|default:"Pending" }} / {{ answer.question.points }}</p>
+        {% if answer.teacher_feedback %}<p class="ai-feedback-inline">💬 {{ answer.teacher_feedback }}</p>{% endif %}
+    {% else %}
+        <p>Your answer: {{ answer.text_answer }}</p>
+        {% if answer.is_correct == True %}
+            <p class="feedback-correct">✓ Correct!</p>
+        {% elif answer.is_correct == False %}
+            <p class="feedback-incorrect">✗ Needs improvement</p>
+        {% endif %}
+        {% if answer.ai_feedback %}<p class="ai-feedback-inline">💡 {{ answer.ai_feedback }}</p>{% endif %}
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="result-actions">
+    {% if submission.is_finished and attempts_remaining > 0 %}
+        <a href="{% url 'quiz_start' submission.quiz.id %}" class="btn-small">Retake Exam ({{ attempts_remaining }} attempt{{ attempts_remaining|pluralize }} left)</a>
+    {% endif %}
+    <a href="{% url 'dashboard' %}" class="btn-small btn-secondary">Back to Dashboard</a>
+</div>
+{% endblock %}

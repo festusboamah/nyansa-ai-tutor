@@ -8,6 +8,9 @@ from .models import (
     BankQuestionChoice,
     Choice,
     CriterionScore,
+    ExamFeeWaiver,
+    ExamIntegrityEvent,
+    ExamSnapshot,
     Question,
     Quiz,
     RubricCriterion,
@@ -47,6 +50,14 @@ class SubmissionAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Answer)
+admin.site.register(ExamIntegrityEvent)
+admin.site.register(ExamSnapshot)
+
+
+@admin.register(ExamFeeWaiver)
+class ExamFeeWaiverAdmin(admin.ModelAdmin):
+    list_display = ("student", "quiz", "granted_by", "created_at")
+    list_filter = ("quiz",)
 
 
 class BankQuestionChoiceInline(admin.TabularInline):
