@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Invite staff in bulk | Nyansa{% endblock %}
+{% block content %}
+<section class="onboarding-shell roster-import">
+  <div class="admin-heading"><div><p class="eyebrow">School administration</p><h1>Invite teachers and staff in bulk</h1><p>Each row receives its own email invitation - they set their own password when they accept.</p></div><a href="{% url 'staff_invite_template' %}" class="btn-small btn-secondary">Download CSV template</a></div>
+  <section class="card">
+    <h2>1. Upload a file</h2>
+    <p>Required columns: <strong>email, role</strong>. Role must be one of: {% for value, label in role_choices %}{{ label }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+    <form method="post" enctype="multipart/form-data" class="setup-form-fields">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn-small">Preview invitations</button></form>
+    <p><small>Prefer one at a time? <a href="{% url 'invite_member' %}">Invite a single member</a>.</small></p>
+  </section>
+  {% if row_errors %}<section class="card roster-errors"><h2>Fix these rows</h2><ul>{% for error in row_errors %}<li>{{ error }}</li>{% endfor %}</ul></section>{% endif %}
+  {% if preview %}<section class="card">
+    <h2>2. Review {{ preview.records|length }} invitation(s)</h2>
+    <div class="table-scroll"><table class="student-table"><thead><tr><th>Email</th><th>Role</th></tr></thead><tbody>
+    {% for row in preview.records %}<tr><td>{{ row.email }}</td><td>{{ row.role }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="confirm"><button type="submit" class="btn-small">Send {{ preview.records|length }} invitation(s)</button></form>
+  </section>{% endif %}
+</section>
+{% endblock %}

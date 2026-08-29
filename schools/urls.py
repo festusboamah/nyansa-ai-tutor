@@ -21,6 +21,8 @@ urlpatterns = [
     path("admin/classes/<int:class_id>/promote/", views.promote_class, name="promote_class"),
     path("admin/people/<int:membership_id>/edit/", views.edit_student_record, name="edit_student_record"),
     path("admin/people/invite/", views.invite_member, name="invite_member"),
+    path("admin/people/invite-bulk/", views.bulk_staff_import, name="bulk_staff_import"),
+    path("admin/people/staff-invite-template/", views.staff_invite_template, name="staff_invite_template"),
     path("admin/people/<int:membership_id>/<str:status>/", views.set_membership_status, name="set_membership_status"),
     path("invitations/<str:token>/", views.accept_school_invitation, name="accept_school_invitation"),
 ]

@@ -100,6 +100,16 @@ class StudentRosterUploadForm(forms.Form):
         return roster_file
 
 
+class StaffInviteUploadForm(forms.Form):
+    invite_file = forms.FileField(help_text="Upload a .csv or .xlsx file with email and role columns.")
+
+    def clean_invite_file(self):
+        invite_file = self.cleaned_data["invite_file"]
+        if not invite_file.name.lower().endswith((".csv", ".xlsx")):
+            raise forms.ValidationError("Upload a CSV or Excel (.xlsx) file.")
+        return invite_file
+
+
 class StudentRecordForm(forms.Form):
     identifier = forms.CharField(label="Student ID", max_length=50)
     first_name = forms.CharField(max_length=150)

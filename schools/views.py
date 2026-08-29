@@ -10,9 +10,10 @@ from django.db import transaction
 from django.db import models
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from courses.models import Subject
-from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, StudentRecordForm, StudentRosterUploadForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
+from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, StaffInviteUploadForm, StudentRecordForm, StudentRosterUploadForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
 from .models import SchoolInvitation, SchoolMembership
 from .roster_import import import_student_roster, parse_student_roster
+from .staff_import import import_staff_invitations, parse_staff_invite_list
 from .curriculum import generate_ghana_curriculum, generate_school_classes
 from .services import accept_invitation, create_invitation, has_school_role
 
@@ -545,6 +546,54 @@ def student_roster_template(request):
         content_type="text/csv",
     )
     response["Content-Disposition"] = 'attachment; filename="nyansa-student-roster-template.csv"'
+    return response
+
+
+@admin_required
+def bulk_staff_import(request):
+    preview = request.session.get("staff_invite_preview")
+    if request.method == "POST" and request.POST.get("action") == "confirm":
+        if not preview:
+            messages.error(request, "Upload and preview a file before confirming.")
+            return redirect("bulk_staff_import")
+        results = import_staff_invitations(
+            school=request.school, records=preview["records"], invited_by=request.user, request=request,
+        )
+        request.session.pop("staff_invite_preview", None)
+        invited = sum(1 for r in results if r["status"] == "invited")
+        skipped = len(results) - invited
+        messages.success(
+            request,
+            f"{invited} invitation(s) sent." + (f" {skipped} row(s) skipped (already invited/a member, or failed)." if skipped else ""),
+        )
+        return redirect("people_directory")
+
+    form = StaffInviteUploadForm(request.POST or None, request.FILES or None)
+    errors = []
+    if request.method == "POST" and form.is_valid():
+        try:
+            records, errors = parse_staff_invite_list(form.cleaned_data["invite_file"])
+        except (ValidationError, ValueError, OSError) as error:
+            form.add_error("invite_file", error)
+        else:
+            if not errors:
+                preview = {"records": records}
+                request.session["staff_invite_preview"] = preview
+    return render(request, "schools/bulk_staff_import.html", {
+        "form": form, "preview": preview, "row_errors": errors,
+        "role_choices": SchoolMembership.Role.choices,
+    })
+
+
+@admin_required
+def staff_invite_template(request):
+    response = HttpResponse(
+        "email,role\n"
+        "ama.mensah@example.com,TEACHER\n"
+        "kwame.owusu@example.com,PARENT\n",
+        content_type="text/csv",
+    )
+    response["Content-Disposition"] = 'attachment; filename="nyansa-staff-invite-template.csv"'
     return response
 
 
