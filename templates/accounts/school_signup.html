@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Register Your School - Nyansa{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>Register Your School</h1>
+    <p>Create your school and your School Admin account in one step. You'll land straight in the setup wizard afterwards.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-small">Create School Account</button>
+    </form>
+    <p>Just want to learn? <a href="{% url 'signup' %}">Sign up as a student</a> instead.</p>
+</div>
+{% endblock %}

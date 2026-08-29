@@ -3,7 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from .forms import StudentSignUpForm
+from .forms import SchoolAdminSignUpForm, StudentSignUpForm
 from schools.models import SchoolMembership
 from schools.services import has_school_role
 
@@ -23,6 +23,19 @@ def signup_view(request):
     else:
         form = StudentSignUpForm()
     return render(request, "accounts/signup.html", {"form": form})
+
+
+def school_signup_view(request):
+    if request.method == "POST":
+        form = SchoolAdminSignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, "School registered! Let's get it set up.")
+            return redirect("school_onboarding")
+    else:
+        form = SchoolAdminSignUpForm()
+    return render(request, "accounts/school_signup.html", {"form": form})
 
 @login_required
 def profile_view(request):

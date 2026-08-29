@@ -1,10 +1,11 @@
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
+from django.utils.text import slugify
 import hashlib
 import secrets
 
-from .models import SchoolInvitation, SchoolMembership
+from .models import School, SchoolInvitation, SchoolMembership
 
 
 ACTIVE_SCHOOL_SESSION_KEY = "active_school_id"
@@ -54,6 +55,29 @@ def scope_to_school(queryset, school, field="school"):
 def has_school_role(request, *roles):
     membership = getattr(request, "school_membership", None)
     return bool(membership and membership.is_active and membership.role in roles)
+
+
+def unique_school_slug(name):
+    base = slugify(name)[:70] or "school"
+    slug = base
+    suffix = 2
+    while School.objects.filter(slug=slug).exists():
+        slug = f"{base}-{suffix}"[:80]
+        suffix += 1
+    return slug
+
+
+def register_school_with_admin(*, name, user):
+    """Creates a new School and makes `user` its School Admin, in one step.
+
+    This is the self-serve counterpart to a manually-seeded school: it's what
+    lets someone sign up and immediately reach the onboarding wizard, instead
+    of needing a school/membership created for them by hand via /admin/.
+    """
+    with transaction.atomic():
+        school = School.objects.create(name=name, slug=unique_school_slug(name))
+        SchoolMembership.objects.create(school=school, user=user, role=SchoolMembership.Role.SCHOOL_ADMIN)
+    return school
 
 
 def create_invitation(*, school, email, role, invited_by):
