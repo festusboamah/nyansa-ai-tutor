@@ -119,14 +119,24 @@ fieldset.module { padding:0 0 16px; }
 .nyansa-dashboard-label { display:flex; justify-content:space-between; gap:24px; align-items:end; margin-bottom:16px; }
 .nyansa-dashboard-label h2 { margin:4px 0 0; color:#211d1a; font-size:1.65rem; }
 .nyansa-dashboard-label > p { color:#70655e; }
-.nyansa-app-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.nyansa-app-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px; align-items:start; }
 .nyansa-app-list .module { margin:0; }
 .nyansa-app-list .module caption a { color:#fff; }
-.nyansa-app-list .module th { width:100%; }
-.nyansa-app-list .module td { width:1%; white-space:nowrap; }
-.dashboard #content { max-width:1600px; }
-.dashboard #content-main { width:auto; }
-.dashboard #content-related { width:330px; margin-right:0; }
+.nyansa-app-list .module th { width:auto; min-width:0; overflow-wrap:anywhere; }
+.nyansa-app-list .module td { width:92px; white-space:nowrap; }
+.dashboard #content {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 330px;
+    gap:28px;
+    align-items:start;
+    width:100%;
+    max-width:none;
+}
+.dashboard .nyansa-admin-intro,
+.dashboard .nyansa-dashboard-label { grid-column:1 / -1; width:100%; }
+.dashboard #content-main { grid-column:1; width:100%; min-width:0; float:none; }
+.dashboard #content-related { grid-column:2; width:100%; margin:0; float:none; }
+.dashboard #content > br.clear { display:none; }
 #recent-actions-module { padding-bottom:8px; }
 #recent-actions-module > h2 { margin:4px 16px 10px; padding:0; background:transparent; color:#241e1a; font-size:1.2rem; letter-spacing:-.02em; text-transform:none; }
 #recent-actions-module > .nyansa-admin-eyebrow { margin:18px 16px 0; }
@@ -137,8 +147,8 @@ fieldset.module { padding:0 0 16px; }
 #recent-actions-module .actionlist small { display:block; margin-top:3px; color:#786e67; }
 
 @media(max-width:1024px) {
-    .nyansa-app-list { grid-template-columns:1fr; }
-    .dashboard #content-related { width:290px; }
+    .dashboard #content { grid-template-columns:minmax(0,1fr) 280px; gap:20px; }
+    .nyansa-app-list { grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }
 }
 @media(max-width:767px) {
     #header { min-height:90px; padding:12px 16px; }
@@ -149,6 +159,8 @@ fieldset.module { padding:0 0 16px; }
     .nyansa-admin-intro-actions { margin-top:22px; min-width:0; }
     .nyansa-dashboard-label { display:block; }
     .nyansa-dashboard-label > p { margin-top:8px; }
+    .dashboard #content { display:block; }
+    .nyansa-app-list { grid-template-columns:1fr; }
     .dashboard #content-related { width:auto; margin:22px 0 0; }
     #changelist { overflow-x:auto; }
     .form-row { padding:14px; }

@@ -5,7 +5,11 @@
 
 {% block extrastyle %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'admin/css/nyansa-admin.css' %}?v=20260830-3">
+{% endblock %}
+
+{% block responsive %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/nyansa-admin.css' %}?v=20260830-4">
 {% endblock %}
 
 {% block extrahead %}
