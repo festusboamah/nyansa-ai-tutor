@@ -129,6 +129,10 @@ DEFAULT_FROM_EMAIL=Nyansa <noreply@nyansa.com>
 
 To send email through SMTP, set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend` and provide the SMTP host and credentials. Do not commit `.env` or API keys.
 
+For lower-latency production delivery through Resend's HTTPS API, set
+`EMAIL_BACKEND=config.email_backends.ResendEmailBackend`, add the Resend key as
+`RESEND_API_KEY`, and optionally set `EMAIL_TIMEOUT` (defaults to 8 seconds).
+
 To process queued family notifications, run `python manage.py process_messages --limit 50` from a recurring worker. Configure `ARKESEL_API_KEY` and `ARKESEL_SENDER_ID` to enable the Ghana-focused SMS adapter. Without an SMS key, SMS attempts fail safely and remain retryable; email and portal access continue independently.
 
 For Mobile Money, configure `PAYSTACK_SECRET_KEY` and set the Paystack webhook URL to `https://YOUR_HOST/finance/webhooks/paystack/`. Checkout is initialized on the server with the `mobile_money` channel. The browser return page never posts payment; only a correctly signed provider webhook reconciles the ledger.
