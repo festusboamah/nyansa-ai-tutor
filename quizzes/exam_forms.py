@@ -8,8 +8,13 @@ class ExamOfferingsForm(forms.Form):
     offerings = forms.ModelMultipleChoiceField(
         queryset=SubjectOffering.objects.none(),
         widget=forms.CheckboxSelectMultiple,
-        required=True,
-        help_text="Every active student enrolled in the selected class/subject offering(s) may sit this exam.",
+        required=False,
+        help_text=(
+            "Every active student enrolled in the selected class/subject offering(s) is "
+            "eligible. Leave every box unchecked for a subject-wide quiz (or, for an "
+            "exam, every active student in the school - publishing still requires at "
+            "least one class to be chosen)."
+        ),
     )
 
     def __init__(self, *args, teacher_membership=None, subject=None, **kwargs):

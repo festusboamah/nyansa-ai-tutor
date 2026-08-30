@@ -59,6 +59,10 @@ def quiz_start_view(request, quiz_id):
             "in_progress_submission": in_progress_submission,
         })
 
+    if quiz.offerings.exists() and not student_may_sit_exam(quiz, request.school_membership):
+        messages.error(request, "This quiz is restricted to a class you are not part of.")
+        return redirect("dashboard")
+
     return render(request, "quizzes/quiz_start.html", {
         "quiz": quiz,
         "question_count": question_count,
@@ -234,6 +238,10 @@ def quiz_take_view(request, quiz_id):
 
     if quiz.status == Quiz.Status.DRAFT:
         messages.error(request, "This quiz hasn't been published by your teacher yet.")
+        return redirect("dashboard")
+
+    if quiz.offerings.exists() and not student_may_sit_exam(quiz, request.school_membership):
+        messages.error(request, "This quiz is restricted to a class you are not part of.")
         return redirect("dashboard")
 
     if quiz.is_past_deadline():
@@ -468,7 +476,6 @@ def publish_quiz_view(request, quiz_id):
 def select_exam_offerings_view(request, quiz_id):
     quiz = get_object_or_404(
         Quiz, id=quiz_id, teacher=request.user, subject__school=request.school,
-        assessment_type=Quiz.AssessmentType.EXAM,
     )
     if request.method == "POST":
         form = ExamOfferingsForm(

@@ -63,7 +63,12 @@ class Quiz(models.Model):
     snapshot_interval_seconds = models.PositiveIntegerField(default=90, blank=True)
     offerings = models.ManyToManyField(
         "academics.SubjectOffering", blank=True, related_name="quizzes",
-        help_text="For exams: the class/subject offerings sitting this exam. Leave empty for a subject-wide quiz.",
+        help_text=(
+            "Optional: restrict this quiz or exam to specific class/subject offerings "
+            "(useful when you teach the same subject to more than one class). Leave "
+            "empty for a subject-wide quiz, open to every enrolled student - or, for "
+            "an exam, every active student in the school."
+        ),
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

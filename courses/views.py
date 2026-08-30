@@ -10,6 +10,7 @@ from .study_ai import (
     get_or_extract_material_text,
 )
 from quizzes.models import Quiz, Submission
+from quizzes.exam_roster import student_may_sit_exam
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
@@ -105,6 +106,10 @@ def subject_detail_view(request, subject_id):
     quizzes = subject.quizzes.all()
     if not has_school_role(request, SchoolMembership.Role.TEACHER, SchoolMembership.Role.SCHOOL_ADMIN):
         quizzes = quizzes.exclude(status=Quiz.Status.DRAFT)
+        quizzes = [
+            quiz for quiz in quizzes
+            if not quiz.offerings.exists() or student_may_sit_exam(quiz, request.school_membership)
+        ]
     assignments = subject.assignments.all()
     return render(request, "courses/subject_detail.html", {
         "subject": subject,

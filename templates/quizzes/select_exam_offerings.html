@@ -3,7 +3,7 @@
 {% block content %}
 <div class="card form-card">
     <h1>Choose Classes for {{ quiz.title }}</h1>
-    <p>Select every class/subject offering that should sit this exam. Every actively enrolled student in the offerings you pick becomes the roster automatically — no separate import needed.</p>
+    <p>Select every class/subject offering that should take this {{ quiz.get_assessment_type_display|lower }}. Every actively enrolled student in the offerings you pick becomes eligible automatically - no separate import needed. Leave every box unchecked to clear the restriction.</p>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}

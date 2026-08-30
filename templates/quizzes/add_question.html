@@ -15,6 +15,13 @@
     <a href="{% url 'exam_roster' quiz.id %}" class="btn-small btn-secondary">Roster & fee status</a>
     <a href="{% url 'exam_grading_queue' quiz.id %}" class="btn-small btn-secondary">Grade essays</a>
 </div>
+{% else %}
+<div class="card form-card">
+    <h2>Classes</h2>
+    <p>Open to every student enrolled in {{ quiz.subject.name }} by default. If you teach {{ quiz.subject.name }} to more than one class, you can restrict this quiz to specific classes instead.</p>
+    <p>Restricted to: <strong>{% if quiz.offerings.count %}{{ quiz.offerings.count }} class(es){% else %}Everyone enrolled (not restricted){% endif %}</strong></p>
+    <a href="{% url 'select_exam_offerings' quiz.id %}" class="btn-small btn-secondary">Choose classes</a>
+</div>
 {% endif %}
 
 {% if quiz.status == "DRAFT" %}
