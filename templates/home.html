@@ -1,170 +1,147 @@
 {% extends "base.html" %}
-{% block title %}Nyansa: AI Teaching &amp; Learning for Ghana{% endblock %}
+{% load static %}
+{% block title %}Nyansa: Where Questions Become Understanding{% endblock %}
 {% block content %}
 
-<section class="platform-hero">
-    <div class="platform-hero-copy">
-        <p class="platform-kicker">AI teaching &amp; learning for Ghana</p>
-        <h1>Teach with a copilot. <span>Learn with a tutor.</span></h1>
-        <p class="platform-lead">Nyansa is the teaching and learning layer for your school, powered by AI: a tutor that knows the curriculum for students, a lesson and grading copilot for teachers, and explainable mastery evidence for everyone, all under human review.</p>
-        <div class="hero-actions platform-actions">
+<section class="landing-hero">
+    <div class="landing-hero-copy reveal">
+        <p class="platform-kicker">Teaching and learning, made wiser</p>
+        <h1>A place for questions to become <em>understanding.</em></h1>
+        <p class="landing-lead">Nyansa gives learners a curriculum-aware tutor, teachers a practical copilot, and schools a clearer view of how understanding grows.</p>
+        <div class="landing-actions">
             {% if not user.is_authenticated %}
-                <a href="{% url 'signup' %}" class="btn-hero-primary">Explore Nyansa</a>
-                <a href="{% url 'school_signup' %}" class="btn-hero-secondary">Register your school</a>
-                <a href="{% url 'login' %}" class="btn-hero-secondary">Sign in</a>
+                <a href="{% url 'signup' %}" class="landing-cta landing-cta-primary">Explore Nyansa</a>
+                <a href="{% url 'school_signup' %}" class="landing-cta landing-cta-outline">Bring Nyansa to your school</a>
             {% elif request.school_membership.role == "SCHOOL_ADMIN" %}
-                <a href="{% url 'school_admin_dashboard' %}" class="btn-hero-primary">Open School Overview</a>
+                <a href="{% url 'school_admin_dashboard' %}" class="landing-cta landing-cta-primary">Open school overview</a>
             {% elif request.school_membership.role == "TEACHER" %}
-                <a href="{% url 'teacher_dashboard' %}" class="btn-hero-primary">Open Teacher Dashboard</a>
+                <a href="{% url 'teacher_dashboard' %}" class="landing-cta landing-cta-primary">Open teacher workspace</a>
             {% elif request.school_membership.role == "PARENT" %}
-                <a href="{% url 'guardian_portal' %}" class="btn-hero-primary">Open Guardian Portal</a>
+                <a href="{% url 'guardian_portal' %}" class="landing-cta landing-cta-primary">Open guardian portal</a>
             {% else %}
-                <a href="{% url 'dashboard' %}" class="btn-hero-primary">Open Student Dashboard</a>
+                <a href="{% url 'dashboard' %}" class="landing-cta landing-cta-primary">Continue learning</a>
             {% endif %}
         </div>
-        <div class="platform-trust" aria-label="Nyansa principles">
-            <span>Access scoped to your school</span>
-            <span>Auditable records</span>
-            <span>AI reviewed by humans</span>
+        <div class="landing-trust" aria-label="Nyansa commitments">
+            <span>Grounded in the curriculum</span><span>Human-reviewed</span><span>Made for real classrooms</span>
         </div>
     </div>
-    <div class="platform-hero-visual learning-canvas" aria-label="A learner moving from a question to understanding">
-        <div class="canvas-label"><span>Today&rsquo;s learning trail</span><strong>Fractions in real life</strong></div>
-        <div class="question-card">
-            <span class="card-index">A question</span>
-            <p>Why does one half look different when the whole changes?</p>
-        </div>
-        <div class="thinking-path" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-        <div class="insight-card">
-            <span class="card-index">A discovery</span>
-            <p>The fraction stays the same; the whole sets its size.</p>
-            <div class="fraction-shapes" aria-hidden="true"><span></span><span></span><span></span></div>
-        </div>
-        <div class="canvas-note">Built through hints, examples, and your own thinking.</div>
+
+    <div class="landing-hero-portrait reveal">
+        <figure class="hero-photo-main">
+            <img src="{% static 'images/landing/learner-joy.jpg' %}" alt="A smiling learner holding her books on campus" width="665" height="1000" fetchpriority="high">
+        </figure>
+        <figure class="hero-photo-inset">
+            <img src="{% static 'images/landing/classroom-curiosity.jpg' %}" alt="A learner raising her hand during a classroom lesson" width="735" height="493">
+        </figure>
+        <div class="hero-photo-note"><span>Curiosity lives here</span><strong>Ask. Try. Understand.</strong></div>
     </div>
 </section>
 
-<section class="platform-section" id="learning-pillars" aria-labelledby="platform-heading">
-    <div class="section-heading">
-        <p class="platform-kicker">One connected system</p>
-        <h2 id="platform-heading">Built around how teaching and learning actually happen</h2>
-        <p>Every workflow shares the same trusted school, class, and term context, so tutoring, coursework, and mastery insight stay connected instead of scattered across separate tools.</p>
+<div class="subject-ribbon" aria-hidden="true">
+    <div><span>Algebra</span><i></i><span>Reading</span><i></i><span>Biology</span><i></i><span>History</span><i></i><span>Creative writing</span><i></i><span>Physics</span><i></i><span>Algebra</span><i></i><span>Reading</span></div>
+</div>
+
+<section class="landing-manifesto" id="learning-pillars">
+    <div class="manifesto-main reveal">
+        <p class="manifesto-label">Why Nyansa exists</p>
+        <h2>Every learner deserves more than an answer. They deserve the moment it finally makes sense.</h2>
+        <p>Nyansa is designed around that moment: asking better questions, practising with purpose, noticing misconceptions, and helping teachers respond while it still matters.</p>
     </div>
-    <div class="platform-grid">
-        <article class="platform-card reveal"><span>01</span><h3>Intelligent Tutor</h3><p>A conversational tutor that knows the curriculum and guides with questions and hints instead of handing over answers. Practice, explanations, and a safe mode for exams, with every session logged.</p></article>
-        <article class="platform-card reveal"><span>02</span><h3>Learning Workspace</h3><p>Subjects, materials, assignments, quizzes, and exams in one place, with deadlines, study goals, and progress a student can actually see.</p></article>
-        <article class="platform-card reveal"><span>03</span><h3>Teacher Copilot</h3><p>Lesson planning support, question banks built with AI, grading feedback based on rubrics, and differentiated tasks by mastery level, ready to use.</p></article>
-        <article class="platform-card reveal"><span>04</span><h3>Mastery &amp; Learning Intelligence</h3><p>Explainable mastery evidence per topic, misconception detection, and progress trends, grounded in real coursework, not guesswork.</p></article>
-        <article class="platform-card reveal"><span>05</span><h3>Built to fit your school</h3><p>Complements your school's existing administrative records rather than duplicating them, so nothing falls out of sync.</p></article>
-        <article class="platform-card reveal"><span>06</span><h3>Responsible AI</h3><p>AI output is advisory by default; teachers and administrators approve anything that touches a grade, a report, or a student record.</p></article>
+    <aside class="manifesto-note reveal">
+        <span class="note-mark" aria-hidden="true">N</span>
+        <blockquote>“Technology should sharpen human judgment, not replace it.”</blockquote>
+        <p>Nyansa means <strong>wisdom</strong> in Twi. Important academic decisions stay visible and under human control.</p>
+    </aside>
+</section>
+
+<section class="human-learning-story reveal" aria-labelledby="human-story-title">
+    <figure class="human-story-teacher">
+        <img src="{% static 'images/landing/teacher-guidance.jpg' %}" alt="A teacher helping learners during a computer lesson" width="736" height="736" loading="lazy">
+        <figcaption>Teachers remain at the centre</figcaption>
+    </figure>
+    <div class="human-story-copy">
+        <p class="platform-kicker">Learning is human</p>
+        <h2 id="human-story-title">Built for the conversations that happen around the lesson.</h2>
+        <p>Nyansa does not replace the person who notices a puzzled face, celebrates a brave attempt, or asks the question that unlocks an idea. It gives learners and teachers more ways to reach that moment together.</p>
+        <div class="story-handwritten">Wisdom grows when we learn together.</div>
+    </div>
+    <figure class="human-story-team">
+        <img src="{% static 'images/landing/student-teamwork.jpg' %}" alt="A group of students working together around laptops" width="736" height="736" loading="lazy">
+        <figcaption>Ideas become stronger together</figcaption>
+    </figure>
+</section>
+
+<section class="landing-section landing-pillars" aria-labelledby="pillars-title">
+    <header class="landing-section-heading reveal">
+        <div><p class="platform-kicker">One learning layer</p><h2 id="pillars-title">Built around the work of learning</h2></div>
+        <p>Five connected capabilities, each with a clear role. No scattered tools and no mystery about how a recommendation was made.</p>
+    </header>
+    <div class="pillar-list">
+        <article class="pillar-item reveal"><span>01</span><h3>Intelligent tutor</h3><p>Guided explanations, questions, hints, and practice that respect approved learning material.</p><strong>For curious learners</strong></article>
+        <article class="pillar-item reveal"><span>02</span><h3>Learning workspace</h3><p>Subjects, materials, assignments, quizzes, deadlines, and study goals in one calm place.</p><strong>For focused study</strong></article>
+        <article class="pillar-item reveal"><span>03</span><h3>Teacher copilot</h3><p>Lesson drafts, question generation, rubrics, feedback support, and differentiated tasks.</p><strong>For prepared teachers</strong></article>
+        <article class="pillar-item reveal"><span>04</span><h3>Mastery intelligence</h3><p>Topic evidence, misconceptions, learning gaps, and progress trends that can be explained.</p><strong>For timely support</strong></article>
+        <article class="pillar-item reveal"><span>05</span><h3>School context</h3><p>Works with trusted class and curriculum context without becoming a second administration system.</p><strong>For connected schools</strong></article>
     </div>
 </section>
 
-<section class="quotes-section reveal" aria-label="Voices on education">
+<section class="landing-section product-story" aria-labelledby="story-title">
+    <header class="product-story-copy reveal">
+        <p class="platform-kicker">A day with Nyansa</p>
+        <h2 id="story-title">Different views. One learning story.</h2>
+        <p>A learner asks. Nyansa guides. The teacher sees where support is needed. Progress becomes useful evidence instead of another hidden score.</p>
+        {% if not user.is_authenticated %}<a href="{% url 'signup' %}" class="text-link">Create your learning space</a>{% endif %}
+    </header>
+    <div class="product-mosaic">
+        <article class="mosaic-card mosaic-tutor reveal"><span class="mosaic-label">Tutor session</span><div class="chat-line chat-question">Can you help me understand photosynthesis?</div><div class="chat-line chat-response">Let&rsquo;s start with what a plant needs to grow. What have you noticed?</div><div class="prompt-chips"><span>Give me a hint</span><span>Show an example</span></div></article>
+        <article class="mosaic-card mosaic-plan reveal"><span class="mosaic-label">Teacher copilot</span><h3>Tomorrow&rsquo;s lesson</h3><p>Energy transfer in ecosystems</p><ul><li>Starter question ready</li><li>Three learning activities</li><li>Exit check awaiting review</li></ul><span class="review-stamp">Teacher review required</span></article>
+        <article class="mosaic-card mosaic-mastery reveal"><span class="mosaic-label">Mastery evidence</span><div class="mastery-topic"><strong>Fractions</strong><span>Growing</span></div><div class="mastery-bars" aria-label="Mastery trend is improving"><i></i><i></i><i></i><i></i><i></i></div><p>Recent practice shows stronger comparison skills. Equivalent fractions need one more review.</p></article>
+        <article class="mosaic-card mosaic-workspace reveal"><span class="mosaic-label">Learning workspace</span><h3>Your week, clearly organised</h3><div class="workspace-days"><span><b>Mon</b>Algebra</span><span><b>Wed</b>Biology quiz</span><span><b>Fri</b>Essay draft</span></div></article>
+    </div>
+</section>
+
+<section class="principle-band reveal" aria-label="Nyansa principles">
+    <div><span>01</span><strong>Curriculum-aware</strong><p>Context before answers.</p></div>
+    <div><span>02</span><strong>Explainable</strong><p>Evidence you can inspect.</p></div>
+    <div><span>03</span><strong>Human-led</strong><p>People approve what matters.</p></div>
+    <div><span>04</span><strong>Privacy-conscious</strong><p>Only necessary data is used.</p></div>
+</section>
+
+<section class="quotes-section reveal" aria-labelledby="quotes-title">
     <p class="platform-kicker quotes-kicker">Wisdom worth carrying forward</p>
+    <h2 id="quotes-title" class="quotes-title">Learning changes what feels possible.</h2>
     <div class="quotes-carousel" id="quotes-carousel">
-        <blockquote class="quote-slide is-active">
-            <p>“Knowledge is power. Information is liberating. Education is the premise of progress, in every society, in every family.”</p>
-            <cite>Kofi Annan</cite>
-        </blockquote>
-        <blockquote class="quote-slide">
-            <p>“Education is the most powerful weapon which you can use to change the world.”</p>
-            <cite>Nelson Mandela</cite>
-        </blockquote>
-        <blockquote class="quote-slide">
-            <p>“The roots of education are bitter, but the fruit is sweet.”</p>
-            <cite>Aristotle</cite>
-        </blockquote>
-        <blockquote class="quote-slide">
-            <p>“Education is the passport to the future, for tomorrow belongs to those who prepare for it today.”</p>
-            <cite>Malcolm X</cite>
-        </blockquote>
-        <blockquote class="quote-slide">
-            <p>“Live as if you were to die tomorrow. Learn as if you were to live forever.”</p>
-            <cite>Mahatma Gandhi</cite>
-        </blockquote>
-        <blockquote class="quote-slide">
-            <p>“An investment in knowledge pays the best interest.”</p>
-            <cite>Benjamin Franklin</cite>
-        </blockquote>
+        <blockquote class="quote-slide is-active"><p>“Knowledge is power. Information is liberating. Education is the premise of progress, in every society, in every family.”</p><cite>Kofi Annan</cite></blockquote>
+        <blockquote class="quote-slide"><p>“Education is the most powerful weapon which you can use to change the world.”</p><cite>Nelson Mandela</cite></blockquote>
+        <blockquote class="quote-slide"><p>“The roots of education are bitter, but the fruit is sweet.”</p><cite>Aristotle</cite></blockquote>
+        <blockquote class="quote-slide"><p>“Education is the passport to the future, for tomorrow belongs to those who prepare for it today.”</p><cite>Malcolm X</cite></blockquote>
     </div>
-    <div class="quote-controls">
-        <div class="quote-dots" id="quote-dots" aria-label="Choose a quote">
-        <button class="quote-dot is-active" type="button" data-index="0" aria-label="Quote 1"></button>
-        <button class="quote-dot" type="button" data-index="1" aria-label="Quote 2"></button>
-        <button class="quote-dot" type="button" data-index="2" aria-label="Quote 3"></button>
-        <button class="quote-dot" type="button" data-index="3" aria-label="Quote 4"></button>
-        <button class="quote-dot" type="button" data-index="4" aria-label="Quote 5"></button>
-        <button class="quote-dot" type="button" data-index="5" aria-label="Quote 6"></button>
-        </div>
-        <button type="button" class="quote-pause" id="quote-pause" aria-pressed="false">Pause</button>
-    </div>
+    <div class="quote-controls"><div class="quote-dots" id="quote-dots" aria-label="Choose a quote"><button class="quote-dot is-active" type="button" data-index="0" aria-label="Quote 1"></button><button class="quote-dot" type="button" data-index="1" aria-label="Quote 2"></button><button class="quote-dot" type="button" data-index="2" aria-label="Quote 3"></button><button class="quote-dot" type="button" data-index="3" aria-label="Quote 4"></button></div><button type="button" class="quote-pause" id="quote-pause" aria-pressed="false">Pause</button></div>
 </section>
 
-<section class="platform-promise reveal">
-    <div>
-        <p class="platform-kicker">Wisdom, not automation at any cost</p>
-        <h2>Technology should sharpen human judgment, not replace it.</h2>
-    </div>
-    <p>Nyansa means “wisdom” in Twi. Every important academic and administrative decision remains visible, accountable, and under the control of the school.</p>
+<section class="landing-final reveal">
+    <div><p class="platform-kicker">Ready when curiosity is</p><h2>Make room for the next breakthrough.</h2></div>
+    <div><p>Start as a learner, or create a connected teaching and learning space for your school.</p><div class="landing-actions"><a href="{% url 'signup' %}" class="landing-cta landing-cta-light">Explore Nyansa</a><a href="{% url 'school_signup' %}" class="landing-cta landing-cta-dark-outline">Register your school</a></div></div>
 </section>
 
 <script>
 (function () {
     "use strict";
-
     var carousel = document.getElementById("quotes-carousel");
     if (!carousel) return;
-
     var slides = Array.from(carousel.querySelectorAll(".quote-slide"));
     var dots = Array.from(document.querySelectorAll("#quote-dots .quote-dot"));
     var pauseButton = document.getElementById("quote-pause");
     var current = 0;
     var timer = null;
-    var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    function show(index) {
-        slides[current].classList.remove("is-active");
-        dots[current].classList.remove("is-active");
-        current = (index + slides.length) % slides.length;
-        slides[current].classList.add("is-active");
-        dots[current].classList.add("is-active");
-        dots.forEach(function (dot, i) { dot.setAttribute("aria-current", i === current ? "true" : "false"); });
-    }
-
-    function startAutoplay() {
-        if (prefersReducedMotion) return;
-        if (pauseButton.getAttribute("aria-pressed") === "true") return;
-        stopAutoplay();
-        timer = window.setInterval(function () { show(current + 1); }, 6000);
-    }
-
-    function stopAutoplay() {
-        if (timer) window.clearInterval(timer);
-    }
-
-    dots.forEach(function (dot, i) {
-        dot.addEventListener("click", function () {
-            show(i);
-            startAutoplay();
-        });
-    });
-
-    pauseButton.addEventListener("click", function () {
-        var paused = pauseButton.getAttribute("aria-pressed") === "true";
-        pauseButton.setAttribute("aria-pressed", paused ? "false" : "true");
-        pauseButton.textContent = paused ? "Pause" : "Play";
-        if (paused) startAutoplay(); else stopAutoplay();
-    });
-
-    carousel.addEventListener("mouseenter", stopAutoplay);
-    carousel.addEventListener("mouseleave", startAutoplay);
-    carousel.addEventListener("focusin", stopAutoplay);
-    carousel.addEventListener("focusout", startAutoplay);
-
-    startAutoplay();
-    // Scroll-reveal for `.reveal` elements on this page is handled globally
-    // by static/js/scroll-reveal.js (loaded in base.html).
+    var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function show(index) { slides[current].classList.remove("is-active"); dots[current].classList.remove("is-active"); current = (index + slides.length) % slides.length; slides[current].classList.add("is-active"); dots[current].classList.add("is-active"); dots.forEach(function (dot, i) { dot.setAttribute("aria-current", i === current ? "true" : "false"); }); }
+    function stop() { if (timer) window.clearInterval(timer); }
+    function start() { if (reducedMotion || pauseButton.getAttribute("aria-pressed") === "true") return; stop(); timer = window.setInterval(function () { show(current + 1); }, 6500); }
+    dots.forEach(function (dot, i) { dot.addEventListener("click", function () { show(i); start(); }); });
+    pauseButton.addEventListener("click", function () { var paused = pauseButton.getAttribute("aria-pressed") === "true"; pauseButton.setAttribute("aria-pressed", paused ? "false" : "true"); pauseButton.textContent = paused ? "Pause" : "Play"; if (paused) start(); else stop(); });
+    carousel.addEventListener("mouseenter", stop); carousel.addEventListener("mouseleave", start); carousel.addEventListener("focusin", stop); carousel.addEventListener("focusout", start); start();
 })();
 </script>
 {% endblock %}
