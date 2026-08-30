@@ -15,9 +15,9 @@ services:
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_ALLOWED_HOSTS
-        value: .onrender.com
+        value: nyansa.app,.nyansa.app,.onrender.com
       - key: DJANGO_CSRF_TRUSTED_ORIGINS
-        value: https://*.onrender.com
+        value: https://nyansa.app,https://*.nyansa.app,https://*.onrender.com
       - key: DJANGO_TRUST_PROXY_SSL_HEADER
         value: "True"
       - key: NYANSA_DEMO_MODE
