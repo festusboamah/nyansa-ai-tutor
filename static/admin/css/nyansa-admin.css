@@ -1,0 +1,158 @@
+:root,
+html[data-theme="light"] {
+    --primary:#b8441d;
+    --secondary:#2d2119;
+    --accent:#e99220;
+    --primary-fg:#fff;
+    --body-fg:#2b2826;
+    --body-bg:#f7f3ed;
+    --body-quiet-color:#6f665f;
+    --body-medium-color:#554c46;
+    --body-loud-color:#211d1a;
+    --header-color:#fff;
+    --header-branding-color:#fff;
+    --header-bg:#251a14;
+    --header-link-color:#f8e8dc;
+    --breadcrumbs-fg:#765b4d;
+    --breadcrumbs-link-fg:#9f3b18;
+    --breadcrumbs-bg:#eee5dc;
+    --link-fg:#9f3b18;
+    --link-hover-color:#70270f;
+    --link-selected-fg:#8e3113;
+    --hairline-color:#ddd3c9;
+    --border-color:#d7cbc0;
+    --error-fg:#b42318;
+    --message-success-bg:#e5f3e8;
+    --message-warning-bg:#fff1ce;
+    --message-error-bg:#fbe6e3;
+    --darkened-bg:#eee8e1;
+    --selected-bg:#f9e6da;
+    --selected-row:#fff2e7;
+    --button-fg:#fff;
+    --button-bg:#b8441d;
+    --button-hover-bg:#913413;
+    --default-button-bg:#2d2119;
+    --default-button-hover-bg:#120d0a;
+    --delete-button-bg:#b42318;
+    --delete-button-hover-bg:#861c13;
+    color-scheme:light;
+}
+
+* { box-sizing:border-box; }
+body { font-family:"Segoe UI",Inter,system-ui,-apple-system,sans-serif; }
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid #e99220 !important; outline-offset:2px; }
+
+#header { min-height:78px; padding:0 28px; border-bottom:3px solid #d85827; box-shadow:0 8px 26px rgba(37,26,20,.12); }
+#branding { display:flex; align-items:center; }
+.nyansa-admin-brand { display:flex; gap:11px; align-items:center; color:#fff !important; text-decoration:none; }
+.nyansa-admin-brand img { width:36px; height:36px; object-fit:contain; }
+.nyansa-admin-brand span { display:grid; line-height:1.05; }
+.nyansa-admin-brand strong { font-size:1.25rem; letter-spacing:-.02em; }
+.nyansa-admin-brand small { margin-top:5px; color:#d7c5b9; font-size:.65rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
+#user-tools { font-size:.75rem; letter-spacing:.02em; }
+#user-tools a { border-bottom-color:#6b5143; }
+.nyansa-view-site { display:inline-flex; min-height:40px; align-items:center; padding:0 14px; border:1px solid #6d5040; color:#fff !important; font-size:.76rem; font-weight:700; text-decoration:none; }
+.nyansa-view-site:hover { background:#3b2a21; }
+
+div.breadcrumbs { padding:13px 28px; border-bottom:1px solid #d7cbc0; font-size:.75rem; }
+#container { background:#f7f3ed; }
+#content { padding:32px; }
+#content h1 { color:#211d1a; font-size:clamp(1.8rem,3vw,2.7rem); font-weight:800; letter-spacing:-.04em; }
+#content h2 { font-weight:750; }
+
+.module,.inline-group { overflow:hidden; border:1px solid #d7cbc0; border-radius:14px; background:#fff; box-shadow:0 5px 18px rgba(55,39,29,.05); }
+.module h2,.module caption,.inline-group h2 { padding:13px 16px; background:#2d2119; color:#fff; font-size:.78rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+.module table { border-collapse:collapse; }
+.module td,.module th { padding:12px 14px; }
+.module tbody tr { transition:background-color .15s ease; }
+.module tbody tr:hover { background:#fff7f0; }
+
+#nav-sidebar { border-right:1px solid #d7cbc0; background:#fffdf9; }
+#nav-sidebar .module { border:0; border-radius:0; box-shadow:none; }
+#nav-sidebar .module caption { background:#f0e5db; color:#4a362b; }
+#nav-filter { margin:14px 10px; border:1px solid #d7cbc0; border-radius:9px; background:#fff; }
+.toggle-nav-sidebar { border-right:1px solid #d7cbc0; background:#fff; color:#9f3b18; }
+
+input,textarea,select,.vTextField { min-height:42px; border:1px solid #cbbdb0 !important; border-radius:8px !important; background:#fff !important; color:#2b2826 !important; }
+textarea { min-height:110px; }
+input:focus,textarea:focus,select:focus { border-color:#b8441d !important; box-shadow:0 0 0 3px rgba(184,68,29,.14); }
+.aligned label { color:#403832; font-weight:700; }
+.help,.helptext,p.help { color:#756b64 !important; font-size:.78rem !important; }
+fieldset.module { padding:0 0 16px; }
+.form-row { padding:16px 20px; border-bottom-color:#eee5dc; }
+
+.button,input[type=submit],input[type=button],.submit-row input,a.button { min-height:42px; padding:10px 17px; border:0; border-radius:8px; background:#b8441d; color:#fff; font-weight:750; transition:background-color .16s ease,box-shadow .16s ease; }
+.button:hover,input[type=submit]:hover,input[type=button]:hover,.submit-row input:hover,a.button:hover { background:#913413; color:#fff; }
+.submit-row { padding:14px 18px; border:1px solid #d7cbc0; border-radius:12px; background:#fff; box-shadow:0 4px 14px rgba(55,39,29,.05); }
+.object-tools a { min-height:40px; padding:10px 15px; border-radius:8px; background:#2d2119; }
+.object-tools a:hover { background:#b8441d; }
+
+#changelist { overflow:hidden; border:1px solid #d7cbc0; border-radius:14px; background:#fff; box-shadow:0 5px 18px rgba(55,39,29,.05); }
+#changelist .changelist-form-container { min-width:0; }
+#changelist table thead th { padding:13px 10px; background:#ede4db; color:#44372f; font-size:.7rem; letter-spacing:.04em; text-transform:uppercase; }
+#changelist table tbody td,#changelist table tbody th { padding:12px 10px; }
+#changelist-filter { border-left:1px solid #d7cbc0; background:#fffaf5; }
+#changelist-filter h2 { background:#2d2119; }
+#changelist-filter h3 { color:#4b4039; font-weight:750; }
+#changelist-search { padding:14px !important; border-bottom:1px solid #e5dbd1; background:#fffaf5; }
+.paginator { border-top:1px solid #e5dbd1 !important; background:#fffaf5 !important; }
+
+.messagelist { margin:0 0 22px; }
+.messagelist li { border-radius:9px; background-position:14px 14px; }
+.errornote { border-radius:9px; }
+
+.login { background:#f5eee6; }
+.login #container { width:min(440px,calc(100% - 32px)); border:1px solid #d7cbc0; border-radius:20px; background:#fff; box-shadow:0 24px 60px rgba(57,38,27,.13); }
+.login #header { min-height:100px; padding:20px 28px; border-radius:19px 19px 0 0; }
+.login #content { padding:30px; }
+.login #content-main .password-reset-link { margin:12px 0 18px; text-align:left; }
+.login #content-main .submit-row { padding:0; border:0; box-shadow:none; }
+.login #content-main .submit-row input[type="submit"] { width:100%; background:#b8441d !important; color:#fff !important; }
+
+.nyansa-admin-intro { display:flex; justify-content:space-between; gap:30px; align-items:end; margin-bottom:36px; padding:34px; border-radius:18px; background:#2d2119; color:#fff; box-shadow:10px 12px 0 #e3d5c8; }
+.nyansa-admin-intro h1 { margin:4px 0 9px; color:#fff !important; font-size:clamp(2.3rem,4.7vw,4.5rem) !important; line-height:.98; }
+.nyansa-admin-intro p:not(.nyansa-admin-eyebrow) { max-width:650px; margin:0; color:#d9c9bf; }
+.nyansa-admin-eyebrow { margin:0; color:#e99220; font-size:.67rem; font-weight:900; letter-spacing:.13em; text-transform:uppercase; }
+.nyansa-admin-intro-actions { display:flex; flex-wrap:wrap; gap:9px; min-width:max-content; }
+.nyansa-admin-intro-actions a { display:inline-flex; min-height:44px; align-items:center; padding:0 15px; border:1px solid #735746; border-radius:8px; color:#fff; font-weight:750; text-decoration:none; }
+.nyansa-admin-intro-actions a.primary { border-color:#d85827; background:#d85827; }
+.nyansa-dashboard-label { display:flex; justify-content:space-between; gap:24px; align-items:end; margin-bottom:16px; }
+.nyansa-dashboard-label h2 { margin:4px 0 0; color:#211d1a; font-size:1.65rem; }
+.nyansa-dashboard-label > p { color:#70655e; }
+.nyansa-app-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.nyansa-app-list .module { margin:0; }
+.nyansa-app-list .module caption a { color:#fff; }
+.nyansa-app-list .module th { width:100%; }
+.nyansa-app-list .module td { width:1%; white-space:nowrap; }
+.dashboard #content { max-width:1600px; }
+.dashboard #content-main { width:auto; }
+.dashboard #content-related { width:330px; margin-right:0; }
+#recent-actions-module { padding-bottom:8px; }
+#recent-actions-module > h2 { margin:4px 16px 10px; padding:0; background:transparent; color:#241e1a; font-size:1.2rem; letter-spacing:-.02em; text-transform:none; }
+#recent-actions-module > .nyansa-admin-eyebrow { margin:18px 16px 0; }
+#recent-actions-module .actionlist { margin:0; }
+#recent-actions-module .actionlist li { padding:13px 16px; border-top:1px solid #eee6df; }
+#recent-actions-module .actionlist li::before { display:none; }
+.nyansa-action-kind { display:block; color:#a43c18; font-size:.62rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+#recent-actions-module .actionlist small { display:block; margin-top:3px; color:#786e67; }
+
+@media(max-width:1024px) {
+    .nyansa-app-list { grid-template-columns:1fr; }
+    .dashboard #content-related { width:290px; }
+}
+@media(max-width:767px) {
+    #header { min-height:90px; padding:12px 16px; }
+    #user-tools { margin-top:8px; }
+    .nyansa-view-site { display:none; }
+    #content { padding:20px 14px; }
+    .nyansa-admin-intro { display:block; padding:24px 20px; box-shadow:6px 7px 0 #e3d5c8; }
+    .nyansa-admin-intro-actions { margin-top:22px; min-width:0; }
+    .nyansa-dashboard-label { display:block; }
+    .nyansa-dashboard-label > p { margin-top:8px; }
+    .dashboard #content-related { width:auto; margin:22px 0 0; }
+    #changelist { overflow-x:auto; }
+    .form-row { padding:14px; }
+}
+@media(prefers-reduced-motion:reduce) {
+    * { scroll-behavior:auto !important; transition:none !important; }
+}

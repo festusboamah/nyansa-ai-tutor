@@ -8,6 +8,10 @@ from accounts.views import home_view
 from config.views import health_live, health_ready, service_worker_view
 from integrations.views import suku360_credential_webhook_view, suku360_sso_login_view
 
+admin.site.site_header = "Nyansa system administration"
+admin.site.site_title = "Nyansa administration"
+admin.site.index_title = "System control room"
+
 urlpatterns = [
     # Must precede admin.site.urls: the admin login template only shows a
     # "Forgotten your password?" link when a URL named "admin_password_reset"

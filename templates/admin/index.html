@@ -1,0 +1,55 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static log %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/css/dashboard.css' %}">{% endblock %}
+{% block coltype %}colMS{% endblock %}
+{% block bodyclass %}{{ block.super }} dashboard nyansa-admin-dashboard{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<section class="nyansa-admin-intro" aria-labelledby="admin-welcome-title">
+    <div>
+        <p class="nyansa-admin-eyebrow">System control room</p>
+        <h1 id="admin-welcome-title">Welcome back{% if user.first_name %}, {{ user.first_name }}{% endif %}.</h1>
+        <p>Manage learning infrastructure, review system records, and keep Nyansa running safely.</p>
+    </div>
+    <div class="nyansa-admin-intro-actions">
+        <a href="{% url 'admin:password_change' %}">Security settings</a>
+        <a href="{% url 'home' %}" class="primary">Open Nyansa</a>
+    </div>
+</section>
+
+<div class="nyansa-dashboard-label">
+    <div><p class="nyansa-admin-eyebrow">Administration areas</p><h2>Choose where to work</h2></div>
+    <p>Access is controlled by your assigned permissions.</p>
+</div>
+
+<div id="content-main" class="app-list nyansa-app-list">
+    {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<aside id="content-related" aria-labelledby="recent-actions-title">
+    <div class="module" id="recent-actions-module">
+        <p class="nyansa-admin-eyebrow">Activity trail</p>
+        <h2 id="recent-actions-title">Your recent actions</h2>
+        {% get_admin_log 8 as admin_log for_user user %}
+        {% if not admin_log %}
+            <p class="quiet">No administration activity yet.</p>
+        {% else %}
+            <ul class="actionlist">
+            {% for entry in admin_log %}
+                <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
+                    <span class="nyansa-action-kind">{% if entry.is_addition %}Added{% elif entry.is_change %}Changed{% elif entry.is_deletion %}Deleted{% endif %}</span>
+                    {% if entry.is_deletion or not entry.get_admin_url %}{{ entry.object_repr }}{% else %}<a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>{% endif %}
+                    {% if entry.content_type %}<small>{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}</small>{% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</aside>
+{% endblock %}
