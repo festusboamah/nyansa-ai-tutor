@@ -1,5 +1,5 @@
 {% load static %}
-const CACHE_NAME = "nyansa-shell-v2";
+const CACHE_NAME = "nyansa-shell-v4";
 const STATIC_URL = "{{ static_url }}";
 
 const PRECACHE_URLS = [
@@ -7,8 +7,10 @@ const PRECACHE_URLS = [
     "{% static 'js/navigation.js' %}",
     "{% static 'js/offline-queue.js' %}",
     "{% static 'js/low-data-mode.js' %}",
-    "{% static 'images/logo.svg' %}",
-    "{% static 'images/favicon.svg' %}",
+    "{% static 'js/scroll-reveal.js' %}",
+    "{% static 'js/form-enhancements.js' %}",
+    "{% static 'images/logo.png' %}",
+    "{% static 'images/favicon-32.png' %}",
     "{% static 'manifest.json' %}",
     "{% static 'offline.html' %}"
 ];

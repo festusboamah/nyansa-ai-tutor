@@ -12,11 +12,12 @@
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <meta name="theme-color" content="#CF5123">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <script src="{% static 'js/navigation.js' %}" defer></script>
-    <script src="{% static 'js/offline-queue.js' %}" defer></script>
-    <script src="{% static 'js/low-data-mode.js' %}" defer></script>
-    <script src="{% static 'js/scroll-reveal.js' %}" defer></script>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260830-2">
+    <script src="{% static 'js/navigation.js' %}?v=20260830-2" defer></script>
+    <script src="{% static 'js/offline-queue.js' %}?v=20260830-2" defer></script>
+    <script src="{% static 'js/low-data-mode.js' %}?v=20260830-2" defer></script>
+    <script src="{% static 'js/scroll-reveal.js' %}?v=20260830-2" defer></script>
+    <script src="{% static 'js/form-enhancements.js' %}?v=20260830-2" defer></script>
     <script>
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function () {
@@ -161,8 +162,9 @@
         </div>
         <div class="navbar-links">
             <a href="#" id="low-data-toggle" class="low-data-toggle">Low-data mode: Off</a>
-            <a href="{% url 'login' %}">Login</a>
-            <a href="{% url 'signup' %}" class="btn-signup">Sign Up</a>
+            <a href="{% url 'school_signup' %}">For schools</a>
+            <a href="{% url 'login' %}">Sign in</a>
+            <a href="{% url 'signup' %}" class="btn-signup">Explore Nyansa</a>
         </div>
     </nav>
     {% endif %}
@@ -180,13 +182,30 @@
         {% endblock %}
     </main>
 
-    <footer class="footer">
+    {% if user.is_authenticated %}
+    <footer class="footer footer-compact">
         <div class="footer-row">
             <p class="footer-copy">&copy; 2026 Nyansa. School intelligence</p>
             <p class="footer-links"><a href="{% url 'terms' %}">Terms</a> · <a href="{% url 'privacy' %}">Privacy</a></p>
             <p class="footer-credit">Developed by <a href="https://nerdsiv.com" target="_blank" rel="noreferrer"><strong>NERDS IV Technologies</strong></a></p>
         </div>
     </footer>
+    {% else %}
+    <footer class="footer public-footer">
+        <div class="public-footer-glow" aria-hidden="true"></div>
+        <div class="public-footer-grid">
+            <div class="footer-brand-block">
+                <a href="{% url 'home' %}" class="footer-brand" aria-label="Nyansa home"><img src="{% static 'images/logo.png' %}" alt="" class="brand-logo"><span>Nyansa</span></a>
+                <p>A trusted teaching and learning layer that helps every learner find their next step.</p>
+                <span class="footer-origin">Built with care for African classrooms</span>
+            </div>
+            <nav class="footer-nav" aria-label="Explore Nyansa"><h2>Explore</h2><a href="{% url 'home' %}#learning-pillars">How it works</a><a href="{% url 'signup' %}">For learners</a><a href="{% url 'school_signup' %}">For schools</a></nav>
+            <nav class="footer-nav" aria-label="Account links"><h2>Get started</h2><a href="{% url 'login' %}">Sign in</a><a href="{% url 'signup' %}">Create learner account</a><a href="{% url 'school_signup' %}">Register your school</a></nav>
+            <nav class="footer-nav" aria-label="Legal links"><h2>Trust</h2><a href="{% url 'privacy' %}">Privacy</a><a href="{% url 'terms' %}">Terms</a><span>Human-reviewed AI</span></nav>
+        </div>
+        <div class="public-footer-bottom"><p>&copy; 2026 Nyansa. Learn with wisdom.</p><p>Developed by <a href="https://nerdsiv.com" target="_blank" rel="noreferrer">NERDS IV Technologies</a></p></div>
+    </footer>
+    {% endif %}
 
     {% if user.is_authenticated %}
         </div>

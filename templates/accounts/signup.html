@@ -1,10 +1,17 @@
 {% extends "base.html" %}
+{% block title %}Explore Nyansa - Create a Learner Account{% endblock %}
 {% block content %}
-<h2>Sign Up</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Create Account</button>
-</form>
-<p>Setting up a school instead? <a href="{% url 'school_signup' %}">Register your school</a>.</p>
+<section class="auth-shell auth-explore">
+    <div class="auth-story reveal">
+        <a href="{% url 'home' %}" class="auth-back">Nyansa home</a><p class="platform-kicker">Explore Nyansa</p>
+        <h1>A smarter place to ask, practise, and grow.</h1><p class="auth-story-lead">Create your learning space and turn every question into a clear next step.</p>
+        <div class="learner-journey" aria-label="Your Nyansa learning journey"><article><span>Ask</span><p>Start with a question in your own words.</p></article><article><span>Understand</span><p>Get curriculum-aware guidance and examples.</p></article><article><span>Master</span><p>Practise, spot gaps, and watch your confidence grow.</p></article></div>
+        <div class="floating-subjects" aria-hidden="true"><span>Algebra</span><span>Biology</span><span>Reading</span><span>History</span></div>
+    </div>
+    <div class="auth-panel reveal">
+        <div class="auth-panel-heading"><span class="auth-eyebrow">Learner account</span><h2>Start exploring</h2><p>It only takes a minute to create your space.</p></div>
+        <form method="post" class="auth-form">{% csrf_token %}{{ form.as_p }}<button type="submit" class="auth-submit">Create my account</button></form>
+        <p class="auth-switch">Setting up a school? <a href="{% url 'school_signup' %}">Register your school</a></p><p class="auth-legal">By continuing, you agree to our <a href="{% url 'terms' %}">terms</a> and <a href="{% url 'privacy' %}">privacy policy</a>.</p>
+    </div>
+</section>
 {% endblock %}

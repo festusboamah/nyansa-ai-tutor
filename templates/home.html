@@ -28,18 +28,23 @@
             <span>AI reviewed by humans</span>
         </div>
     </div>
-    <div class="platform-hero-visual" aria-label="Connected teaching and learning">
-        <div class="platform-orbit platform-orbit-large"></div>
-        <div class="platform-orbit platform-orbit-small"></div>
-        <div class="platform-core"><strong>Nyansa</strong><span>AI learning layer</span></div>
-        <div class="platform-node node-academics">Tutor</div>
-        <div class="platform-node node-families">Workspace</div>
-        <div class="platform-node node-finance">Copilot</div>
-        <div class="platform-node node-insight">Mastery</div>
+    <div class="platform-hero-visual learning-canvas" aria-label="A learner moving from a question to understanding">
+        <div class="canvas-label"><span>Today&rsquo;s learning trail</span><strong>Fractions in real life</strong></div>
+        <div class="question-card">
+            <span class="card-index">A question</span>
+            <p>Why does one half look different when the whole changes?</p>
+        </div>
+        <div class="thinking-path" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="insight-card">
+            <span class="card-index">A discovery</span>
+            <p>The fraction stays the same; the whole sets its size.</p>
+            <div class="fraction-shapes" aria-hidden="true"><span></span><span></span><span></span></div>
+        </div>
+        <div class="canvas-note">Built through hints, examples, and your own thinking.</div>
     </div>
 </section>
 
-<section class="platform-section" aria-labelledby="platform-heading">
+<section class="platform-section" id="learning-pillars" aria-labelledby="platform-heading">
     <div class="section-heading">
         <p class="platform-kicker">One connected system</p>
         <h2 id="platform-heading">Built around how teaching and learning actually happen</h2>
@@ -56,7 +61,7 @@
 </section>
 
 <section class="quotes-section reveal" aria-label="Voices on education">
-    <p class="platform-kicker" style="text-align:center;">In good company</p>
+    <p class="platform-kicker quotes-kicker">Wisdom worth carrying forward</p>
     <div class="quotes-carousel" id="quotes-carousel">
         <blockquote class="quote-slide is-active">
             <p>“Knowledge is power. Information is liberating. Education is the premise of progress, in every society, in every family.”</p>
@@ -83,13 +88,16 @@
             <cite>Benjamin Franklin</cite>
         </blockquote>
     </div>
-    <div class="quote-dots" id="quote-dots" role="tablist" aria-label="Choose a quote">
+    <div class="quote-controls">
+        <div class="quote-dots" id="quote-dots" aria-label="Choose a quote">
         <button class="quote-dot is-active" type="button" data-index="0" aria-label="Quote 1"></button>
         <button class="quote-dot" type="button" data-index="1" aria-label="Quote 2"></button>
         <button class="quote-dot" type="button" data-index="2" aria-label="Quote 3"></button>
         <button class="quote-dot" type="button" data-index="3" aria-label="Quote 4"></button>
         <button class="quote-dot" type="button" data-index="4" aria-label="Quote 5"></button>
         <button class="quote-dot" type="button" data-index="5" aria-label="Quote 6"></button>
+        </div>
+        <button type="button" class="quote-pause" id="quote-pause" aria-pressed="false">Pause</button>
     </div>
 </section>
 
@@ -110,6 +118,7 @@
 
     var slides = Array.from(carousel.querySelectorAll(".quote-slide"));
     var dots = Array.from(document.querySelectorAll("#quote-dots .quote-dot"));
+    var pauseButton = document.getElementById("quote-pause");
     var current = 0;
     var timer = null;
     var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -120,10 +129,12 @@
         current = (index + slides.length) % slides.length;
         slides[current].classList.add("is-active");
         dots[current].classList.add("is-active");
+        dots.forEach(function (dot, i) { dot.setAttribute("aria-current", i === current ? "true" : "false"); });
     }
 
     function startAutoplay() {
         if (prefersReducedMotion) return;
+        if (pauseButton.getAttribute("aria-pressed") === "true") return;
         stopAutoplay();
         timer = window.setInterval(function () { show(current + 1); }, 6000);
     }
@@ -139,8 +150,17 @@
         });
     });
 
+    pauseButton.addEventListener("click", function () {
+        var paused = pauseButton.getAttribute("aria-pressed") === "true";
+        pauseButton.setAttribute("aria-pressed", paused ? "false" : "true");
+        pauseButton.textContent = paused ? "Pause" : "Play";
+        if (paused) startAutoplay(); else stopAutoplay();
+    });
+
     carousel.addEventListener("mouseenter", stopAutoplay);
     carousel.addEventListener("mouseleave", startAutoplay);
+    carousel.addEventListener("focusin", stopAutoplay);
+    carousel.addEventListener("focusout", startAutoplay);
 
     startAutoplay();
     // Scroll-reveal for `.reveal` elements on this page is handled globally

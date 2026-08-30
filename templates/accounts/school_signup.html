@@ -1,14 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Register Your School - Nyansa{% endblock %}
 {% block content %}
-<div class="card form-card">
-    <h1>Register Your School</h1>
-    <p>Create your school and your School Admin account in one step. You'll land straight in the setup wizard afterwards.</p>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn-small">Create School Account</button>
-    </form>
-    <p>Just want to learn? <a href="{% url 'signup' %}">Sign up as a student</a> instead.</p>
-</div>
+<section class="auth-shell auth-school">
+    <div class="auth-story reveal">
+        <a href="{% url 'home' %}" class="auth-back">Nyansa home</a><p class="platform-kicker">Nyansa for schools</p>
+        <h1>Give every classroom a learning copilot.</h1><p class="auth-story-lead">Bring tutoring, coursework, teacher support, and explainable mastery into one human-led learning layer.</p>
+        <div class="school-proof-grid"><article><strong>01</strong><span>Create your school space</span></article><article><strong>02</strong><span>Set up teaching context</span></article><article><strong>03</strong><span>Invite your learning community</span></article></div>
+        <div class="school-promise"><span aria-hidden="true">&#10003;</span><p><strong>You stay in control.</strong> Consequential AI output remains advisory until a human approves it.</p></div>
+    </div>
+    <div class="auth-panel reveal">
+        <div class="auth-panel-heading"><span class="auth-eyebrow">School registration</span><h2>Create your school space</h2><p>Your administrator account and school workspace are created together.</p></div>
+        <form method="post" class="auth-form">{% csrf_token %}{{ form.as_p }}<button type="submit" class="auth-submit">Create school account</button></form>
+        <p class="auth-switch">Just want to learn? <a href="{% url 'signup' %}">Explore as a learner</a></p><p class="auth-legal">By continuing, you agree to our <a href="{% url 'terms' %}">terms</a> and <a href="{% url 'privacy' %}">privacy policy</a>.</p>
+    </div>
+</section>
 {% endblock %}

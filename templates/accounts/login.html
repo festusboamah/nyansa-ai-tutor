@@ -1,13 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Login - Nyansa{% endblock %}
+{% block title %}Sign in - Nyansa{% endblock %}
 {% block content %}
-<div class="card form-card">
-    <h1>Login</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn-small">Login</button>
-    </form>
-    <p><a href="{% url 'password_reset' %}">Forgot your password?</a></p>
-</div>
+<section class="auth-shell auth-login">
+    <div class="auth-story reveal">
+        <a href="{% url 'home' %}" class="auth-back">Nyansa home</a>
+        <p class="platform-kicker">Welcome back</p>
+        <h1>Pick up where your curiosity left off.</h1>
+        <p class="auth-story-lead">Your subjects, study goals, teacher feedback, and tutor conversations are ready when you are.</p>
+        <div class="auth-tip-carousel" data-auth-carousel aria-label="Learning tips">
+            <article class="auth-tip is-active"><span>01</span><strong>Ask for a hint</strong><p>Nyansa can guide your thinking without simply giving away the answer.</p></article>
+            <article class="auth-tip"><span>02</span><strong>Build a study rhythm</strong><p>Small, focused sessions make progress easier to see and remember.</p></article>
+            <article class="auth-tip"><span>03</span><strong>Learn from mistakes</strong><p>Review misconceptions and turn difficult topics into your strongest ones.</p></article>
+        </div>
+        <div class="auth-tip-dots" data-auth-dots aria-label="Choose a learning tip"></div>
+    </div>
+    <div class="auth-panel reveal">
+        <div class="auth-panel-heading"><span class="auth-eyebrow">Your learning space</span><h2>Sign in to Nyansa</h2><p>Use the account connected to you or your school.</p></div>
+        <form method="post" class="auth-form">{% csrf_token %}{{ form.as_p }}<div class="auth-form-row"><a href="{% url 'password_reset' %}">Forgot your password?</a></div><button type="submit" class="auth-submit">Sign in</button></form>
+        <p class="auth-switch">New to Nyansa? <a href="{% url 'signup' %}">Explore as a learner</a></p>
+    </div>
+</section>
 {% endblock %}
