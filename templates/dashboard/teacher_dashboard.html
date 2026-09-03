@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}Teacher Dashboard - Nyansa{% endblock %}
 {% block content %}
 <h1>Teacher Dashboard</h1>
@@ -11,7 +12,7 @@
     <a href="{% url 'quiz_create_choice' %}" class="btn-small btn-secondary">+ Create Quiz</a>
     <a href="{% url 'create_assignment' %}" class="btn-small btn-secondary">+ Create Assignment</a>
     <a href="{% url 'gradebook_offerings' %}" class="btn-small btn-secondary">Gradebook</a>
-    <a href="{% url 'lesson_notes_list' %}" class="btn-small btn-secondary">📋 Lesson Notes</a>
+    <a href="{% url 'lesson_notes_list' %}" class="btn-small btn-secondary">{% icon "clipboard" %} Lesson Notes</a>
 </div>
 
 {% for data in subject_data %}
@@ -48,7 +49,7 @@
 <p>You don't have any subjects with materials or quizzes yet. Add some through Django admin to get started.</p>
 {% endfor %}
 
-<h2>📄 My Assignments</h2>
+<h2>{% icon "document" %} My Assignments</h2>
 <div class="card-grid">
     {% for assignment in assignments %}
     <div class="card reveal">

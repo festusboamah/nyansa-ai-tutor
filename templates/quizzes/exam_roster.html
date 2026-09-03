@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}Roster - {{ quiz.title }}{% endblock %}
 {% block content %}
-<h1>📋 Roster: {{ quiz.title }}</h1>
+<h1>{% icon "clipboard" %} Roster: {{ quiz.title }}</h1>
 
 <table class="student-table">
     <thead>

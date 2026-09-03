@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}Submissions - {{ assignment.title }}{% endblock %}
 {% block content %}
-<h1>📝 Submissions: {{ assignment.title }}</h1>
+<h1>{% icon "pencil" %} Submissions: {{ assignment.title }}</h1>
 
 <table class="student-table">
     <thead>

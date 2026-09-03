@@ -1,15 +1,16 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}{{ session.title }} - Nyansa{% endblock %}
 {% block content %}
-<h1>🤖 {{ session.title }}</h1>
+<h1>{% icon "sparkles" %} {{ session.title }}</h1>
 
 <div class="qa-history">
     {% for message in conversation %}
     <div class="qa-item">
         {% if message.role == "STUDENT" %}
-        <div class="qa-question">🙋 You: {{ message.content }}</div>
+        <div class="qa-question">{% icon "user" %} You: {{ message.content }}</div>
         {% else %}
-        <div class="qa-answer">🤖 Tutor: {{ message.content }}</div>
+        <div class="qa-answer">{% icon "sparkles" %} Tutor: {{ message.content }}</div>
         {% endif %}
     </div>
     {% empty %}

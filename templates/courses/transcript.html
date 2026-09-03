@@ -1,17 +1,18 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}My Transcript - Nyansa{% endblock %}
 {% block content %}
-<h1>🎓 My Transcript</h1>
+<h1>{% icon "academic-cap" %} My Transcript</h1>
 <p>A complete record of your quiz performance across all subjects.</p>
 
 <div class="profile-grid">
     <div class="card stat-card">
-        <div class="stat-icon">📊</div>
+        <div class="stat-icon">{% icon "bar-chart" %}</div>
         <div class="stat-label">Overall Average</div>
         <div class="stat-value">{% if overall_average is not None %}{{ overall_average }}%{% else %}N/A{% endif %}</div>
     </div>
     <div class="card stat-card">
-        <div class="stat-icon">📝</div>
+        <div class="stat-icon">{% icon "pencil" %}</div>
         <div class="stat-label">Total Quizzes Taken</div>
         <div class="stat-value">{{ total_quizzes }}</div>
     </div>

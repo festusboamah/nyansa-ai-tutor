@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}Quiz Results - Nyansa{% endblock %}
 {% block content %}
 <div class="card">
@@ -12,14 +13,14 @@
     {% if submission.badges.all %}
     <div class="badges-earned">
         {% for badge in submission.badges.all %}
-            <span class="badge-icon">🏆 {{ badge.get_badge_type_display }}</span>
+            <span class="badge-icon">{% icon "trophy" %} {{ badge.get_badge_type_display }}</span>
         {% endfor %}
     </div>
     {% endif %}
 
     {% if submission.ai_feedback %}
     <div class="ai-feedback-box">
-        <strong>🤖 AI Feedback:</strong>
+        <strong>{% icon "sparkles" %} AI Feedback:</strong>
         <p>{{ submission.ai_feedback }}</p>
     </div>
     {% endif %}
@@ -32,19 +33,19 @@
     {% if answer.question.question_type == "MCQ" %}
         <p>Your answer: {{ answer.selected_choice.text|default:"No answer selected" }}</p>
         {% if answer.is_correct %}
-            <p class="feedback-correct">✓ Correct!</p>
+            <p class="feedback-correct">{% icon "check" %} Correct!</p>
         {% else %}
-            <p class="feedback-incorrect">✗ Incorrect</p>
+            <p class="feedback-incorrect">{% icon "x" %} Incorrect</p>
         {% endif %}
     {% else %}
         <p>Your answer: {{ answer.text_answer }}</p>
         {% if answer.is_correct == True %}
-            <p class="feedback-correct">✓ Correct!</p>
+            <p class="feedback-correct">{% icon "check" %} Correct!</p>
         {% elif answer.is_correct == False %}
-            <p class="feedback-incorrect">✗ Needs improvement</p>
+            <p class="feedback-incorrect">{% icon "x" %} Needs improvement</p>
         {% endif %}
         {% if answer.ai_feedback %}
-            <p class="ai-feedback-inline">💡 {{ answer.ai_feedback }}</p>
+            <p class="ai-feedback-inline">{% icon "lightbulb" %} {{ answer.ai_feedback }}</p>
         {% endif %}
     {% endif %}
 </div>

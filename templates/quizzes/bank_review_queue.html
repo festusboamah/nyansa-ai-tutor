@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}Question Bank Review - Nyansa{% endblock %}
 {% block content %}
 <div class="admin-heading">
@@ -16,7 +17,7 @@
         <ul class="choice-review-list">
             {% for choice in item.choices.all %}
                 <li class="{% if choice.is_correct %}choice-correct{% endif %}">
-                    {{ choice.text }} {% if choice.is_correct %}✓{% endif %}
+                    {{ choice.text }} {% if choice.is_correct %}{% icon "check" %}{% endif %}
                 </li>
             {% endfor %}
         </ul>

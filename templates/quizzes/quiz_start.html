@@ -1,14 +1,15 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}{{ quiz.title }} - Nyansa{% endblock %}
 {% block content %}
 <div class="card">
     <h1>{{ quiz.title }}</h1>
     <p>{{ quiz.description|default:"Test your knowledge on this topic." }}</p>
     <p><strong>{{ question_count }}</strong> question{{ question_count|pluralize }} in this quiz.</p>
-    <p>⏱ Time limit: <strong>{{ quiz.time_limit_minutes }} minutes</strong></p>
-    <p>🔁 Attempts: <strong>{{ attempts_used }} / {{ quiz.max_attempts }}</strong> used</p>
+    <p>{% icon "clock" %} Time limit: <strong>{{ quiz.time_limit_minutes }} minutes</strong></p>
+    <p>{% icon "repeat" %} Attempts: <strong>{{ attempts_used }} / {{ quiz.max_attempts }}</strong> used</p>
     {% if quiz.deadline %}
-        <p>📅 Deadline: <strong>{{ quiz.deadline|date:"M d, Y - g:i A" }}</strong></p>
+        <p>{% icon "calendar" %} Deadline: <strong>{{ quiz.deadline|date:"M d, Y - g:i A" }}</strong></p>
     {% endif %}
 
     {% if past_deadline %}

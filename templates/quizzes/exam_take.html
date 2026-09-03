@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% load static %}
+{% load icons %}
 {% block title %}{{ quiz.title }} - Nyansa{% endblock %}
 {% block content %}
 <h1>{{ quiz.title }}</h1>
 
 <div id="integrity-warning-box" class="alert alert-error" hidden>
-    ⚠ Warnings logged this attempt: <span id="integrity-warning-count">0</span> — tab switches, lost focus, and exiting fullscreen are recorded for your teacher.
+    {% icon "warning" %} Warnings logged this attempt: <span id="integrity-warning-count">0</span> — tab switches, lost focus, and exiting fullscreen are recorded for your teacher.
 </div>
 
 <div id="fullscreen-gate" class="card">

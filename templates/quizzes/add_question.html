@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}{{ quiz.title }} - Add Questions{% endblock %}
 {% block content %}
 <h1>{{ quiz.title }} {% if quiz.status == "DRAFT" %}<span class="badge-enrolled" style="background-color:#fef3c7;color:#92400e;">Draft</span>{% endif %}</h1>
@@ -45,7 +46,7 @@
             <ul class="choice-review-list">
                 {% for choice in q.choices.all %}
                     <li class="{% if choice.is_correct %}choice-correct{% endif %}">
-                        {{ choice.text }} {% if choice.is_correct %}✓{% endif %}
+                        {{ choice.text }} {% if choice.is_correct %}{% icon "check" %}{% endif %}
                     </li>
                 {% endfor %}
             </ul>

@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}{{ assignment.title }} - Nyansa{% endblock %}
 {% block content %}
-<h1>📝 {{ assignment.title }}</h1>
+<h1>{% icon "pencil" %} {{ assignment.title }}</h1>
 <p>{{ assignment.instructions }}</p>
 {% if assignment.deadline %}
-<p>📅 Deadline: <strong>{{ assignment.deadline|date:"M d, Y - g:i A" }}</strong></p>
+<p>{% icon "calendar" %} Deadline: <strong>{{ assignment.deadline|date:"M d, Y - g:i A" }}</strong></p>
 {% endif %}
 
 {% if assignment.criteria.all %}

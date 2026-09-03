@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}Upload Document - Nyansa{% endblock %}
 {% block content %}
 <div class="card form-card">
-    <h1>📄 Upload a Study Document</h1>
+    <h1>{% icon "document" %} Upload a Study Document</h1>
     <p>Upload a PDF and Claude will generate a summary and answer your questions about it.</p>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}

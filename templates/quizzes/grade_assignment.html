@@ -1,17 +1,18 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}Grade Submission - Nyansa{% endblock %}
 {% block content %}
 <h1>Grade Submission</h1>
 <p><strong>Student:</strong> {{ submission.student.username }} | <strong>Assignment:</strong> {{ submission.assignment.title }}</p>
 
 <div class="card">
-    <h2>📎 Submitted File</h2>
-    <a href="{{ submission.file.url }}" target="_blank" class="btn-small">📄 View Submission</a>
+    <h2>{% icon "paperclip" %} Submitted File</h2>
+    <a href="{{ submission.file.url }}" target="_blank" class="btn-small">{% icon "document" %} View Submission</a>
 </div>
 
 {% if criterion_scores %}
 <div class="ai-feedback-box">
-    <strong>🤖 AI Suggested Grade, by criterion (for your reference):</strong>
+    <strong>{% icon "sparkles" %} AI Suggested Grade, by criterion (for your reference):</strong>
     <ul class="choice-review-list">
         {% for cs in criterion_scores %}
             <li>

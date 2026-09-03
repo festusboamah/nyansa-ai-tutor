@@ -1,4 +1,5 @@
 {% load static %}
+{% load icons %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,32 +53,32 @@
 
             <nav class="sidebar-nav">
                 {% if request.school_membership.role == "STUDENT" %}
-                    <a href="{% url 'dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'dashboard' %} active{% endif %}"><span class="sidebar-icon">🏠</span> Dashboard</a>
-                    <a href="{% url 'browse_subjects' %}" class="sidebar-link{% if request.resolver_match.url_name == 'browse_subjects' %} active{% endif %}"><span class="sidebar-icon">📚</span> Browse Subjects</a>
-                    <a href="{% url 'tutor_home' %}" class="sidebar-link{% if request.resolver_match.url_name == 'tutor_home' %} active{% endif %}"><span class="sidebar-icon">💬</span> Tutor</a>
-                    <a href="{% url 'study_documents' %}" class="sidebar-link{% if request.resolver_match.url_name == 'study_documents' %} active{% endif %}"><span class="sidebar-icon">🗂️</span> Study Hub</a>
-                    <a href="{% url 'mastery_overview' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_overview' %} active{% endif %}"><span class="sidebar-icon">🎯</span> Mastery</a>
-                    <a href="{% url 'mastery_study_goals' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_study_goals' %} active{% endif %}"><span class="sidebar-icon">📌</span> Study Goals</a>
-                    <a href="{% url 'transcript' %}" class="sidebar-link{% if request.resolver_match.url_name == 'transcript' %} active{% endif %}"><span class="sidebar-icon">📜</span> Transcript</a>
+                    <a href="{% url 'dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'dashboard' %} active{% endif %}"><span class="sidebar-icon">{% icon "home" %}</span> Dashboard</a>
+                    <a href="{% url 'browse_subjects' %}" class="sidebar-link{% if request.resolver_match.url_name == 'browse_subjects' %} active{% endif %}"><span class="sidebar-icon">{% icon "book" %}</span> Browse Subjects</a>
+                    <a href="{% url 'tutor_home' %}" class="sidebar-link{% if request.resolver_match.url_name == 'tutor_home' %} active{% endif %}"><span class="sidebar-icon">{% icon "chat" %}</span> Tutor</a>
+                    <a href="{% url 'study_documents' %}" class="sidebar-link{% if request.resolver_match.url_name == 'study_documents' %} active{% endif %}"><span class="sidebar-icon">{% icon "folder" %}</span> Study Hub</a>
+                    <a href="{% url 'mastery_overview' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_overview' %} active{% endif %}"><span class="sidebar-icon">{% icon "target" %}</span> Mastery</a>
+                    <a href="{% url 'mastery_study_goals' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_study_goals' %} active{% endif %}"><span class="sidebar-icon">{% icon "pin" %}</span> Study Goals</a>
+                    <a href="{% url 'transcript' %}" class="sidebar-link{% if request.resolver_match.url_name == 'transcript' %} active{% endif %}"><span class="sidebar-icon">{% icon "scroll" %}</span> Transcript</a>
                 {% endif %}
 
                 {% if request.school_membership.role == "TEACHER" %}
-                    <a href="{% url 'teacher_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'teacher_dashboard' %} active{% endif %}"><span class="sidebar-icon">🏠</span> Dashboard</a>
-                    <a href="{% url 'gradebook_offerings' %}" class="sidebar-link{% if request.resolver_match.url_name == 'gradebook_offerings' %} active{% endif %}"><span class="sidebar-icon">📊</span> Gradebook</a>
-                    <a href="{% url 'attendance_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'attendance_dashboard' %} active{% endif %}"><span class="sidebar-icon">✅</span> Attendance</a>
-                    <a href="{% url 'term_report_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'term_report_dashboard' %} active{% endif %}"><span class="sidebar-icon">📈</span> Reports</a>
-                    <a href="{% url 'analytics_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'analytics_dashboard' %} active{% endif %}"><span class="sidebar-icon">📉</span> Analytics</a>
-                    <a href="{% url 'mastery_overview' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_overview' %} active{% endif %}"><span class="sidebar-icon">🎯</span> Mastery</a>
-                    <a href="{% url 'generate_bank_questions' %}" class="sidebar-link{% if request.resolver_match.url_name == 'generate_bank_questions' %} active{% endif %}"><span class="sidebar-icon">🗃️</span> Question Bank</a>
-                    <a href="{% url 'mastery_improvement_report' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_improvement_report' %} active{% endif %}"><span class="sidebar-icon">📈</span> Improvement Report</a>
+                    <a href="{% url 'teacher_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'teacher_dashboard' %} active{% endif %}"><span class="sidebar-icon">{% icon "home" %}</span> Dashboard</a>
+                    <a href="{% url 'gradebook_offerings' %}" class="sidebar-link{% if request.resolver_match.url_name == 'gradebook_offerings' %} active{% endif %}"><span class="sidebar-icon">{% icon "bar-chart" %}</span> Gradebook</a>
+                    <a href="{% url 'attendance_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'attendance_dashboard' %} active{% endif %}"><span class="sidebar-icon">{% icon "check-circle" %}</span> Attendance</a>
+                    <a href="{% url 'term_report_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'term_report_dashboard' %} active{% endif %}"><span class="sidebar-icon">{% icon "trending-up" %}</span> Reports</a>
+                    <a href="{% url 'analytics_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'analytics_dashboard' %} active{% endif %}"><span class="sidebar-icon">{% icon "trending-down" %}</span> Analytics</a>
+                    <a href="{% url 'mastery_overview' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_overview' %} active{% endif %}"><span class="sidebar-icon">{% icon "target" %}</span> Mastery</a>
+                    <a href="{% url 'generate_bank_questions' %}" class="sidebar-link{% if request.resolver_match.url_name == 'generate_bank_questions' %} active{% endif %}"><span class="sidebar-icon">{% icon "archive" %}</span> Question Bank</a>
+                    <a href="{% url 'mastery_improvement_report' %}" class="sidebar-link{% if request.resolver_match.url_name == 'mastery_improvement_report' %} active{% endif %}"><span class="sidebar-icon">{% icon "trending-up" %}</span> Improvement Report</a>
                 {% endif %}
 
                 {% if request.school_membership.role == "SCHOOL_ADMIN" %}
-                    <a href="{% url 'school_admin_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'school_admin_dashboard' %} active{% endif %}"><span class="sidebar-icon">🏠</span> Overview</a>
+                    <a href="{% url 'school_admin_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'school_admin_dashboard' %} active{% endif %}"><span class="sidebar-icon">{% icon "home" %}</span> Overview</a>
 
                     <div class="sidebar-group">
                         <button type="button" class="sidebar-group-toggle">
-                            <span class="sidebar-icon">🎓</span> <span class="sidebar-group-label">Academics</span> <span class="sidebar-chevron" aria-hidden="true">▾</span>
+                            <span class="sidebar-icon">{% icon "academic-cap" %}</span> <span class="sidebar-group-label">Academics</span> <span class="sidebar-chevron" aria-hidden="true">▾</span>
                         </button>
                         <div class="sidebar-group-panel">
                             <a href="{% url 'gradebook_settings' %}" class="sidebar-link">Grade Settings</a>
@@ -98,7 +99,7 @@
 
                     <div class="sidebar-group">
                         <button type="button" class="sidebar-group-toggle">
-                            <span class="sidebar-icon">🏫</span> <span class="sidebar-group-label">School Operations</span> <span class="sidebar-chevron" aria-hidden="true">▾</span>
+                            <span class="sidebar-icon">{% icon "building" %}</span> <span class="sidebar-group-label">School Operations</span> <span class="sidebar-chevron" aria-hidden="true">▾</span>
                         </button>
                         <div class="sidebar-group-panel">
                             <a href="{% url 'school_onboarding' %}" class="sidebar-link">School Setup</a>
@@ -114,13 +115,13 @@
                 {% endif %}
 
                 {% if request.school_membership.role == "PARENT" %}
-                    <a href="{% url 'guardian_portal' %}" class="sidebar-link{% if request.resolver_match.url_name == 'guardian_portal' %} active{% endif %}"><span class="sidebar-icon">👪</span> My Children</a>
-                    <a href="{% url 'communication_preferences' %}" class="sidebar-link{% if request.resolver_match.url_name == 'communication_preferences' %} active{% endif %}"><span class="sidebar-icon">⚙️</span> Message Preferences</a>
+                    <a href="{% url 'guardian_portal' %}" class="sidebar-link{% if request.resolver_match.url_name == 'guardian_portal' %} active{% endif %}"><span class="sidebar-icon">{% icon "users" %}</span> My Children</a>
+                    <a href="{% url 'communication_preferences' %}" class="sidebar-link{% if request.resolver_match.url_name == 'communication_preferences' %} active{% endif %}"><span class="sidebar-icon">{% icon "settings" %}</span> Message Preferences</a>
                 {% endif %}
 
                 {% if request.school_membership.role == "TEACHER" or request.school_membership.role == "SCHOOL_ADMIN" %}
                     <a href="{% url 'notification_center' %}" class="sidebar-link notification-link{% if request.resolver_match.url_name == 'notification_center' %} active{% endif %}" aria-label="Notifications">
-                        <span class="sidebar-icon" aria-hidden="true">🔔</span> Alerts
+                        <span class="sidebar-icon" aria-hidden="true">{% icon "bell" %}</span> Alerts
                         {% if staff_notification_unread_count %}<span class="notification-badge">{{ staff_notification_unread_count }}</span>{% endif %}
                     </a>
                 {% endif %}

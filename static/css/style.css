@@ -2665,3 +2665,29 @@ body:has(.landing-hero) { overflow-x:hidden; }
     .human-story-teacher img { aspect-ratio:4/3; }
     .human-story-team { transform:rotate(2deg); }
 }
+
+/* Inline icons rendered by {% icon %} (accounts/templatetags/icons.py),
+   which replaced the emoji glyphs used throughout the UI. One rule here
+   instead of per-usage tweaks: SVGs are inline-replaced elements that sit
+   on the text baseline by default, which reads a little low next to
+   regular text - nudge every one up slightly so icon+label pairs line up
+   the way the emoji they replaced happened to. */
+svg[stroke="currentColor"] { vertical-align: -0.15em; }
+
+/* School profile setup step (templates/schools/onboarding.html): the form
+   has 17 fields across quite different concerns (identity, contact,
+   education levels, branding uploads), which as one flat form.as_p list
+   reads as one long undifferentiated form. Grouping them into labelled
+   fieldsets with icons breaks that up without changing the wizard's step
+   structure or the underlying Django form/view. */
+.profile-fieldset { margin: 0 0 1.75rem; padding: 0; border: 0; }
+.profile-fieldset legend { display: flex; align-items: center; gap: .5rem; padding: 0 0 .6rem; margin-bottom: .9rem; width: 100%; border-bottom: 1px solid #edf1f6; font-weight: 800; color: var(--primary-dark); }
+.profile-fieldset legend svg { color: var(--primary); }
+.field-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1rem; }
+.field-grid .setup-form-fields > p, .profile-fieldset .setup-form-fields > p { margin-bottom: 1rem; }
+.checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .5rem .75rem; }
+.checkbox-grid .checkbox-field { display: flex; align-items: flex-start; gap: .5rem; padding: .6rem .75rem; border: 1px solid #e4e9f1; border-radius: 10px; background: #fbfbfd; }
+.checkbox-field input[type="checkbox"] { margin-top: .2rem !important; }
+.checkbox-field label { font-weight: 700; font-size: .92rem; }
+.checkbox-field .help-text { grid-column: 1 / -1; margin: .15rem 0 0; font-size: .78rem; color: #6b7a90; }
+@media (max-width: 640px) { .field-grid { grid-template-columns: 1fr; } }

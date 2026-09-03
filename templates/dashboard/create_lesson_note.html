@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}Create Lesson Note | Nyansa{% endblock %}
 {% block content %}
 <div class="card form-card">
-    <h1>📋 Create AI Lesson Note</h1>
+    <h1>{% icon "clipboard" %} Create AI Lesson Note</h1>
     <p>Fill in the details below to create a lesson plan draft based on the standards. AI output must be reviewed by the teacher before submission.</p>
     <form method="post">
         {% csrf_token %}

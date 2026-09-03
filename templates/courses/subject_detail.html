@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}{{ subject.name }} - Nyansa{% endblock %}
 {% block content %}
 <h1>{{ subject.name }}</h1>
 <p>{{ subject.description }}</p>
 
-<h2>📚 Materials</h2>
+<h2>{% icon "book" %} Materials</h2>
 <div class="card-grid">
     {% for material in materials %}
     <div class="card">
@@ -13,8 +14,8 @@
         {% if material.material_type == "VIDEO" and material.video_url %}
             <a href="{{ material.video_url }}" target="_blank" class="btn-small">▶ Watch Video</a>
         {% elif material.file %}
-            <a href="{{ material.file.url }}" target="_blank" class="btn-small download-link">📄 Download</a>
-            <a href="{% url 'material_text' material.id %}" class="btn-small view-text-link">📝 View as Text</a>
+            <a href="{{ material.file.url }}" target="_blank" class="btn-small download-link">{% icon "document" %} Download</a>
+            <a href="{% url 'material_text' material.id %}" class="btn-small view-text-link">{% icon "pencil" %} View as Text</a>
         {% endif %}
     </div>
     {% empty %}
@@ -22,7 +23,7 @@
     {% endfor %}
 </div>
 
-<h2>📝 Quizzes</h2>
+<h2>{% icon "clipboard" %} Quizzes</h2>
 <div class="card-grid">
     {% for quiz in quizzes %}
     <div class="card">
@@ -37,7 +38,7 @@
     {% endfor %}
 </div>
 
-<h2>📄 Assignments</h2>
+<h2>{% icon "document" %} Assignments</h2>
 <div class="card-grid">
     {% for assignment in assignments %}
     <div class="card">

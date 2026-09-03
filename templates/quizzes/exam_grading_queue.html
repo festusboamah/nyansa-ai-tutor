@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}Grade Essays - {{ quiz.title }}{% endblock %}
 {% block content %}
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="{% url 'add_question' quiz.id %}">{{ quiz.title }}</a> <span class="breadcrumb-sep">/</span> <span class="breadcrumb-current">Grading Queue</span>
 </nav>
-<h1>📝 Grade Essays: {{ quiz.title }}</h1>
+<h1>{% icon "pencil" %} Grade Essays: {{ quiz.title }}</h1>
 
 {% if quiz.results_published_at %}
 <p class="badge-enrolled">Results published on {{ quiz.results_published_at|date:"M d, Y - g:i A" }}</p>
@@ -26,7 +27,7 @@
     <tbody>
         {% for submission in pending_submissions %}
         <tr>
-            <td>{{ submission.student.username }}{% if submission.flagged_for_review %} <span class="feedback-incorrect">⚠</span>{% endif %}</td>
+            <td>{{ submission.student.username }}{% if submission.flagged_for_review %} <span class="feedback-incorrect">{% icon "warning" %}</span>{% endif %}</td>
             <td>{{ submission.submitted_at|date:"M d, Y - g:i A" }}</td>
             <td><a href="{% url 'exam_attempt_detail' submission.id %}" class="btn-small">Grade</a></td>
         </tr>
@@ -42,7 +43,7 @@
     <tbody>
         {% for submission in graded_submissions %}
         <tr>
-            <td>{{ submission.student.username }}{% if submission.flagged_for_review %} <span class="feedback-incorrect">⚠</span>{% endif %}</td>
+            <td>{{ submission.student.username }}{% if submission.flagged_for_review %} <span class="feedback-incorrect">{% icon "warning" %}</span>{% endif %}</td>
             <td>{{ submission.score|default:"Pending" }}</td>
             <td><a href="{% url 'exam_attempt_detail' submission.id %}" class="btn-small">Review</a></td>
         </tr>

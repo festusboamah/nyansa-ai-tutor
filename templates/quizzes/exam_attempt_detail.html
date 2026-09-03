@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}Grade Attempt - Nyansa{% endblock %}
 {% block content %}
 <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -10,7 +11,7 @@
 <p><strong>Student:</strong> {{ submission.student.username }} | <strong>Exam:</strong> {{ submission.quiz.title }}</p>
 {% if submission.flagged_for_review %}
 <div class="card">
-    <p><span class="feedback-incorrect">⚠ Flagged for review</span> — see the integrity log below.</p>
+    <p><span class="feedback-incorrect">{% icon "warning" %} Flagged for review</span> — see the integrity log below.</p>
     <form method="post" action="{% url 'clear_exam_flag' submission.id %}">
         {% csrf_token %}
         <button type="submit" class="btn-small btn-secondary">Mark as Reviewed</button>
@@ -20,7 +21,7 @@
 
 {% if integrity_events %}
 <div class="card">
-    <h2>⚠ Integrity Log ({{ integrity_events|length }} event{{ integrity_events|length|pluralize }})</h2>
+    <h2>{% icon "warning" %} Integrity Log ({{ integrity_events|length }} event{{ integrity_events|length|pluralize }})</h2>
     <ul class="choice-review-list">
         {% for event in integrity_events %}
             <li>{{ event.get_event_type_display }} at {{ event.occurred_at|date:"g:i:s A" }}{% if event.detail %} — {{ event.detail }}{% endif %}</li>
@@ -31,7 +32,7 @@
 
 {% if snapshots %}
 <div class="card">
-    <h2>📷 Snapshots ({{ snapshots|length }})</h2>
+    <h2>{% icon "camera" %} Snapshots ({{ snapshots|length }})</h2>
     <p style="font-size: 0.85rem;">Click a snapshot to view it full-size.</p>
     <div class="card-grid">
         {% for snapshot in snapshots %}
@@ -55,7 +56,7 @@
     {% else %}
         <p>Answer: {{ answer.text_answer }}</p>
     {% endif %}
-    <p>{% if answer.is_correct %}✓ Correct{% else %}✗ Incorrect{% endif %} ({{ answer.question.points }} point{{ answer.question.points|pluralize }})</p>
+    <p>{% if answer.is_correct %}{% icon "check" %} Correct{% else %}{% icon "x" %} Incorrect{% endif %} ({{ answer.question.points }} point{{ answer.question.points|pluralize }})</p>
 </div>
 {% endfor %}
 
@@ -69,10 +70,10 @@
             <h3>{{ answer.question.text }}</h3>
             <p>Max points: {{ answer.question.points }}</p>
             <p>Student's answer: {{ answer.text_answer|default:"(no text answer)" }}</p>
-            {% if answer.file_answer %}<a href="{{ answer.file_answer.url }}" target="_blank" class="btn-small">📄 View uploaded file</a>{% endif %}
+            {% if answer.file_answer %}<a href="{{ answer.file_answer.url }}" target="_blank" class="btn-small">{% icon "document" %} View uploaded file</a>{% endif %}
             {% if answer.ai_suggested_points is not None %}
             <div class="ai-feedback-box">
-                <strong>🤖 AI Suggested:</strong> {{ answer.ai_suggested_points }} / {{ answer.question.points }}
+                <strong>{% icon "sparkles" %} AI Suggested:</strong> {{ answer.ai_suggested_points }} / {{ answer.question.points }}
                 <p>{{ answer.ai_suggested_feedback }}</p>
                 <p style="font-size: 0.85rem; font-style: italic;">This is a suggestion only — the fields below are pre-filled with it, but you can edit before saving.</p>
             </div>

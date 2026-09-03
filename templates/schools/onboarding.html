@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load icons %}
 {% block title %}School setup | Nyansa{% endblock %}
 {% block content %}
 <section class="onboarding-shell">
@@ -11,14 +12,14 @@
     <nav class="setup-steps" aria-label="School setup steps">
       {% for item in steps %}
       <a href="?step={{ item.key }}" class="{% if current_step == item.key %}active{% endif %}">
-        <span>{% if item.complete %}&#10003;{% else %}{{ forloop.counter }}{% endif %}</span>{{ item.label }}
+        <span>{% if item.complete %}{% icon "check" %}{% else %}{{ forloop.counter }}{% endif %}</span>{{ item.label }}
       </a>
       {% endfor %}
     </nav>
     <section class="setup-form card">
       {% if current_step == "complete" %}
       <div class="setup-complete">
-        <span aria-hidden="true">&#10003;</span>
+        <span aria-hidden="true">{% icon "check" size="1.8rem" %}</span>
         <p class="eyebrow">Setup complete</p>
         <h2>Your school workspace is ready</h2>
         <p>All nine setup areas have records. You can revisit any step from the menu whenever school information changes.</p>
@@ -63,7 +64,63 @@
       {% if current_step == "enrollment" %}<p>Place an active student into one of this school's classes, or <a href="{% url 'bulk_student_import' %}">import an entire class roster from CSV/Excel</a>.</p>{% endif %}
       <form method="post" enctype="multipart/form-data" class="setup-form-fields">
         {% csrf_token %}<input type="hidden" name="step" value="{{ current_step }}">
+        {% if current_step == "profile" %}
+        {# 17 fields across quite different concerns - grouped into labelled
+           sections instead of one long flat list, same form/fields either way. #}
+        <fieldset class="profile-fieldset">
+          <legend>{% icon "building" %} Basic information</legend>
+          <div class="field-grid">
+            <p>{{ form.name.label_tag }}{{ form.name }}{{ form.name.errors }}</p>
+            <p>{{ form.timezone.label_tag }}{{ form.timezone }}{{ form.timezone.errors }}</p>
+          </div>
+          <p>{{ form.address.label_tag }}{{ form.address }}{{ form.address.errors }}</p>
+          <div class="field-grid">
+            <p>{{ form.phone.label_tag }}{{ form.phone }}{{ form.phone.errors }}</p>
+            <p>{{ form.email.label_tag }}{{ form.email }}{{ form.email.errors }}</p>
+          </div>
+        </fieldset>
+
+        <fieldset class="profile-fieldset">
+          <legend>{% icon "settings" %} Access &amp; class structure</legend>
+          <div class="field-grid">
+            <p>{{ form.student_access_mode.label_tag }}{{ form.student_access_mode }}{% if form.student_access_mode.help_text %}<br><small class="help-text">{{ form.student_access_mode.help_text }}</small>{% endif %}{{ form.student_access_mode.errors }}</p>
+            <p>{{ form.stream_structure.label_tag }}{{ form.stream_structure }}{% if form.stream_structure.help_text %}<br><small class="help-text">{{ form.stream_structure.help_text }}</small>{% endif %}{{ form.stream_structure.errors }}</p>
+          </div>
+        </fieldset>
+
+        <fieldset class="profile-fieldset">
+          <legend>{% icon "academic-cap" %} Education levels</legend>
+          <p class="help-text" style="margin-top:0;">{{ form.offers_kg.help_text }}</p>
+          <div class="checkbox-grid">
+            <div class="checkbox-field">{{ form.offers_kg }}<label for="{{ form.offers_kg.id_for_label }}">{{ form.offers_kg.label }}</label></div>
+            <div class="checkbox-field">{{ form.offers_primary }}<label for="{{ form.offers_primary.id_for_label }}">{{ form.offers_primary.label }}</label></div>
+            <div class="checkbox-field">{{ form.offers_jhs }}<label for="{{ form.offers_jhs.id_for_label }}">{{ form.offers_jhs.label }}</label></div>
+            <div class="checkbox-field">
+              {{ form.offers_shs }}<div><label for="{{ form.offers_shs.id_for_label }}">{{ form.offers_shs.label }}</label><p class="help-text">{{ form.offers_shs.help_text }}</p></div>
+            </div>
+            <div class="checkbox-field">
+              {{ form.offers_stem }}<div><label for="{{ form.offers_stem.id_for_label }}">{{ form.offers_stem.label }}</label><p class="help-text">{{ form.offers_stem.help_text }}</p></div>
+            </div>
+            <div class="checkbox-field">
+              {{ form.offers_tvet }}<div><label for="{{ form.offers_tvet.id_for_label }}">{{ form.offers_tvet.label }}</label><p class="help-text">{{ form.offers_tvet.help_text }}</p></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="profile-fieldset">
+          <legend>{% icon "camera" %} Branding &amp; documents</legend>
+          <div class="field-grid">
+            <p>{{ form.logo.label_tag }}{{ form.logo }}{% if form.logo.help_text %}<br><small class="help-text">{{ form.logo.help_text }}</small>{% endif %}{{ form.logo.errors }}</p>
+            <p>{{ form.official_stamp.label_tag }}{{ form.official_stamp }}{% if form.official_stamp.help_text %}<br><small class="help-text">{{ form.official_stamp.help_text }}</small>{% endif %}{{ form.official_stamp.errors }}</p>
+          </div>
+          <div class="field-grid">
+            <p>{{ form.headteacher_name.label_tag }}{{ form.headteacher_name }}{{ form.headteacher_name.errors }}</p>
+            <p>{{ form.headteacher_signature.label_tag }}{{ form.headteacher_signature }}{% if form.headteacher_signature.help_text %}<br><small class="help-text">{{ form.headteacher_signature.help_text }}</small>{% endif %}{{ form.headteacher_signature.errors }}</p>
+          </div>
+        </fieldset>
+        {% else %}
         {{ form.as_p }}
+        {% endif %}
         {% if current_step == "class" or current_step == "assignment" %}
         <div class="setup-submit-actions">
           <button type="submit" name="save_action" value="add_another" class="btn-small btn-secondary">Save and add another {% if current_step == "class" %}class{% else %}teacher assignment{% endif %}</button>
