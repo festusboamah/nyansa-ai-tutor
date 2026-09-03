@@ -65,8 +65,7 @@
       <form method="post" enctype="multipart/form-data" class="setup-form-fields">
         {% csrf_token %}<input type="hidden" name="step" value="{{ current_step }}">
         {% if current_step == "profile" %}
-        {# 17 fields across quite different concerns - grouped into labelled
-           sections instead of one long flat list, same form/fields either way. #}
+        {# 17 fields, grouped into labelled sections instead of one long flat list. #}
         <fieldset class="profile-fieldset">
           <legend>{% icon "building" %} Basic information</legend>
           <div class="field-grid">
