@@ -6,7 +6,13 @@
 <section class="landing-hero">
     <div class="landing-hero-copy reveal">
         <p class="platform-kicker">Teaching and learning, made wiser</p>
-        <h1>A place for questions to become <em>understanding.</em></h1>
+        <h1 class="hero-headline-carousel" data-headline-carousel>
+            <span class="hero-headline-slide is-active">A place for questions to become <em>understanding.</em></span>
+            <span class="hero-headline-slide">A place for effort to become <em>mastery.</em></span>
+            <span class="hero-headline-slide">A place for teaching to become <em>easier.</em></span>
+            <span class="hero-headline-slide">A place for curiosity to become <em>confidence.</em></span>
+        </h1>
+        <div class="hero-headline-dots" data-headline-dots aria-label="Change headline"></div>
         <p class="landing-lead">Nyansa gives learners a curriculum-aware tutor, teachers a practical copilot, and schools a clearer view of how understanding grows.</p>
         <div class="landing-actions">
             {% if not user.is_authenticated %}

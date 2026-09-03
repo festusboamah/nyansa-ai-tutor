@@ -2472,6 +2472,19 @@ input[type="checkbox"], input[type="radio"] { max-width: 1.1rem; }
 body:has(.landing-hero) { overflow-x:hidden; }
 .landing-hero-copy h1 { max-width:720px; margin:.6rem 0 1.4rem; font-size:clamp(3.4rem,6.7vw,6.4rem); line-height:.91; letter-spacing:-.065em; }
 .landing-hero-copy h1 em { display:block; color:var(--primary); font-family:Georgia,'Times New Roman',serif; font-size:.72em; font-weight:400; }
+/* Headline carousel: a CSS grid stack (every slide in the same cell) rather
+   than the .auth-tip pattern's fixed-height absolute positioning, since
+   slide length/line-wrapping varies far more here than in a small
+   testimonial card - grid-area stacking sizes the container to the
+   tallest slide automatically instead of needing a guessed min-height. */
+.hero-headline-carousel { display:grid; }
+.hero-headline-slide { grid-area:1/1; opacity:0; transform:translateY(10px); transition:opacity .5s ease, transform .5s ease; pointer-events:none; }
+.hero-headline-slide.is-active { opacity:1; transform:translateY(0); pointer-events:auto; }
+.hero-headline-dots { display:flex; gap:.4rem; margin:0 0 1.2rem; }
+.hero-headline-dots button { position:relative; width:34px; height:34px; padding:0; border:0; background:transparent; cursor:pointer; }
+.hero-headline-dots button::after { content:""; position:absolute; inset:15px 3px; border-radius:99px; background:rgba(45,33,25,.18); }
+.hero-headline-dots button.is-active::after { background:var(--primary); }
+.hero-headline-dots button:focus-visible { outline:3px solid var(--primary); outline-offset:1px; border-radius:8px; }
 .landing-lead { max-width:660px; color:#5f5852; font-size:1.13rem; }
 .landing-actions { display:flex; flex-wrap:wrap; gap:.75rem; margin:1.8rem 0; }
 .landing-cta { display:inline-flex; min-height:50px; align-items:center; justify-content:center; padding:.75rem 1.2rem; border:2px solid transparent; border-radius:5px; color:inherit; text-decoration:none; font-weight:850; transition:transform .2s ease,box-shadow .2s ease,background .2s ease; }
