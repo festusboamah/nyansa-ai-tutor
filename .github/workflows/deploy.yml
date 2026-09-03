@@ -1,0 +1,55 @@
+name: Deploy
+
+# Separate from ci.yml/tests.yml (both GitHub-hosted, test-only) - this is
+# the only workflow that touches the production server, so it's kept in
+# its own file with its own, narrower trigger.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    # Same runner suku360's own .github/workflows/ci.yml uses - Nyansa is
+    # co-located on that box (see suku360's infra/docker-compose.nyansa.yml),
+    # so this builds and deploys locally there too, no separate CI/CD cost.
+    # Requires a *second* runner registration on that machine, scoped to
+    # this repo specifically (personal-account self-hosted runners are
+    # registered per-repository, unlike an org's shared runner groups) -
+    # Settings -> Actions -> Runners -> New self-hosted runner here, using
+    # the same suku360-prod label so this `runs-on` selector matches it.
+    runs-on: [self-hosted, linux, x64, suku360-prod]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push nyansa-web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/nyansa-web:latest
+            ghcr.io/${{ github.repository_owner }}/nyansa-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy locally on the production runner
+        # Re-invokes suku360's own deploy.sh, which already knows how to
+        # bring up nyansa-web/nyansa-worker alongside suku360's own
+        # services and run Nyansa's migrations - see that repo's
+        # infra/deploy.sh. This workflow doesn't need its own copy of any
+        # infra file; suku360's own CI already keeps those current on the
+        # server.
+        run: |
+          cd /home/deploy/suku360/infra
+          NYANSA_IMAGE_TAG=${{ github.sha }} ./deploy.sh
