@@ -2099,6 +2099,7 @@ h2 {
     .notification-heading button { width: 100%; }
 }
 .pending-work { margin: 1.25rem 0; padding: 1.25rem; border-radius: 14px; background: #241A14; color: white; }
+.pending-work h2 { color: white; }
 .pending-work-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: 1rem; }
 .pending-work-grid a { display: grid; padding: 1rem; border-radius: 10px; background: rgba(255,255,255,.1); color: white; text-decoration: none; }
 .pending-work-grid strong { font-size: 1.8rem; color: var(--accent); }
