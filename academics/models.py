@@ -153,3 +153,64 @@ class TeacherAssignment(models.Model):
 
     def __str__(self):
         return f"{self.teacher.user.get_full_name() or self.teacher.user.username} — {self.offering}"
+
+
+class CourseSection(models.Model):
+    """A specific offering of a course in a term - the Tertiary equivalent of
+    SubjectOffering, but not tied to a fixed SchoolClass since a university
+    student's course load varies per student, not per cohort."""
+
+    school = models.ForeignKey("schools.School", on_delete=models.CASCADE, related_name="course_sections")
+    subject = models.ForeignKey("courses.Subject", on_delete=models.CASCADE, related_name="sections")
+    term = models.ForeignKey(Term, on_delete=models.CASCADE, related_name="course_sections")
+    section_code = models.CharField(max_length=10, help_text="e.g. A, 01")
+    instructor = models.ForeignKey(
+        "schools.SchoolMembership", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="course_sections_taught",
+    )
+    capacity = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["subject", "term", "section_code"], name="unique_course_section")]
+
+    def clean(self):
+        school_ids = {self.school_id, self.subject.school_id, self.term.academic_year.school_id}
+        if len(school_ids) != 1:
+            raise ValidationError("All course section records must belong to the same school.")
+        if self.instructor_id and (
+            self.instructor.school_id != self.school_id
+            or self.instructor.role != "TEACHER"
+        ):
+            raise ValidationError("Instructor must have a teacher membership in the section school.")
+
+    def __str__(self):
+        return f"{self.subject.name} {self.section_code} — {self.term.name}"
+
+
+class CourseEnrollment(models.Model):
+    """Per-student, per-semester course enrollment for Tertiary schools.
+    Deliberately separate from ClassEnrollment (Ghana K-12's fixed-class
+    model) and from courses.Enrollment (which has no term dimension)."""
+
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Active"
+        DROPPED = "DROPPED", "Dropped"
+        COMPLETED = "COMPLETED", "Completed"
+
+    student = models.ForeignKey("schools.SchoolMembership", on_delete=models.CASCADE, related_name="course_enrollments")
+    section = models.ForeignKey(CourseSection, on_delete=models.CASCADE, related_name="enrollments")
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
+    enrolled_on = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["student", "section"], name="unique_student_section_enrollment")]
+
+    def clean(self):
+        if self.section_id and self.student_id and (
+            self.student.school_id != self.section.school_id
+            or self.student.role != "STUDENT"
+        ):
+            raise ValidationError("Student must have a student membership in the section school.")
+
+    def __str__(self):
+        return f"{self.student} — {self.section}"

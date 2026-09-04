@@ -4,9 +4,9 @@ from .models import Subject, Material, Enrollment
 
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ("name", "school", "created_at")
+    list_display = ("name", "code", "credit_hours", "school", "created_at")
     list_filter = ("school",)
-    search_fields = ("name", "school__name")
+    search_fields = ("name", "code", "school__name")
 
 
 @admin.register(Material)

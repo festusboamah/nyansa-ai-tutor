@@ -7,6 +7,8 @@ class Subject(models.Model):
         "schools.School", on_delete=models.CASCADE, related_name="subjects"
     )
     name = models.CharField(max_length=100)
+    code = models.CharField(max_length=20, blank=True, help_text="Course code, e.g. MATH101. Tertiary only.")
+    credit_hours = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Credit hours. Tertiary only.")
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
