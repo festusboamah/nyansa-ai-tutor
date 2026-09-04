@@ -60,6 +60,28 @@ class ServiceWorkerTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class SEOTests(TestCase):
+    def test_robots_txt_points_at_sitemap_and_hides_authenticated_areas(self):
+        response = self.client.get("/robots.txt", secure=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain")
+        self.assertContains(response, "Sitemap: https://testserver/sitemap.xml")
+        self.assertContains(response, "Disallow: /dashboard/")
+        self.assertContains(response, "Allow: /accounts/signup/")
+
+    def test_sitemap_xml_lists_public_pages(self):
+        response = self.client.get("/sitemap.xml", secure=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/xml")
+        self.assertContains(response, "<loc>https://testserver/</loc>")
+        self.assertContains(response, "<loc>https://testserver/accounts/signup/school/</loc>")
+
+    def test_home_page_includes_organization_structured_data(self):
+        response = self.client.get(reverse("home"), secure=True)
+        self.assertContains(response, "application/ld+json")
+        self.assertContains(response, "EducationalOrganization")
+
+
 class NavigationTests(TestCase):
     def test_school_admin_navigation_is_grouped_and_uses_membership_role(self):
         school = School.objects.create(name="Demo School", slug="demo-school")

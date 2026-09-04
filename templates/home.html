@@ -1,6 +1,29 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Nyansa: Where Questions Become Understanding{% endblock %}
+{% block meta_description %}Nyansa is an AI tutor built for the Ghanaian curriculum, giving learners guided explanations and practice, teachers a lesson-planning copilot, and schools a clearer view of how understanding grows.{% endblock %}
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "name": "Nyansa",
+  "alternateName": "Nyansa AI",
+  "url": "https://nyansa.app",
+  "logo": "https://nyansa.app{% static 'images/logo.png' %}",
+  "description": "Nyansa is an AI tutor built for the Ghanaian curriculum, giving learners guided explanations and practice, teachers a lesson-planning copilot, and schools a clearer view of how understanding grows.",
+  "sameAs": []
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Nyansa",
+  "url": "https://nyansa.app"
+}
+</script>
+{% endblock %}
 {% block content %}
 
 <section class="landing-hero">

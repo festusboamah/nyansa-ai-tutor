@@ -5,7 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from accounts.views import home_view
-from config.views import health_live, health_ready, service_worker_view
+from config.views import health_live, health_ready, robots_txt_view, service_worker_view, sitemap_xml_view
 from integrations.views import suku360_credential_webhook_view, suku360_sso_login_view
 
 admin.site.site_header = "Nyansa system administration"
@@ -27,6 +27,8 @@ urlpatterns = [
     ),
     path("admin/", admin.site.urls),
     path("service-worker.js", service_worker_view, name="service_worker"),
+    path("robots.txt", robots_txt_view, name="robots_txt"),
+    path("sitemap.xml", sitemap_xml_view, name="sitemap_xml"),
     path("health/live/", health_live, name="health_live"),
     path("health/ready/", health_ready, name="health_ready"),
     path("", home_view, name="home"),

@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Nyansa{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Nyansa is an AI tutor built for the Ghanaian curriculum, giving learners guided explanations and practice, teachers a lesson-planning copilot, and schools a clearer view of how understanding grows.{% endblock %}">
     <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
     <link rel="icon" type="image/png" href="{% static 'images/favicon-32.png' %}" sizes="32x32">
     <link rel="icon" type="image/png" href="{% static 'images/favicon-16.png' %}" sizes="16x16">
@@ -26,6 +27,7 @@
             });
         }
     </script>
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="{% if user.is_authenticated %}has-sidebar{% endif %}">
     <div id="offline-notices" class="messages"></div>
