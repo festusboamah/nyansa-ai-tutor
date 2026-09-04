@@ -88,6 +88,7 @@ class SchoolOnboardingTests(TestCase):
         response = self.client.post(reverse("school_onboarding"), {
             "step": "profile", "name": self.school.name, "address": "Accra",
             "phone": "0200000000", "email": "setup@example.com", "timezone": "Africa/Accra",
+            "education_system": School.EducationSystem.BASIC,
             "student_access_mode": School.StudentAccessMode.STAFF_MANAGED,
             "stream_structure": School.StreamStructure.SINGLE,
         }, secure=True)
@@ -119,6 +120,7 @@ class SchoolOnboardingTests(TestCase):
         form = SchoolProfileForm(
             data={
                 "name": self.school.name,
+                "education_system": School.EducationSystem.BASIC,
                 "timezone": "Africa/Accra",
                 "student_access_mode": School.StudentAccessMode.STAFF_MANAGED,
                 "stream_structure": School.StreamStructure.SINGLE,

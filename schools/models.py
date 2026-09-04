@@ -10,6 +10,12 @@ def default_invitation_expiry():
 
 
 class School(models.Model):
+    class EducationSystem(models.TextChoices):
+        BASIC = "BASIC", "Basic School"
+        SENIOR_HIGH = "SENIOR_HIGH", "Senior High School"
+        CAMBRIDGE = "CAMBRIDGE", "Cambridge International"
+        TERTIARY = "TERTIARY", "Tertiary"
+
     class StudentAccessMode(models.TextChoices):
         STAFF_MANAGED = "STAFF_MANAGED", "Staff-managed records"
         PORTAL = "PORTAL", "Student accounts and online learning"
@@ -25,6 +31,12 @@ class School(models.Model):
         ARCHIVED = "ARCHIVED", "Archived"
 
     name = models.CharField(max_length=200)
+    education_system = models.CharField(
+        max_length=16,
+        choices=EducationSystem.choices,
+        default=EducationSystem.BASIC,
+        help_text="The curriculum and grading standard this school follows.",
+    )
     slug = models.SlugField(
         max_length=80,
         unique=True,

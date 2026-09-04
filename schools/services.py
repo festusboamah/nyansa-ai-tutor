@@ -67,7 +67,7 @@ def unique_school_slug(name):
     return slug
 
 
-def register_school_with_admin(*, name, user):
+def register_school_with_admin(*, name, user, education_system=School.EducationSystem.BASIC):
     """Creates a new School and makes `user` its School Admin, in one step.
 
     This is the self-serve counterpart to a manually-seeded school: it's what
@@ -75,7 +75,9 @@ def register_school_with_admin(*, name, user):
     of needing a school/membership created for them by hand via /admin/.
     """
     with transaction.atomic():
-        school = School.objects.create(name=name, slug=unique_school_slug(name))
+        school = School.objects.create(
+            name=name, slug=unique_school_slug(name), education_system=education_system,
+        )
         SchoolMembership.objects.create(school=school, user=user, role=SchoolMembership.Role.SCHOOL_ADMIN)
     return school
 

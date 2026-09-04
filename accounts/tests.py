@@ -59,6 +59,7 @@ class SchoolAdminSignupTests(TestCase):
                 "username": "headteacher",
                 "email": "head@example.com",
                 "school_name": "Nyansa Model School",
+                "education_system": School.EducationSystem.CAMBRIDGE,
                 "password1": "A-long-test-password-2026",
                 "password2": "A-long-test-password-2026",
             }
@@ -69,6 +70,7 @@ class SchoolAdminSignupTests(TestCase):
 
         school = School.objects.get(name="Nyansa Model School")
         self.assertEqual(school.slug, "nyansa-model-school")
+        self.assertEqual(school.education_system, School.EducationSystem.CAMBRIDGE)
         membership = SchoolMembership.objects.get(school=school, user=user)
         self.assertEqual(membership.role, SchoolMembership.Role.SCHOOL_ADMIN)
         self.assertTrue(membership.is_active)
@@ -80,6 +82,7 @@ class SchoolAdminSignupTests(TestCase):
                 "username": "second-admin",
                 "email": "second@example.com",
                 "school_name": "Existing School",
+                "education_system": School.EducationSystem.BASIC,
                 "password1": "A-long-test-password-2026",
                 "password2": "A-long-test-password-2026",
             }
@@ -97,6 +100,7 @@ class SchoolAdminSignupTests(TestCase):
                 "username": "new-admin",
                 "email": "new-admin@example.com",
                 "school_name": "Fresh Start Academy",
+                "education_system": School.EducationSystem.TERTIARY,
                 "password1": "A-long-test-password-2026",
                 "password2": "A-long-test-password-2026",
             },
@@ -109,3 +113,5 @@ class SchoolAdminSignupTests(TestCase):
         self.assertTrue(
             SchoolMembership.objects.filter(user=user, role=SchoolMembership.Role.SCHOOL_ADMIN).exists()
         )
+        school = SchoolMembership.objects.get(user=user, role=SchoolMembership.Role.SCHOOL_ADMIN).school
+        self.assertEqual(school.education_system, School.EducationSystem.TERTIARY)

@@ -70,8 +70,9 @@
           <legend>{% icon "building" %} Basic information</legend>
           <div class="field-grid">
             <p>{{ form.name.label_tag }}{{ form.name }}{{ form.name.errors }}</p>
-            <p>{{ form.timezone.label_tag }}{{ form.timezone }}{{ form.timezone.errors }}</p>
+            <p>{{ form.education_system.label_tag }}{{ form.education_system }}{% if form.education_system.help_text %}<br><small class="help-text">{{ form.education_system.help_text }}</small>{% endif %}{{ form.education_system.errors }}</p>
           </div>
+          <p>{{ form.timezone.label_tag }}{{ form.timezone }}{{ form.timezone.errors }}</p>
           <p>{{ form.address.label_tag }}{{ form.address }}{{ form.address.errors }}</p>
           <div class="field-grid">
             <p>{{ form.phone.label_tag }}{{ form.phone }}{{ form.phone.errors }}</p>
