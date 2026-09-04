@@ -343,3 +343,60 @@ class TermReportWorkflowTests(TestCase):
         session.save()
         response = self.client.get(reverse("term_report_detail", args=[report.pk]), secure=True)
         self.assertEqual(response.status_code, 404)
+
+
+class EducationSystemGradingTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(
+            name="Cambridge Academy", slug="cambridge-academy", address="Accra, Ghana",
+            education_system=School.EducationSystem.CAMBRIDGE,
+        )
+        self.year = AcademicYear.objects.create(
+            school=self.school, name="2026/2027", start_date=date(2026, 9, 1),
+            end_date=date(2027, 7, 31), is_current=True,
+        )
+        self.term = Term.objects.create(
+            academic_year=self.year, name="Term 1", order=1,
+            start_date=date(2026, 9, 7), end_date=date(2026, 9, 11),
+        )
+        self.teacher = self._membership("cambridge-teacher", SchoolMembership.Role.TEACHER, User.Role.TEACHER)
+        self.admin = self._membership("cambridge-admin", SchoolMembership.Role.SCHOOL_ADMIN, User.Role.TEACHER)
+        self.student = self._membership("cambridge-student", SchoolMembership.Role.STUDENT, User.Role.STUDENT)
+        self.school_class = SchoolClass.objects.create(
+            school=self.school, academic_year=self.year, name="Year 10", class_teacher=self.teacher
+        )
+        ClassEnrollment.objects.create(school_class=self.school_class, student=self.student)
+        self.subject = Subject.objects.create(school=self.school, name="Mathematics")
+        self.offering = SubjectOffering.objects.create(
+            school=self.school, school_class=self.school_class, subject=self.subject, term=self.term
+        )
+        TeacherAssignment.objects.create(offering=self.offering, teacher=self.teacher, is_lead=True)
+        self.scheme = GradeScheme.objects.create(
+            school=self.school, academic_year=self.year, name="Standard", status=GradeScheme.Status.ACTIVE
+        )
+        self.category = AssessmentCategory.objects.create(
+            scheme=self.scheme, name="Term work", code="term-work", weight=Decimal("100.00"), order=1
+        )
+        self.assessment = Assessment.objects.create(
+            school=self.school, offering=self.offering, category=self.category,
+            title="Final assessment", max_score=Decimal("100.00"), status=Assessment.Status.CLOSED,
+        )
+        GradeEntry.objects.create(
+            school=self.school, assessment=self.assessment, student=self.student,
+            recorded_by=self.teacher, score=Decimal("72.00"), status=GradeEntry.Status.PUBLISHED,
+            review_status=GradeEntry.ReviewStatus.APPROVED, reviewed_by=self.admin,
+        )
+
+    def _membership(self, username, membership_role, user_role):
+        user = User.objects.create_user(username=username, password="test-password", role=user_role)
+        return SchoolMembership.objects.create(school=self.school, user=user, role=membership_role)
+
+    def test_cambridge_report_shows_raw_score_with_no_ges_band(self):
+        report = generate_class_reports(
+            school_class=self.school_class, term=self.term, actor=self.teacher
+        )[0]
+
+        subject = report.snapshot["subjects"][0]
+        self.assertEqual(subject["score"], "72.00")
+        self.assertEqual(subject["grade"], "72.00")
+        self.assertEqual(subject["remark"], "")

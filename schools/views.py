@@ -11,7 +11,7 @@ from django.db import models
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from courses.models import Subject
 from .forms import AcademicYearForm, ClassEnrollmentForm, SchoolClassForm, SchoolInvitationForm, SchoolProfileForm, StaffInviteUploadForm, StudentRecordForm, StudentRosterUploadForm, SubjectOfferingForm, SubjectSetupForm, TeacherAssignmentForm, TermForm
-from .models import SchoolInvitation, SchoolMembership
+from .models import School, SchoolInvitation, SchoolMembership
 from .roster_import import import_student_roster, parse_student_roster
 from .staff_import import import_staff_invitations, parse_staff_invite_list
 from .curriculum import generate_ghana_curriculum, generate_school_classes
@@ -59,6 +59,17 @@ ONBOARDING_STEPS = (
     ("enrollment", "Enrol students"),
 )
 
+GHANA_EDUCATION_SYSTEMS = (School.EducationSystem.BASIC, School.EducationSystem.SENIOR_HIGH)
+
+# Ghana's GES mandates a 3-term year; other systems just need at least one
+# term on record before the "term" onboarding step counts as complete.
+MIN_TERMS_BY_EDUCATION_SYSTEM = {
+    School.EducationSystem.BASIC: 3,
+    School.EducationSystem.SENIOR_HIGH: 3,
+    School.EducationSystem.CAMBRIDGE: 1,
+    School.EducationSystem.TERTIARY: 1,
+}
+
 
 def _onboarding_state(school):
     active_roles = set(SchoolMembership.objects.filter(
@@ -75,7 +86,8 @@ def _onboarding_state(school):
     return {
         "profile": bool(school.address and school.phone and school.email),
         "year": AcademicYear.objects.filter(school=school).exists(),
-        "term": Term.objects.filter(academic_year__school=school).count() >= 3,
+        "term": Term.objects.filter(academic_year__school=school).count()
+        >= MIN_TERMS_BY_EDUCATION_SYSTEM[school.education_system],
         "people": {
             SchoolMembership.Role.TEACHER,
             SchoolMembership.Role.STUDENT,
@@ -105,11 +117,18 @@ def _step_after(current_step, state):
 
 @admin_required
 def school_onboarding(request):
+    if request.school.education_system == School.EducationSystem.TERTIARY:
+        return render(request, "schools/onboarding_tertiary_holding.html")
+
     state = _onboarding_state(request.school)
     step_keys = {key for key, _ in ONBOARDING_STEPS} | {"complete"}
     step = request.POST.get("step") or request.GET.get("step") or _next_onboarding_step(state)
     if step not in step_keys:
         raise Http404
+    uses_ghana_curriculum = request.school.education_system in GHANA_EDUCATION_SYSTEMS
+
+    if request.method == "POST" and request.POST.get("action") in {"generate_curriculum", "generate_classes"} and not uses_ghana_curriculum:
+        return HttpResponse(status=400)
 
     if request.method == "POST" and request.POST.get("action") == "generate_curriculum":
         created_subjects, created_offerings, unmatched = generate_ghana_curriculum(school=request.school)
@@ -215,6 +234,7 @@ def school_onboarding(request):
         "progress_percent": round(completed / len(ONBOARDING_STEPS) * 100),
         "education_levels": request.school,
         "generated_offering_count": SubjectOffering.objects.filter(school=request.school).count(),
+        "uses_ghana_curriculum": uses_ghana_curriculum,
     })
 
 

@@ -7,7 +7,7 @@ from django.utils import timezone
 from academics.models import ClassEnrollment, SubjectOffering, TeacherAssignment
 from attendance.services import student_attendance_summary
 from gradebook.evidence import active_scheme_for, category_evidence
-from schools.models import SchoolMembership
+from schools.models import School, SchoolMembership
 
 from .models import ReportPolicy, ReportWorkflowEvent, TermReport
 
@@ -43,6 +43,20 @@ def _ges_grade(score):
     return next((grade, remark) for minimum, grade, remark in boundaries if score >= minimum)
 
 
+# GES's 1-9 banding is Ghana's official basic/senior-high scale. Other education
+# systems don't have a sourced grade-boundary table yet, so they get the raw
+# score with no band rather than a mislabeled/guessed one.
+GES_EDUCATION_SYSTEMS = (School.EducationSystem.BASIC, School.EducationSystem.SENIOR_HIGH)
+
+
+def _grade_for_school(score, education_system):
+    if education_system in GES_EDUCATION_SYSTEMS:
+        return _ges_grade(score)
+    if score is None:
+        return "—", "No approved score"
+    return str(score), ""
+
+
 def can_prepare_reports(actor, school_class, term):
     if actor.school_id != school_class.school_id or not actor.is_active:
         return False
@@ -55,7 +69,7 @@ def can_prepare_reports(actor, school_class, term):
     ).exists()
 
 
-def _subject_result(student, offering, scheme, pass_mark):
+def _subject_result(student, offering, scheme, pass_mark, education_system):
     weighted, categories = Decimal("0"), []
     class_score = exam_score = None
     for row in category_evidence(student, offering, scheme):
@@ -77,7 +91,7 @@ def _subject_result(student, offering, scheme, pass_mark):
         })
     complete = bool(categories) and all(item["average"] is not None for item in categories)
     score = (weighted / Decimal("100")).quantize(Decimal("0.01")) if complete else None
-    grade, remark = _ges_grade(score)
+    grade, remark = _grade_for_school(score, education_system)
     return {
         "subject": offering.subject.name,
         "score": str(score) if score is not None else None,
@@ -102,7 +116,10 @@ def build_snapshot(*, student, school_class, term, policy):
         if offering.subject.name.strip().casefold() not in REPORT_EXCLUDED_SUBJECTS
     ]
     offerings.sort(key=lambda offering: report_subject_sort_key(offering.subject.name))
-    subjects = [_subject_result(student, offering, scheme, policy.pass_mark) for offering in offerings]
+    subjects = [
+        _subject_result(student, offering, scheme, policy.pass_mark, school.education_system)
+        for offering in offerings
+    ]
     scored = [Decimal(item["score"]) for item in subjects if item["score"] is not None]
     total = sum(scored, Decimal("0"))
     average = (total / len(scored)).quantize(Decimal("0.01")) if scored else None

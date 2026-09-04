@@ -369,6 +369,68 @@ class SchoolOnboardingTests(TestCase):
         self.assertTrue(SubjectOffering.objects.filter(school_class=upper, subject=computing, term=term).exists())
 
 
+class EducationSystemOnboardingTests(TestCase):
+    def _admin_for(self, education_system):
+        school = School.objects.create(
+            name=f"{education_system.title()} School", slug=f"{education_system.lower()}-school",
+            education_system=education_system,
+        )
+        user = User.objects.create_user(username=f"{education_system.lower()}-admin", password="test-password")
+        SchoolMembership.objects.create(school=school, user=user, role=SchoolMembership.Role.SCHOOL_ADMIN)
+        self.client.force_login(user)
+        return school
+
+    def test_ghana_generator_actions_are_rejected_for_cambridge_school(self):
+        self._admin_for(School.EducationSystem.CAMBRIDGE)
+
+        for action in ("generate_classes", "generate_curriculum"):
+            response = self.client.post(
+                reverse("school_onboarding"), {"step": "class", "action": action}, secure=True
+            )
+            self.assertEqual(response.status_code, 400)
+
+    def test_cambridge_term_step_completes_after_one_term(self):
+        school = self._admin_for(School.EducationSystem.CAMBRIDGE)
+        year = AcademicYear.objects.create(
+            school=school, name="2030/2031", start_date="2030-09-01", end_date="2031-07-31", is_current=True,
+        )
+        Term.objects.create(academic_year=year, order=1, name="Semester 1", start_date="2030-09-01", end_date="2031-01-15")
+
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "term", "academic_year": year.pk, "name": "Semester 2", "order": 2,
+            "start_date": "2031-01-16", "end_date": "2031-07-31",
+        }, secure=True)
+
+        self.assertRedirects(
+            response, f"{reverse('school_onboarding')}?step=people", fetch_redirect_response=False
+        )
+
+    def test_basic_term_step_still_requires_three_terms(self):
+        school = self._admin_for(School.EducationSystem.BASIC)
+        year = AcademicYear.objects.create(
+            school=school, name="2030/2031", start_date="2030-09-01", end_date="2031-07-31", is_current=True,
+        )
+        Term.objects.create(academic_year=year, order=1, name="First Term", start_date="2030-09-01", end_date="2030-12-15")
+
+        response = self.client.post(reverse("school_onboarding"), {
+            "step": "term", "academic_year": year.pk, "name": "Second Term", "order": 2,
+            "start_date": "2031-01-06", "end_date": "2031-04-04",
+        }, secure=True)
+
+        self.assertRedirects(
+            response, f"{reverse('school_onboarding')}?step=term", fetch_redirect_response=False
+        )
+
+    def test_tertiary_school_sees_holding_page_instead_of_wizard(self):
+        self._admin_for(School.EducationSystem.TERTIARY)
+
+        response = self.client.get(reverse("school_onboarding"), secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tertiary")
+        self.assertNotContains(response, "Enrol students")
+
+
 class ActiveSchoolResolutionTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="teacher", password="test-password")

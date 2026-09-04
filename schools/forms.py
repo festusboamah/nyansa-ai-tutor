@@ -192,6 +192,12 @@ class AcademicYearForm(SchoolScopedFormMixin, forms.ModelForm):
             "is_current": "Select this only for the academic year the school is using now.",
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.school.education_system not in (School.EducationSystem.BASIC, School.EducationSystem.SENIOR_HIGH):
+            self.fields["start_date"].help_text = "The first day of the full school year."
+            self.fields["end_date"].help_text = "The final day of the full school year."
+
     def clean_name(self):
         name = self.cleaned_data["name"].strip()
         if AcademicYear.objects.filter(school=self.school, name=name).exclude(pk=self.instance.pk).exists():
@@ -209,6 +215,8 @@ class TermForm(SchoolScopedFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["academic_year"].queryset = AcademicYear.objects.filter(school=self.school)
+        if self.school.education_system not in (School.EducationSystem.BASIC, School.EducationSystem.SENIOR_HIGH):
+            self.fields["order"].help_text = "The sequence of this term or semester within the academic year (1, 2, 3...)."
 
 
 class SchoolClassForm(SchoolScopedFormMixin, forms.ModelForm):

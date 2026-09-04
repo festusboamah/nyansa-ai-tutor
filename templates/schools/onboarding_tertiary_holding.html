@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Tertiary setup | Nyansa{% endblock %}
+{% block content %}
+<section class="onboarding-shell">
+  <div class="setup-form card setup-complete">
+    <span aria-hidden="true">{% icon "clock" size="1.8rem" %}</span>
+    <p class="eyebrow">Tertiary &amp; university support</p>
+    <h2>We're building this for {{ request.school.name }}</h2>
+    <p>Nyansa's guided setup today is built around a class-and-term structure for basic and senior high schools. Tertiary institutions work differently — courses, credit hours, and semesters — and we're building that properly rather than forcing your institution through a setup flow that doesn't fit.</p>
+    <p>Reach out and our team will help set up {{ request.school.name }} directly: <a href="mailto:hello@nyansa.com">hello@nyansa.com</a>.</p>
+  </div>
+</section>
+{% endblock %}

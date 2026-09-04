@@ -28,10 +28,11 @@
       {% else %}
       <p class="eyebrow">Step {{ current_label }}</p><h2>{{ current_label }}</h2>
       {% if current_step == "people" %}<p>Invite at least one teacher and one student. This step remains open until both roles have been added. Inviting several people at once? <a href="{% url 'bulk_staff_import' %}">Invite staff in bulk from a CSV/Excel file</a>.</p>{% endif %}
-      {% if current_step == "year" %}<p>An academic year covers the complete school year and contains all three terms.</p>{% endif %}
-      {% if current_step == "term" %}<p>Add First Term, Second Term, and Third Term separately. This step advances after all three have been created.</p>{% endif %}
-      {% if current_step == "class" %}<p>Create each level separately—for example Basic 1 through Basic 6, then JHS 1 through JHS 3. Capacity means the maximum class size.</p>{% endif %}
+      {% if current_step == "year" %}<p>An academic year covers the complete school year{% if uses_ghana_curriculum %} and contains all three terms{% endif %}.</p>{% endif %}
+      {% if current_step == "term" %}{% if uses_ghana_curriculum %}<p>Add First Term, Second Term, and Third Term separately. This step advances after all three have been created.</p>{% else %}<p>Add each term or semester your school uses. This step advances once at least one has been created.</p>{% endif %}{% endif %}
+      {% if current_step == "class" %}{% if uses_ghana_curriculum %}<p>Create each level separately—for example Basic 1 through Basic 6, then JHS 1 through JHS 3. Capacity means the maximum class size.</p>{% else %}<p>Create each class or cohort separately. Capacity means the maximum class size.</p>{% endif %}{% endif %}
       {% if current_step == "class" %}
+      {% if uses_ghana_curriculum %}
       <div class="curriculum-generator">
         <h3>Generate the school’s classes</h3>
         <p>Nyansa will use the education levels and stream structure selected in School profile.</p>
@@ -39,9 +40,11 @@
         <form method="post">{% csrf_token %}<input type="hidden" name="step" value="class"><button type="submit" name="action" value="generate_classes" class="btn-small">Generate all classes</button></form>
         <p><small>Existing and custom classes will not be deleted.</small></p>
       </div>
+      {% endif %}
       <details class="manual-subject-entry"><summary>Add a class manually</summary>
       {% endif %}
       {% if current_step == "subject" %}
+      {% if uses_ghana_curriculum %}
       <div class="curriculum-generator">
         <h3>Use the Ghana standard curriculum</h3>
         <p>Nyansa can create the appropriate subjects and all class-term offerings from the education levels selected in the School profile. For SHS, STEM, and TVET this creates the compulsory core subjects only — electives and trade specializations vary per school and are added separately.</p>
@@ -49,15 +52,18 @@
         <form method="post">{% csrf_token %}<input type="hidden" name="step" value="subject"><button type="submit" name="action" value="generate_curriculum" class="btn-small">Generate subjects and offerings</button></form>
         <p><small>This keeps custom subjects and will not create duplicates.</small></p>
       </div>
+      {% endif %}
       <details class="manual-subject-entry"><summary>Add a custom subject manually</summary>
       {% endif %}
       {% if current_step == "offering" %}
+      {% if uses_ghana_curriculum %}
       <div class="curriculum-generator">
         <h3>Standard offerings are assigned automatically</h3>
         <p>Nyansa connects the required curriculum subjects to every recognised class and all three terms. Use the manual form only for an extra or custom subject.</p>
         <p><strong>{{ generated_offering_count }}</strong> class-term subject offerings currently configured.</p>
         <a href="?step=assignment" class="btn-small">Continue to assign teachers</a>
       </div>
+      {% endif %}
       <details class="manual-subject-entry"><summary>Add a custom subject offering manually</summary>
       {% endif %}
       {% if current_step == "assignment" %}<p>Choose a class–subject–term combination and the teacher responsible for it. “Lead subject teacher” identifies the main teacher when a subject is shared; it is different from the overall class teacher.</p>{% endif %}
