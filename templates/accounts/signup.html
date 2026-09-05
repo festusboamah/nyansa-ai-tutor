@@ -11,7 +11,7 @@
     <div class="auth-panel reveal">
         <div class="auth-panel-heading"><span class="auth-eyebrow">Learner account</span><h2>Start exploring</h2><p>It only takes a minute to create your space.</p></div>
         <form method="post" class="auth-form">{% csrf_token %}{{ form.as_p }}<button type="submit" class="auth-submit">Create my account</button></form>
-        <p class="auth-switch">Setting up a school? <a href="{% url 'school_signup' %}">Register your school</a></p><p class="auth-legal">By continuing, you agree to our <a href="{% url 'terms' %}">terms</a> and <a href="{% url 'privacy' %}">privacy policy</a>.</p>
+        <p class="auth-switch">Are you a teacher? <a href="{% url 'teacher_signup' %}">Register as a teacher</a></p><p class="auth-switch">Setting up a school? <a href="{% url 'school_signup' %}">Register your school</a></p><p class="auth-legal">By continuing, you agree to our <a href="{% url 'terms' %}">terms</a> and <a href="{% url 'privacy' %}">privacy policy</a>.</p>
     </div>
 </section>
 {% endblock %}

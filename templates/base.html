@@ -166,6 +166,7 @@
         <div class="navbar-links">
             <a href="#" id="low-data-toggle" class="low-data-toggle">Low-data mode: Off</a>
             <a href="{% url 'school_signup' %}">For schools</a>
+            <a href="{% url 'teacher_signup' %}">For teachers</a>
             <a href="{% url 'login' %}">Sign in</a>
             <a href="{% url 'signup' %}" class="btn-signup">Explore Nyansa</a>
         </div>
@@ -202,8 +203,8 @@
                 <p>A trusted teaching and learning layer that helps every learner find their next step.</p>
                 <span class="footer-origin">Built with care for African classrooms</span>
             </div>
-            <nav class="footer-nav" aria-label="Explore Nyansa"><h2>Explore</h2><a href="{% url 'home' %}#learning-pillars">How it works</a><a href="{% url 'signup' %}">For learners</a><a href="{% url 'school_signup' %}">For schools</a></nav>
-            <nav class="footer-nav" aria-label="Account links"><h2>Get started</h2><a href="{% url 'login' %}">Sign in</a><a href="{% url 'signup' %}">Create learner account</a><a href="{% url 'school_signup' %}">Register your school</a></nav>
+            <nav class="footer-nav" aria-label="Explore Nyansa"><h2>Explore</h2><a href="{% url 'home' %}#learning-pillars">How it works</a><a href="{% url 'signup' %}">For learners</a><a href="{% url 'teacher_signup' %}">For teachers</a><a href="{% url 'school_signup' %}">For schools</a></nav>
+            <nav class="footer-nav" aria-label="Account links"><h2>Get started</h2><a href="{% url 'login' %}">Sign in</a><a href="{% url 'signup' %}">Create learner account</a><a href="{% url 'teacher_signup' %}">Register as a teacher</a><a href="{% url 'school_signup' %}">Register your school</a></nav>
             <nav class="footer-nav" aria-label="Legal links"><h2>Trust</h2><a href="{% url 'privacy' %}">Privacy</a><a href="{% url 'terms' %}">Terms</a><span>Human-reviewed AI</span></nav>
         </div>
         <div class="public-footer-bottom"><p>&copy; 2026 Nyansa. Learn with wisdom.</p><p>Developed by <a href="https://nerdsiv.com" target="_blank" rel="noreferrer">NERDS IV Technologies</a></p></div>
