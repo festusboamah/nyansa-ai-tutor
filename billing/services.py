@@ -31,12 +31,18 @@ def check_trial_statuses():
     reminder as a TRIAL license approaches its end, and moves an already-ended
     TRIAL to PAST_DUE. Reminder delivery is idempotent via create_notification's
     own deduplication_key, not tracked here - safe to call more than once a day.
+
+    Personal (independent-teacher) schools are excluded: their real trial is
+    the 3-free-generation allowance (personal_school_gate.py), not a calendar
+    countdown, so a fixed 14-day clock would flip their license to PAST_DUE
+    even if they hadn't used up their free generations yet.
     """
     today = timezone.localdate()
     reminder_cutoff = today + timedelta(days=TRIAL_REMINDER_DAYS_BEFORE)
 
     ending_soon = SchoolLicense.objects.filter(
         status=SchoolLicense.Status.TRIAL,
+        school__is_personal=False,
         current_period_end__gt=today,
         current_period_end__lte=reminder_cutoff,
     ).select_related("plan", "school")
@@ -44,7 +50,7 @@ def check_trial_statuses():
         trial_ending_soon.send(sender=SchoolLicense, license=license)
 
     expired = SchoolLicense.objects.filter(
-        status=SchoolLicense.Status.TRIAL, current_period_end__lt=today,
+        status=SchoolLicense.Status.TRIAL, school__is_personal=False, current_period_end__lt=today,
     ).select_related("plan", "school")
     for license in expired:
         license.status = SchoolLicense.Status.PAST_DUE

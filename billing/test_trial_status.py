@@ -97,3 +97,28 @@ class CheckTrialStatusesTests(TestCase):
         call_command("check_trial_status", stdout=out)
 
         self.assertIn("1 trial(s) to past-due", out.getvalue())
+
+    def test_personal_schools_are_not_moved_to_past_due_or_reminded(self):
+        ending_soon_school = School.objects.create(
+            name="A Teacher's Classroom", slug="a-teachers-classroom", is_personal=True,
+        )
+        ended_school = School.objects.create(
+            name="Another Teacher's Classroom", slug="another-teachers-classroom", is_personal=True,
+        )
+        ending_soon = self._license(
+            status=SchoolLicense.Status.TRIAL, current_period_end=self.today + timedelta(days=1),
+            school=ending_soon_school,
+        )
+        already_ended = self._license(
+            status=SchoolLicense.Status.TRIAL, current_period_end=self.today - timedelta(days=1),
+            school=ended_school,
+        )
+
+        result = check_trial_statuses()
+
+        self.assertEqual(result, {"reminded": 0, "expired": 0})
+        ending_soon.refresh_from_db()
+        already_ended.refresh_from_db()
+        self.assertEqual(ending_soon.status, SchoolLicense.Status.TRIAL)
+        self.assertEqual(already_ended.status, SchoolLicense.Status.TRIAL)
+        self.assertFalse(Notification.objects.exists())
