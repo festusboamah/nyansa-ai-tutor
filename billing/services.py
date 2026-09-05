@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import logging
 import secrets
 from datetime import timedelta
 from decimal import Decimal
@@ -15,6 +16,8 @@ from ai_core.services import school_ai_usage
 from .gateways import PaystackGateway
 from .models import BillingProviderEvent, LicenseInvoice, LicensePayment, SchoolLicense
 from .signals import trial_ending_soon, trial_expired
+
+logger = logging.getLogger("nyansa")
 
 # Matches Suku360's trial length.
 TRIAL_LENGTH_DAYS = 14
@@ -117,6 +120,7 @@ def process_paystack_webhook(*, raw_body, signature):
         settings.PAYSTACK_SECRET_KEY.encode("utf-8"), raw_body, hashlib.sha512
     ).hexdigest()
     if not settings.PAYSTACK_SECRET_KEY or not hmac.compare_digest(expected, signature or ""):
+        logger.warning("Rejected Paystack webhook with an invalid signature.")
         raise PermissionDenied("Invalid Paystack signature.")
 
     payload = json.loads(raw_body.decode("utf-8"))
@@ -136,11 +140,16 @@ def process_paystack_webhook(*, raw_body, signature):
         payload_digest=digest, signature_valid=True,
     )
     if not payment:
+        logger.warning("Paystack webhook event %s referenced an unknown payment reference %r.", event_id, reference)
         return event
 
     provider_amount = Decimal(str(data.get("amount", 0))) / 100
     currency = data.get("currency", "")
     if provider_amount != payment.amount or currency != payment.currency:
+        logger.warning(
+            "Paystack webhook event %s amount/currency mismatch for payment %s: got %s %s, expected %s %s.",
+            event_id, payment.pk, provider_amount, currency, payment.amount, payment.currency,
+        )
         return event
 
     if event_type == "charge.success":

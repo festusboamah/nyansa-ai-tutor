@@ -104,3 +104,21 @@ class ResolveGradeTests(TestCase):
 
         grade, _ = resolve_grade(Decimal("75"), scheme=percentage_scheme, subject=self.subject)
         self.assertEqual(grade, "B")
+
+    def test_resolves_the_real_2025_igcse_mathematics_component_50_thresholds(self):
+        # Real data, not illustrative round numbers: Cambridge IGCSE
+        # Mathematics (0580), June 2025, Option P1 (standalone Component 50) -
+        # the one route in this qualification's real table that's a single
+        # component, not a weighted combination of two (which resolve_grade
+        # doesn't support yet - see this module's docstring for the full
+        # table and that caveat).
+        # Source: cambridgeinternational.org/Images/741420-mathematics-without-coursework-0580-june-2025-grade-threshold-table.pdf
+        for grade, minimum in [
+            ("A*", "77"), ("A", "67"), ("B", "57"), ("C", "47"),
+            ("D", "38"), ("E", "30"), ("F", "21"), ("G", "12"),
+        ]:
+            self._boundary(grade, minimum, reference_max_mark="90", subject=self.subject)
+
+        # A student scoring exactly the published B threshold (57/90 = 63.33%).
+        grade, _ = resolve_grade(Decimal("57") / Decimal("90") * 100, scheme=self.scheme, subject=self.subject)
+        self.assertEqual(grade, "B")

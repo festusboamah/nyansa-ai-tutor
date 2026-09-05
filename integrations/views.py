@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import secrets
 
 from django.contrib import messages
@@ -21,6 +22,8 @@ from .models import IntegrationCredential
 from .sso_login import login_from_suku360_token
 from .suku360_credential_push import CredentialPushError, push_credential_to_suku360
 from .suku360_webhook import process_suku360_credential_webhook
+
+logger = logging.getLogger("nyansa")
 
 
 @login_required
@@ -50,6 +53,7 @@ def credential_settings_view(request):
             try:
                 push_credential_to_suku360(suku360_school_id=request.school.suku360_id, raw_token=token)
             except CredentialPushError as exc:
+                logger.warning("Failed to auto-deliver a credential token to Suku360 school %s: %s", request.school.suku360_id, exc)
                 messages.warning(
                     request,
                     f"Could not auto-deliver this token to Suku360 ({exc}) - the token above still works, "
@@ -72,7 +76,8 @@ def suku360_credential_webhook_view(request):
         )
     except PermissionDenied:
         return JsonResponse({"detail": "Invalid signature"}, status=401)
-    except (ValidationError, ValueError, KeyError):
+    except (ValidationError, ValueError, KeyError) as exc:
+        logger.warning("Rejected an invalid Suku360 credential webhook payload: %s", exc)
         return JsonResponse({"detail": "Invalid payload"}, status=400)
     return JsonResponse({"status": "accepted"})
 

@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from django.contrib import messages
@@ -15,6 +16,8 @@ from schools.services import has_school_role
 
 from .models import LicenseInvoice, LicensePayment, LicensePlan, SchoolLicense
 from .services import TRIAL_LENGTH_DAYS, generate_invoice, initiate_license_payment, process_paystack_webhook
+
+logger = logging.getLogger("nyansa")
 
 
 def _admin(request):
@@ -71,6 +74,7 @@ def pay_invoice_view(request, invoice_id):
             email=request.user.email, callback_url=request.build_absolute_uri(reverse("billing_payment_callback")),
         )
     except Exception as error:
+        logger.warning("Payment initialization failed for invoice %s: %s", invoice.pk, error)
         messages.error(request, f"Payment could not be initialized: {error}")
         return redirect("billing_dashboard")
     return redirect(payment.authorization_url)

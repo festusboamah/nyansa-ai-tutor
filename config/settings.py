@@ -25,6 +25,21 @@ if IS_PRODUCTION and DEBUG:
 if IS_PRODUCTION and not ALLOWED_HOSTS:
     raise RuntimeError("DJANGO_ALLOWED_HOSTS must be configured in production.")
 
+# Inert until both IS_PRODUCTION and a real SENTRY_DSN are set - no behavior
+# change in dev/test/CI. send_default_pii is deliberately False, not just the
+# default: this app handles minors' data and must not send it to a third party.
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+if IS_PRODUCTION and SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=0.0,
+        send_default_pii=False,
+    )
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
