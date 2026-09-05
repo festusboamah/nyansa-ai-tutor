@@ -6,7 +6,9 @@ def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator,
     day_names = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
     return {
         "content_standard": f"Demonstrate understanding of {strand_topic} in {subject_name}.",
+        "learning_indicator": learning_indicator,
         "performance_indicators": learning_indicator,
+        "core_competencies": "Communication and Collaboration; Critical Thinking and Problem Solving",
         "resources": resources or "Chalkboard; learner notebooks; locally available teaching materials",
         "days": [
             {
@@ -22,7 +24,8 @@ def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator,
 
 def generate_lesson_note(class_level, subject_name, week_ending, strand_topic,
                           content_standard, learning_indicator, performance_indicator,
-                          reference, resources, num_days, *, school=None):
+                          reference, resources, num_days, *, sub_strand="",
+                          core_competencies="", school=None):
     """
     Returns a dict: {"header": {...}, "days": [{"day": "Monday", "starter": "...", "main": "...", "reflection": "..."}, ...]}
     """
@@ -32,10 +35,12 @@ Details:
 - Class: {class_level}
 - Subject: {subject_name}
 - Week Ending: {week_ending}
-- Strand/Topic: {strand_topic}
+- Strand: {strand_topic}
+- Sub-Strand: {sub_strand or "Not specified - infer a reasonable one from the strand"}
 - Content Standard: {content_standard or "Not specified - infer a reasonable one from the topic"}
-- Learning Indicator(s): {learning_indicator}
+- Learning Indicator(s): {learning_indicator or "Not specified - infer one, and write it in the official GES format '<code>: <description>', e.g. 'B7.3.1.1.1: Classify and use measuring and marking out tools and equipment for production'"}
 - Performance Indicator(s): {performance_indicator or "Infer reasonable performance indicators"}
+- Core Competencies: {core_competencies or "Infer 2-4 relevant ones, e.g. Communication and Collaboration; Critical Thinking and Problem Solving; Personal Development; Creativity and Innovation"}
 - Reference: {reference or "Standard curriculum textbook"}
 - Teaching/Learning Resources: {resources or "Standard classroom resources"}
 - Number of days to plan: {num_days}
@@ -44,7 +49,9 @@ Respond ONLY with valid JSON in this exact structure, nothing else - no markdown
 
 {{
   "content_standard": "the content standard, written out fully",
+  "learning_indicator": "the indicator in '<code>: <description>' format",
   "performance_indicators": "performance indicators as a single string, semicolon separated",
+  "core_competencies": "core competencies as a single string, semicolon separated",
   "resources": "resources as a single string, semicolon separated",
   "days": [
     {{

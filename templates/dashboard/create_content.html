@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Create | Nyansa{% endblock %}
+{% block content %}
+<h1>{% icon "sparkles" %} What would you like to create?</h1>
+<p>Pick a document type, then fill in a few details to generate it.</p>
+
+{% if not has_subject %}
+<div class="card"><p><strong>Add a subject first.</strong> Each document is generated for a subject you teach. <a href="{% url 'create_subject' %}">Create your first subject</a> before generating anything.</p></div>
+{% endif %}
+
+<div class="card-grid" style="margin-top: 1.5rem;">
+    <a href="{% url 'create_lesson_note' %}" class="card study-doc-card">
+        <h2>{% icon "clipboard" %} Lesson Note</h2>
+        <p>Your weekly teaching plan, following the GES format - strand, indicators, and a day-by-day breakdown.</p>
+    </a>
+    <a href="{% url 'create_scheme_of_learning' %}" class="card study-doc-card">
+        <h2>{% icon "calendar" %} Scheme of Learning</h2>
+        <p>A term's topic-by-week table for a subject and class, planned in advance.</p>
+    </a>
+    <a href="{% url 'create_student_note' %}" class="card study-doc-card">
+        <h2>{% icon "document" %} Student Notes</h2>
+        <p>The explanatory notes you give students to learn or copy on a topic.</p>
+    </a>
+</div>
+{% endblock %}

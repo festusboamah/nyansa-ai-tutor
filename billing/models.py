@@ -10,6 +10,7 @@ class LicensePlan(models.Model):
         STARTER = "STARTER", "Starter"
         STANDARD = "STANDARD", "Standard"
         PARTNER = "PARTNER", "Partner"
+        INDIVIDUAL = "INDIVIDUAL", "Individual Teacher"
 
     class BillingPeriod(models.TextChoices):
         MONTHLY = "MONTHLY", "Monthly"

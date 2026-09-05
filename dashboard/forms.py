@@ -1,15 +1,15 @@
 from django import forms
 import json
-from .models import LessonNote
+from .models import LessonNote, SchemeOfLearning, StudentNote
 
 
 class LessonNoteForm(forms.ModelForm):
     class Meta:
         model = LessonNote
         fields = [
-            "subject", "class_level", "week_ending", "strand_topic",
-            "content_standard", "learning_indicator", "performance_indicator",
-            "reference", "resources", "num_days",
+            "subject", "class_level", "class_size", "duration", "week_ending", "strand_topic",
+            "sub_strand", "content_standard", "learning_indicator", "performance_indicator",
+            "core_competencies", "reference", "resources", "num_days",
         ]
         widgets = {
             "week_ending": forms.DateInput(attrs={"type": "date"}),
@@ -52,3 +52,35 @@ class LessonNoteRevisionForm(LessonNoteForm):
 
 class LessonCommentForm(forms.Form):
     message = forms.CharField(max_length=1000, widget=forms.Textarea(attrs={"rows": 3}))
+
+
+class SchemeOfLearningForm(forms.ModelForm):
+    starting_topics = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2}),
+        help_text="Optional: list any topics you already know you want covered, to guide the AI.",
+    )
+
+    class Meta:
+        model = SchemeOfLearning
+        fields = ["subject", "class_level", "term", "num_weeks"]
+
+    def __init__(self, *args, school=None, **kwargs):
+        from courses.models import Subject
+        super().__init__(*args, **kwargs)
+        self.fields["subject"].queryset = (
+            Subject.objects.filter(school=school) if school else Subject.objects.none()
+        )
+
+
+class StudentNoteForm(forms.ModelForm):
+    class Meta:
+        model = StudentNote
+        fields = ["subject", "class_level", "topic"]
+
+    def __init__(self, *args, school=None, **kwargs):
+        from courses.models import Subject
+        super().__init__(*args, **kwargs)
+        self.fields["subject"].queryset = (
+            Subject.objects.filter(school=school) if school else Subject.objects.none()
+        )

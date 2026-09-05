@@ -132,6 +132,315 @@ class LessonNoteAccessBaselineTests(TestCase):
         self.assertEqual(notifications.status_code, 200)
 
 
+class LessonNoteGESFieldsTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username="ges-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.school = School.objects.create(name="GES School", slug="ges-school")
+        SchoolMembership.objects.create(
+            school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER
+        )
+        self.subject = Subject.objects.create(school=self.school, name="Career Technology")
+
+    @patch("dashboard.views.generate_lesson_note")
+    def test_creating_a_note_saves_the_ges_fields_and_passes_them_to_generation(self, generate):
+        generate.return_value = {
+            "content_standard": "Demonstrate understanding of measuring tools.",
+            "learning_indicator": "B7.3.1.1.1: Classify and use measuring and marking out tools.",
+            "performance_indicators": "Learners will identify measuring tools.",
+            "core_competencies": "Communication and Collaboration; Critical Thinking",
+            "resources": "Tape measure; ruler",
+            "days": [{"day": "Monday", "starter": "s", "main": "m", "reflection": "r"}],
+        }
+        self.client.force_login(self.teacher)
+
+        response = self.client.post(
+            reverse("create_lesson_note"),
+            {
+                "subject": self.subject.pk,
+                "class_level": "B7",
+                "class_size": 45,
+                "duration": "1 hour",
+                "week_ending": "2026-08-07",
+                "strand_topic": "Tools, equipment and processes",
+                "sub_strand": "Measuring and marking out",
+                "content_standard": "",
+                "learning_indicator": "B7.3.1.1.1: Classify and use measuring and marking out tools.",
+                "performance_indicator": "",
+                "core_competencies": "",
+                "reference": "",
+                "resources": "",
+                "num_days": 1,
+            },
+            secure=True,
+        )
+
+        note = LessonNote.objects.get(subject=self.subject)
+        self.assertRedirects(response, reverse("lesson_note_detail", args=[note.pk]), fetch_redirect_response=False)
+        self.assertEqual(note.class_size, 45)
+        self.assertEqual(note.duration, "1 hour")
+        self.assertEqual(note.sub_strand, "Measuring and marking out")
+        self.assertEqual(note.core_competencies, "Communication and Collaboration; Critical Thinking")
+        self.assertIn("B7.3.1.1.1", note.learning_indicator)
+        generate.assert_called_once()
+        self.assertEqual(generate.call_args.kwargs["sub_strand"], "Measuring and marking out")
+
+    @patch("dashboard.views.generate_lesson_note")
+    def test_downloaded_docx_contains_the_ges_fields(self, generate):
+        from io import BytesIO
+        from docx import Document
+
+        generate.return_value = {
+            "content_standard": "Demonstrate understanding of measuring tools.",
+            "learning_indicator": "B7.3.1.1.1: Classify and use measuring tools.",
+            "performance_indicators": "Learners will identify measuring tools.",
+            "core_competencies": "Communication and Collaboration",
+            "resources": "Tape measure",
+            "days": [{"day": "Monday", "starter": "Starter text", "main": "Main text", "reflection": "Reflection text"}],
+        }
+        self.client.force_login(self.teacher)
+        self.client.post(
+            reverse("create_lesson_note"),
+            {
+                "subject": self.subject.pk, "class_level": "B7", "class_size": 45, "duration": "1 hour",
+                "week_ending": "2026-08-07", "strand_topic": "Tools, equipment and processes",
+                "sub_strand": "Measuring and marking out", "content_standard": "",
+                "learning_indicator": "B7.3.1.1.1: Classify and use measuring tools.",
+                "performance_indicator": "", "core_competencies": "", "reference": "", "resources": "", "num_days": 1,
+            },
+            secure=True,
+        )
+        note = LessonNote.objects.get(subject=self.subject)
+
+        response = self.client.get(reverse("download_lesson_note_docx", args=[note.pk]), secure=True)
+
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        document = Document(BytesIO(response.content))
+        full_text = "\n".join(cell.text for table in document.tables for row in table.rows for cell in row.cells)
+        self.assertIn("Measuring and marking out", full_text)
+        self.assertIn("Starter text", full_text)
+        self.assertIn("Main text", full_text)
+
+
+class SchemeOfLearningTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username="scheme-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.school = School.objects.create(name="Scheme School", slug="scheme-school")
+        SchoolMembership.objects.create(school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER)
+        self.subject = Subject.objects.create(school=self.school, name="Career Technology")
+
+    @patch("dashboard.views.generate_scheme_of_learning")
+    def test_creating_a_scheme_saves_the_generated_weeks(self, generate):
+        from .models import SchemeOfLearning
+
+        generate.return_value = {
+            "weeks": [{"week": 1, "topic": "Personal Hygiene"}, {"week": 2, "topic": "Food Commodities"}],
+        }
+        self.client.force_login(self.teacher)
+
+        response = self.client.post(
+            reverse("create_scheme_of_learning"),
+            {
+                "subject": self.subject.pk, "class_level": "B7", "term": "Term 2",
+                "num_weeks": 2, "starting_topics": "",
+            },
+            secure=True,
+        )
+
+        scheme = SchemeOfLearning.objects.get(subject=self.subject)
+        self.assertRedirects(response, reverse("scheme_of_learning_detail", args=[scheme.pk]), fetch_redirect_response=False)
+        self.assertIn("Personal Hygiene", scheme.generated_content)
+        generate.assert_called_once()
+
+    @patch("dashboard.views.generate_scheme_of_learning")
+    def test_downloaded_docx_contains_the_week_topics(self, generate):
+        from io import BytesIO
+        from docx import Document
+        from .models import SchemeOfLearning
+
+        generate.return_value = {"weeks": [{"week": 1, "topic": "Personal Hygiene"}]}
+        self.client.force_login(self.teacher)
+        self.client.post(
+            reverse("create_scheme_of_learning"),
+            {"subject": self.subject.pk, "class_level": "B7", "term": "Term 2", "num_weeks": 1, "starting_topics": ""},
+            secure=True,
+        )
+        scheme = SchemeOfLearning.objects.get(subject=self.subject)
+
+        response = self.client.get(reverse("download_scheme_of_learning_docx", args=[scheme.pk]), secure=True)
+
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        document = Document(BytesIO(response.content))
+        full_text = "\n".join(cell.text for table in document.tables for row in table.rows for cell in row.cells)
+        self.assertIn("Personal Hygiene", full_text)
+
+
+class StudentNoteTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username="student-note-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.school = School.objects.create(name="Notes School", slug="notes-school")
+        SchoolMembership.objects.create(school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER)
+        self.subject = Subject.objects.create(school=self.school, name="Introduction to Computers")
+
+    @patch("dashboard.views.generate_student_notes")
+    def test_creating_student_notes_saves_the_generated_sections(self, generate):
+        from .models import StudentNote
+
+        generate.return_value = {
+            "sections": [{"heading": "What is a computer?", "text": "A computer is a machine that processes data."}],
+        }
+        self.client.force_login(self.teacher)
+
+        response = self.client.post(
+            reverse("create_student_note"),
+            {"subject": self.subject.pk, "class_level": "B7", "topic": "Introduction to Computers"},
+            secure=True,
+        )
+
+        note = StudentNote.objects.get(subject=self.subject)
+        self.assertRedirects(response, reverse("student_note_detail", args=[note.pk]), fetch_redirect_response=False)
+        self.assertIn("A computer is a machine", note.generated_content)
+        generate.assert_called_once()
+
+    @patch("dashboard.views.generate_student_notes")
+    def test_downloaded_docx_contains_the_sections(self, generate):
+        from io import BytesIO
+        from docx import Document
+        from .models import StudentNote
+
+        generate.return_value = {
+            "sections": [{"heading": "What is a computer?", "text": "A computer is a machine that processes data."}],
+        }
+        self.client.force_login(self.teacher)
+        self.client.post(
+            reverse("create_student_note"),
+            {"subject": self.subject.pk, "class_level": "B7", "topic": "Introduction to Computers"},
+            secure=True,
+        )
+        note = StudentNote.objects.get(subject=self.subject)
+
+        response = self.client.get(reverse("download_student_note_docx", args=[note.pk]), secure=True)
+
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        document = Document(BytesIO(response.content))
+        full_text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+        self.assertIn("A computer is a machine", full_text)
+
+
+class CreateContentPickerTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username="picker-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        self.school = School.objects.create(name="Picker School", slug="picker-school")
+        SchoolMembership.objects.create(school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER)
+
+    def test_picker_nudges_to_create_a_subject_when_none_exist(self):
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse("create_content"), secure=True)
+        self.assertContains(response, "Add a subject first")
+
+    def test_picker_does_not_nudge_once_a_subject_exists(self):
+        Subject.objects.create(school=self.school, name="Mathematics")
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse("create_content"), secure=True)
+        self.assertNotContains(response, "Add a subject first")
+
+
+class PersonalSchoolGenerationGateTests(TestCase):
+    def setUp(self):
+        from billing.models import LicensePlan, SchoolLicense
+
+        self.school = School.objects.create(name="Solo's Classroom", slug="solo-classroom", is_personal=True)
+        self.teacher = User.objects.create_user(
+            username="solo-gate-teacher", password="test-password", role=User.Role.TEACHER
+        )
+        SchoolMembership.objects.create(school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER)
+        self.subject = Subject.objects.create(school=self.school, name="Introduction to Computers")
+        plan = LicensePlan.objects.get(code="INDIVIDUAL")
+        today = date(2026, 8, 1)
+        self.license = SchoolLicense.objects.create(
+            school=self.school, plan=plan, status=SchoolLicense.Status.TRIAL,
+            current_period_start=today, current_period_end=date(2026, 8, 15),
+        )
+
+    def _use_up_free_generations(self, count):
+        for _ in range(count):
+            AIUsageEvent.objects.create(
+                school=self.school, source=AIUsageEvent.Source.LESSON_AI, model="claude", succeeded=True,
+            )
+
+    def test_generation_allowed_helper_blocks_after_three_free_uses(self):
+        from dashboard.personal_school_gate import generation_allowed
+        from types import SimpleNamespace
+
+        self._use_up_free_generations(2)
+        self.assertTrue(generation_allowed(SimpleNamespace(school=self.school)))
+
+        self._use_up_free_generations(1)
+        self.assertFalse(generation_allowed(SimpleNamespace(school=self.school)))
+
+    def test_generation_allowed_ignores_real_institutions(self):
+        from dashboard.personal_school_gate import generation_allowed
+        from types import SimpleNamespace
+
+        real_school = School.objects.create(name="Real Institution", slug="real-institution")
+        for _ in range(10):
+            AIUsageEvent.objects.create(
+                school=real_school, source=AIUsageEvent.Source.LESSON_AI, model="claude", succeeded=True,
+            )
+
+        self.assertTrue(generation_allowed(SimpleNamespace(school=real_school)))
+
+    def test_active_license_lifts_the_gate_regardless_of_usage_count(self):
+        from dashboard.personal_school_gate import generation_allowed
+        from billing.models import SchoolLicense
+        from types import SimpleNamespace
+
+        self._use_up_free_generations(5)
+        self.license.status = SchoolLicense.Status.ACTIVE
+        self.license.save(update_fields=["status"])
+
+        self.assertTrue(generation_allowed(SimpleNamespace(school=self.school)))
+
+    @patch("dashboard.views.generate_lesson_note")
+    def test_the_fourth_generation_attempt_is_blocked_and_sent_to_pay(self, generate):
+        from billing.models import LicenseInvoice
+
+        self._use_up_free_generations(3)
+        self.client.force_login(self.teacher)
+
+        response = self.client.post(
+            reverse("create_lesson_note"),
+            {
+                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "strand_topic": "Introduction to Computers", "content_standard": "",
+                "learning_indicator": "", "performance_indicator": "", "reference": "",
+                "resources": "", "num_days": 1,
+            },
+            secure=True,
+        )
+
+        generate.assert_not_called()
+        invoice = LicenseInvoice.objects.get(license=self.license)
+        self.assertRedirects(response, reverse("billing_pay_invoice", args=[invoice.pk]), fetch_redirect_response=False)
+        self.assertFalse(LessonNote.objects.filter(subject=self.subject).exists())
+
+
 class LessonNoteApprovalWorkflowTests(TestCase):
     def setUp(self):
         self.school = School.objects.create(name="Approval School", slug="approval-school")

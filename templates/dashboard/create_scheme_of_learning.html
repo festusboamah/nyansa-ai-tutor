@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}Create Scheme of Learning | Nyansa{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>{% icon "calendar" %} Create Scheme of Learning</h1>
+    <p>Fill in the details below to generate a term's week-by-week topic table. Review it before use.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-small">Generate Scheme of Learning</button>
+    </form>
+</div>
+{% endblock %}

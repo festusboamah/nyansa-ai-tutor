@@ -9,8 +9,9 @@ from .signals import lesson_note_author_notified, lesson_note_needs_review
 
 
 SNAPSHOT_FIELDS = (
-    "class_level", "strand_topic", "content_standard", "learning_indicator",
-    "performance_indicator", "reference", "resources", "num_days", "generated_content",
+    "class_level", "class_size", "duration", "strand_topic", "sub_strand", "content_standard",
+    "learning_indicator", "performance_indicator", "core_competencies", "reference", "resources",
+    "num_days", "generated_content",
 )
 
 

@@ -10,6 +10,8 @@ class AIUsageEvent(models.Model):
         QUIZ_GRADING = "quiz_grading", "Quiz Grading"
         ASSIGNMENT_GRADING = "assignment_grading", "Assignment Grading"
         LESSON_AI = "lesson_ai", "Lesson Notes"
+        SCHEME_OF_LEARNING = "scheme_of_learning", "Scheme of Learning"
+        STUDENT_NOTES = "student_notes", "Student Notes"
         STUDENT_REPORTS = "student_reports", "Student Reports"
         ANALYTICS_NARRATIVE = "analytics_narrative", "Analytics Narratives"
 

@@ -201,3 +201,20 @@ class BillingViewTenancyTests(TestCase):
         license = SchoolLicense.objects.get(school=self.school)
         self.assertEqual(license.status, SchoolLicense.Status.TRIAL)
         self.assertEqual(license.plan, self.plan)
+
+
+class PersonalSchoolBillingAccessTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Solo Teacher's Classroom", slug="solo-classroom", is_personal=True)
+        self.teacher = User.objects.create_user(username="solo-billing-teacher", password="test-password", role=User.Role.TEACHER)
+        SchoolMembership.objects.create(school=self.school, user=self.teacher, role=SchoolMembership.Role.TEACHER)
+
+    def test_the_sole_teacher_can_view_their_own_personal_schools_billing_dashboard(self):
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse("billing_dashboard"), secure=True)
+        self.assertEqual(response.status_code, 200)
+
+    def test_the_sole_teacher_can_open_the_plans_page(self):
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse("billing_plans"), secure=True)
+        self.assertEqual(response.status_code, 200)

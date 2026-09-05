@@ -18,8 +18,14 @@ from .services import TRIAL_LENGTH_DAYS, generate_invoice, initiate_license_paym
 
 
 def _admin(request):
-    if not has_school_role(request, SchoolMembership.Role.SCHOOL_ADMIN):
-        raise PermissionDenied
+    if has_school_role(request, SchoolMembership.Role.SCHOOL_ADMIN):
+        return
+    # A personal (one-teacher) school has no SCHOOL_ADMIN membership at all -
+    # its sole TEACHER member manages their own billing directly. Real
+    # institutions are unaffected: this branch only fires when is_personal.
+    if request.school and request.school.is_personal and has_school_role(request, SchoolMembership.Role.TEACHER):
+        return
+    raise PermissionDenied
 
 
 @login_required

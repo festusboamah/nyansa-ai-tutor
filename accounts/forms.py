@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from schools.models import School
-from schools.services import register_school_with_admin
+from schools.services import register_personal_teacher_space, register_school_with_admin
 from .models import User
 
 
@@ -45,4 +45,22 @@ class SchoolAdminSignUpForm(UserCreationForm):
                 user=user,
                 education_system=self.cleaned_data["education_system"],
             )
+        return user
+
+
+class IndependentTeacherSignUpForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    full_name = forms.CharField(max_length=200, label="Your name")
+
+    class Meta:
+        model = User
+        fields = ["username", "email", "full_name", "password1", "password2"]
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = User.Role.TEACHER
+        user.email = self.cleaned_data["email"]
+        if commit:
+            user.save()
+            register_personal_teacher_space(name=self.cleaned_data["full_name"], user=user)
         return user

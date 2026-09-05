@@ -18,11 +18,15 @@ class LessonNote(models.Model):
         Subject, on_delete=models.CASCADE, related_name="lesson_notes"
     )
     class_level = models.CharField(max_length=100, help_text="e.g. Basic 5, JHS 2")
+    class_size = models.PositiveIntegerField(null=True, blank=True)
+    duration = models.CharField(max_length=100, blank=True, help_text="e.g. 1 hour, 40 minutes")
     week_ending = models.DateField()
     strand_topic = models.CharField(max_length=200, help_text="e.g. Numbers, Reproduction")
+    sub_strand = models.CharField(max_length=200, blank=True, help_text="e.g. Cutting/Shaping")
     content_standard = models.TextField(blank=True)
     learning_indicator = models.TextField()
     performance_indicator = models.TextField(blank=True)
+    core_competencies = models.CharField(max_length=300, blank=True, help_text="e.g. Communication and Collaboration; Critical Thinking")
     reference = models.CharField(max_length=300, blank=True)
     resources = models.CharField(max_length=300, blank=True)
     num_days = models.PositiveIntegerField(default=5)
@@ -42,9 +46,9 @@ class LessonNote(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     EDITABLE_FIELDS = (
-        "subject_id", "class_level", "week_ending", "strand_topic", "content_standard",
-        "learning_indicator", "performance_indicator", "reference", "resources", "num_days",
-        "generated_content",
+        "subject_id", "class_level", "class_size", "duration", "week_ending", "strand_topic",
+        "sub_strand", "content_standard", "learning_indicator", "performance_indicator",
+        "core_competencies", "reference", "resources", "num_days", "generated_content",
     )
 
     def clean(self):
@@ -149,3 +153,42 @@ class LessonNoteNotification(models.Model):
     def clean(self):
         if self.lesson_note_id and self.recipient_id and self.recipient.school_id != self.lesson_note.subject.school_id:
             raise ValidationError("Lesson-note notification recipient must belong to the same school.")
+
+
+class SchemeOfLearning(models.Model):
+    """A term's week-by-week topic table (the sample's "Yearly Scheme of
+    Learning"). No approval workflow - a teacher's own working document,
+    unlike LessonNote which a school may review."""
+
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="schemes_of_learning"
+    )
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="schemes_of_learning")
+    class_level = models.CharField(max_length=100, help_text="e.g. Basic 5, JHS 2")
+    term = models.CharField(max_length=100, help_text="e.g. Term 2")
+    num_weeks = models.PositiveIntegerField(default=12)
+    generated_content = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.subject.name} - {self.class_level} ({self.term})"
+
+
+class StudentNote(models.Model):
+    """The explanatory content a teacher gives students to learn or copy on
+    a topic - flowing text, not a GES table. No approval workflow, same
+    reasoning as SchemeOfLearning."""
+
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="student_notes"
+    )
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="student_notes")
+    class_level = models.CharField(max_length=100, help_text="e.g. Basic 5, JHS 2")
+    topic = models.CharField(max_length=200)
+    generated_content = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.subject.name} - {self.topic}"

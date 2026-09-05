@@ -6,10 +6,16 @@ from courses.models import Subject, Enrollment
 from quizzes.models import Quiz, Submission
 from accounts.models import User
 from .ai_reports import generate_student_report
-from .models import LessonNote
-from .forms import LessonNoteForm
+from .models import LessonNote, SchemeOfLearning, StudentNote
+from .forms import LessonNoteForm, SchemeOfLearningForm, StudentNoteForm
 from .forms import LessonCommentForm, LessonNoteRevisionForm
 from .lesson_ai import generate_demo_lesson_note, generate_lesson_note
+from .lesson_docx import build_lesson_note_docx
+from .scheme_ai import generate_demo_scheme, generate_scheme_of_learning
+from .scheme_docx import build_scheme_of_learning_docx
+from .student_notes_ai import generate_demo_student_note, generate_student_notes
+from .student_note_docx import build_student_note_docx
+from .personal_school_gate import generation_allowed, redirect_to_subscribe
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
@@ -90,6 +96,17 @@ def student_report_view(request, student_id, subject_id):
     })
 
 @login_required
+def create_content_view(request):
+    """Landing menu: pick which kind of document to generate before the
+    type-specific form appears."""
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
+        messages.error(request, "This feature is only available to teachers.")
+        return redirect("home")
+    has_subject = Subject.objects.filter(school=request.school).exists()
+    return render(request, "dashboard/create_content.html", {"has_subject": has_subject})
+
+
+@login_required
 def lesson_notes_list_view(request):
     if not has_school_role(request, SchoolMembership.Role.TEACHER):
         messages.error(request, "This feature is only available to teachers.")
@@ -108,6 +125,9 @@ def create_lesson_note_view(request):
         return redirect("home")
 
     if request.method == "POST":
+        if not generation_allowed(request):
+            messages.warning(request, "You've used your 3 free generations - subscribe to keep going.")
+            return redirect_to_subscribe(request)
         form = LessonNoteForm(request.POST, school=request.school)
         if form.is_valid():
             lesson_note = form.save(commit=False)
@@ -125,6 +145,8 @@ def create_lesson_note_view(request):
                 reference=lesson_note.reference,
                 resources=lesson_note.resources,
                 num_days=lesson_note.num_days,
+                sub_strand=lesson_note.sub_strand,
+                core_competencies=lesson_note.core_competencies,
                 school=request.school,
             )
 
@@ -153,8 +175,12 @@ def create_lesson_note_view(request):
             lesson_note.generated_content = json.dumps(result)
             if not lesson_note.content_standard:
                 lesson_note.content_standard = result.get("content_standard", "")
+            if not lesson_note.learning_indicator:
+                lesson_note.learning_indicator = result.get("learning_indicator", "")
             if not lesson_note.performance_indicator:
                 lesson_note.performance_indicator = result.get("performance_indicators", "")
+            if not lesson_note.core_competencies:
+                lesson_note.core_competencies = result.get("core_competencies", "")
             if not lesson_note.resources:
                 lesson_note.resources = result.get("resources", "")
             lesson_note.save()
@@ -169,6 +195,201 @@ def create_lesson_note_view(request):
         form = LessonNoteForm(school=request.school)
 
     return render(request, "dashboard/create_lesson_note.html", {"form": form})
+
+
+@login_required
+def schemes_of_learning_list_view(request):
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
+        messages.error(request, "This feature is only available to teachers.")
+        return redirect("home")
+
+    schemes = SchemeOfLearning.objects.filter(
+        teacher=request.user, subject__school=request.school
+    ).order_by("-created_at")
+    return render(request, "dashboard/schemes_of_learning_list.html", {"schemes": schemes})
+
+
+@login_required
+def create_scheme_of_learning_view(request):
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
+        messages.error(request, "This feature is only available to teachers.")
+        return redirect("home")
+
+    if request.method == "POST":
+        if not generation_allowed(request):
+            messages.warning(request, "You've used your 3 free generations - subscribe to keep going.")
+            return redirect_to_subscribe(request)
+        form = SchemeOfLearningForm(request.POST, school=request.school)
+        if form.is_valid():
+            scheme = form.save(commit=False)
+            scheme.teacher = request.user
+            scheme.save()
+
+            result = generate_scheme_of_learning(
+                class_level=scheme.class_level,
+                subject_name=scheme.subject.name,
+                term=scheme.term,
+                num_weeks=scheme.num_weeks,
+                starting_topics=form.cleaned_data.get("starting_topics", ""),
+                school=request.school,
+            )
+
+            used_demo_fallback = False
+            if result is None and settings.NYANSA_DEMO_MODE:
+                result = generate_demo_scheme(
+                    class_level=scheme.class_level, subject_name=scheme.subject.name,
+                    term=scheme.term, num_weeks=scheme.num_weeks,
+                )
+                used_demo_fallback = True
+
+            if result is None:
+                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
+                scheme.delete()
+                return redirect("create_scheme_of_learning")
+
+            import json
+            scheme.generated_content = json.dumps(result)
+            scheme.save()
+
+            if used_demo_fallback:
+                messages.warning(request, "Demo scheme created without an external AI call. Review it before use.")
+            else:
+                messages.success(request, "Scheme of learning generated successfully!")
+            return redirect("scheme_of_learning_detail", scheme_id=scheme.id)
+    else:
+        form = SchemeOfLearningForm(school=request.school)
+
+    return render(request, "dashboard/create_scheme_of_learning.html", {"form": form})
+
+
+@login_required
+def scheme_of_learning_detail_view(request, scheme_id):
+    scheme = get_object_or_404(
+        SchemeOfLearning, id=scheme_id, teacher=request.user, subject__school=request.school
+    )
+    import json
+    try:
+        scheme_data = json.loads(scheme.generated_content)
+    except (json.JSONDecodeError, TypeError):
+        scheme_data = None
+    return render(request, "dashboard/scheme_of_learning_detail.html", {
+        "scheme": scheme, "scheme_data": scheme_data,
+    })
+
+
+@login_required
+def download_scheme_of_learning_docx(request, scheme_id):
+    scheme = get_object_or_404(
+        SchemeOfLearning, id=scheme_id, teacher=request.user, subject__school=request.school
+    )
+    import json
+    try:
+        scheme_data = json.loads(scheme.generated_content)
+    except (json.JSONDecodeError, TypeError):
+        scheme_data = None
+
+    buffer = build_scheme_of_learning_docx(scheme, scheme_data)
+    response = HttpResponse(
+        buffer.read(),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{scheme.subject.name}_scheme_of_learning.docx"'
+    return response
+
+
+@login_required
+def student_notes_list_view(request):
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
+        messages.error(request, "This feature is only available to teachers.")
+        return redirect("home")
+
+    notes = StudentNote.objects.filter(
+        teacher=request.user, subject__school=request.school
+    ).order_by("-created_at")
+    return render(request, "dashboard/student_notes_list.html", {"notes": notes})
+
+
+@login_required
+def create_student_note_view(request):
+    if not has_school_role(request, SchoolMembership.Role.TEACHER):
+        messages.error(request, "This feature is only available to teachers.")
+        return redirect("home")
+
+    if request.method == "POST":
+        if not generation_allowed(request):
+            messages.warning(request, "You've used your 3 free generations - subscribe to keep going.")
+            return redirect_to_subscribe(request)
+        form = StudentNoteForm(request.POST, school=request.school)
+        if form.is_valid():
+            note = form.save(commit=False)
+            note.teacher = request.user
+            note.save()
+
+            result = generate_student_notes(
+                class_level=note.class_level,
+                subject_name=note.subject.name,
+                topic=note.topic,
+                school=request.school,
+            )
+
+            used_demo_fallback = False
+            if result is None and settings.NYANSA_DEMO_MODE:
+                result = generate_demo_student_note(
+                    class_level=note.class_level, subject_name=note.subject.name, topic=note.topic,
+                )
+                used_demo_fallback = True
+
+            if result is None:
+                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
+                note.delete()
+                return redirect("create_student_note")
+
+            import json
+            note.generated_content = json.dumps(result)
+            note.save()
+
+            if used_demo_fallback:
+                messages.warning(request, "Demo student notes created without an external AI call. Review them before use.")
+            else:
+                messages.success(request, "Student notes generated successfully!")
+            return redirect("student_note_detail", note_id=note.id)
+    else:
+        form = StudentNoteForm(school=request.school)
+
+    return render(request, "dashboard/create_student_note.html", {"form": form})
+
+
+@login_required
+def student_note_detail_view(request, note_id):
+    note = get_object_or_404(
+        StudentNote, id=note_id, teacher=request.user, subject__school=request.school
+    )
+    import json
+    try:
+        note_data = json.loads(note.generated_content)
+    except (json.JSONDecodeError, TypeError):
+        note_data = None
+    return render(request, "dashboard/student_note_detail.html", {"note": note, "note_data": note_data})
+
+
+@login_required
+def download_student_note_docx(request, note_id):
+    note = get_object_or_404(
+        StudentNote, id=note_id, teacher=request.user, subject__school=request.school
+    )
+    import json
+    try:
+        note_data = json.loads(note.generated_content)
+    except (json.JSONDecodeError, TypeError):
+        note_data = None
+
+    buffer = build_student_note_docx(note, note_data)
+    response = HttpResponse(
+        buffer.read(),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{note.topic}_student_notes.docx"'
+    return response
 
 
 @login_required
@@ -372,6 +593,28 @@ def download_lesson_note_pdf(request, note_id):
         return HttpResponse("Error generating PDF", status=500)
 
     return response
+
+
+@login_required
+def download_lesson_note_docx(request, note_id):
+    note = get_object_or_404(
+        LessonNote, id=note_id, teacher=request.user, subject__school=request.school
+    )
+
+    import json
+    try:
+        lesson_data = json.loads(note.generated_content)
+    except (json.JSONDecodeError, TypeError):
+        lesson_data = None
+
+    buffer = build_lesson_note_docx(note, lesson_data)
+    response = HttpResponse(
+        buffer.read(),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{note.strand_topic}_lesson_note.docx"'
+    return response
+
 
 @login_required
 def email_student_report_view(request, student_id, subject_id):

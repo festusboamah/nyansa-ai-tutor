@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import LessonNote, LessonNoteEvent, LessonNoteNotification, LessonNoteVersion
+from .models import (
+    LessonNote, LessonNoteEvent, LessonNoteNotification, LessonNoteVersion,
+    SchemeOfLearning, StudentNote,
+)
 
 
 @admin.register(LessonNote)
@@ -36,3 +39,15 @@ class LessonNoteEventAdmin(admin.ModelAdmin):
 class LessonNoteNotificationAdmin(admin.ModelAdmin):
     list_display = ("recipient", "lesson_note", "created_at", "read_at")
     readonly_fields = ("recipient", "lesson_note", "message", "created_at", "read_at")
+
+
+@admin.register(SchemeOfLearning)
+class SchemeOfLearningAdmin(admin.ModelAdmin):
+    list_display = ("subject", "class_level", "term", "num_weeks", "teacher", "created_at")
+    list_filter = ("subject", "class_level")
+
+
+@admin.register(StudentNote)
+class StudentNoteAdmin(admin.ModelAdmin):
+    list_display = ("subject", "topic", "class_level", "teacher", "created_at")
+    list_filter = ("subject", "class_level")

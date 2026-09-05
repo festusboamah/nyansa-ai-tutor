@@ -18,13 +18,17 @@
     <table>
         <tr><th>Field</th><th>Details</th></tr>
         <tr><td>Class</td><td>{{ note.class_level }}</td></tr>
+        <tr><td>Class Size</td><td>{{ note.class_size|default:"-" }}</td></tr>
+        <tr><td>Duration</td><td>{{ note.duration|default:"-" }}</td></tr>
         <tr><td>Subject</td><td>{{ note.subject.name }}</td></tr>
         <tr><td>Reference</td><td>{{ note.reference|default:"-" }}</td></tr>
         <tr><td>Week Ending</td><td>{{ note.week_ending|date:"M d, Y" }}</td></tr>
-        <tr><td>Strand/Topic</td><td>{{ note.strand_topic }}</td></tr>
+        <tr><td>Strand</td><td>{{ note.strand_topic }}</td></tr>
+        <tr><td>Sub-Strand</td><td>{{ note.sub_strand|default:"-" }}</td></tr>
         <tr><td>Content Standard</td><td>{{ note.content_standard|default:"-" }}</td></tr>
-        <tr><td>Learning Indicator(s)</td><td>{{ note.learning_indicator }}</td></tr>
+        <tr><td>Indicator</td><td>{{ note.learning_indicator }}</td></tr>
         <tr><td>Performance Indicator(s)</td><td>{{ note.performance_indicator|default:"-" }}</td></tr>
+        <tr><td>Core Competencies</td><td>{{ note.core_competencies|default:"-" }}</td></tr>
         <tr><td>Teaching/Learning Resources</td><td>{{ note.resources|default:"-" }}</td></tr>
     </table>
 

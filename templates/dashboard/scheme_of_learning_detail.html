@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ scheme.subject.name }} Scheme of Learning - Nyansa{% endblock %}
+{% block content %}
+<h1>{{ scheme.subject.name }}: Scheme of Learning</h1>
+<p>{{ scheme.class_level }} · {{ scheme.term }}</p>
+{% if scheme_data %}
+<table class="lesson-table"><tr><th>Week</th><th>Topic</th></tr>{% for week in scheme_data.weeks %}<tr><td>{{ week.week }}</td><td>{{ week.topic }}</td></tr>{% endfor %}</table>
+{% else %}<div class="card"><p>This scheme could not be loaded properly.</p></div>{% endif %}
+<div class="result-actions"><a href="{% url 'download_scheme_of_learning_docx' scheme.id %}" class="btn-small">Download Word</a><a href="{% url 'schemes_of_learning_list' %}" class="btn-small btn-secondary">Back</a></div>
+{% endblock %}

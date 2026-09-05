@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
@@ -79,6 +81,33 @@ def register_school_with_admin(*, name, user, education_system=School.EducationS
             name=name, slug=unique_school_slug(name), education_system=education_system,
         )
         SchoolMembership.objects.create(school=school, user=user, role=SchoolMembership.Role.SCHOOL_ADMIN)
+    return school
+
+
+def register_personal_teacher_space(*, name, user):
+    """Creates a one-teacher "personal school" and makes `user` its sole
+    TEACHER member, in one step - the independent-teacher counterpart to
+    `register_school_with_admin`. Reuses every school-scoped feature
+    (lesson notes, AI usage tracking, billing) for someone with no
+    institution behind them, the same way Suku360 Classroom does for
+    individual teachers on that side of the product.
+    """
+    from billing.models import LicensePlan, SchoolLicense
+    from billing.services import TRIAL_LENGTH_DAYS
+
+    with transaction.atomic():
+        school_name = f"{name}'s Classroom"
+        school = School.objects.create(
+            name=school_name, slug=unique_school_slug(school_name), is_personal=True,
+        )
+        SchoolMembership.objects.create(school=school, user=user, role=SchoolMembership.Role.TEACHER)
+        plan = LicensePlan.objects.filter(code="INDIVIDUAL", is_active=True).first()
+        if plan:
+            today = timezone.localdate()
+            SchoolLicense.objects.create(
+                school=school, plan=plan, status=SchoolLicense.Status.TRIAL,
+                current_period_start=today, current_period_end=today + timedelta(days=TRIAL_LENGTH_DAYS),
+            )
     return school
 
 

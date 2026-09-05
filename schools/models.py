@@ -31,6 +31,10 @@ class School(models.Model):
         ARCHIVED = "ARCHIVED", "Archived"
 
     name = models.CharField(max_length=200)
+    is_personal = models.BooleanField(
+        default=False,
+        help_text="A one-teacher personal space (no invited members), not a real institution.",
+    )
     education_system = models.CharField(
         max_length=16,
         choices=EducationSystem.choices,

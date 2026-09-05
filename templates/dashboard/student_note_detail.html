@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ note.topic }} - Nyansa{% endblock %}
+{% block content %}
+<h1>{{ note.topic }}</h1>
+<p>{{ note.subject.name }} · {{ note.class_level }}</p>
+{% if note_data %}
+{% for section in note_data.sections %}
+<div class="card"><h2>{{ section.heading }}</h2><p>{{ section.text }}</p></div>
+{% endfor %}
+{% else %}<div class="card"><p>These notes could not be loaded properly.</p></div>{% endif %}
+<div class="result-actions"><a href="{% url 'download_student_note_docx' note.id %}" class="btn-small">Download Word</a><a href="{% url 'student_notes_list' %}" class="btn-small btn-secondary">Back</a></div>
+{% endblock %}
