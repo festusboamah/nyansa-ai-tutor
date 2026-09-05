@@ -133,6 +133,19 @@ else:
         }
     }
 
+redis_url = os.getenv("REDIS_URL", "").strip()
+if redis_url:
+    CACHES = {"default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": redis_url,
+    }}
+else:
+    # Unlike DATABASE_URL, this is not a hard requirement in production -
+    # caching is a performance optimization, not a correctness dependency;
+    # degrade to the per-process default rather than failing startup if
+    # REDIS_URL isn't configured yet.
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 ANALYTICS_AI_NARRATIVES = os.getenv("ANALYTICS_AI_NARRATIVES", "False").lower() in {"1", "true", "yes", "on"}
 ANALYTICS_AI_MODEL = os.getenv("ANALYTICS_AI_MODEL", "claude-sonnet-4-5")

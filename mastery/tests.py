@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import ProtectedError
 from django.test import TestCase
@@ -10,7 +11,8 @@ from django.urls import reverse
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from accounts.models import User
 from courses.models import Enrollment, Subject
-from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
+from gradebook.history import record_grade_entry, review_grade_entry
+from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeReviewDecision, GradeScheme
 from quizzes.models import Answer, BankQuestion, Question, Quiz, Submission
 from schools.models import School, SchoolMembership
 
@@ -20,9 +22,11 @@ from .models import Misconception, RemediationPlan, StudyGoal, Strand, Topic, To
 from .services import (
     add_topic_prerequisite,
     can_view_class,
+    class_subject_mastery,
     class_topic_bands,
     class_topic_mastery,
     goal_revision_status,
+    mastery_cache_key,
     misconception_patterns,
     remediation_plan_outcomes,
     school_remediation_plan_outcomes,
@@ -151,6 +155,52 @@ class MasteryComputationTests(MasteryTestCase):
         self.assertEqual(angles_row["counts"], {
             "MASTERED": 0, "DEVELOPING": 0, "NEEDS_SUPPORT": 0, "NO_EVIDENCE": 2,
         })
+
+
+class ClassSubjectMasteryCachingTests(MasteryTestCase):
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+
+    def test_second_call_is_served_from_cache(self):
+        first = class_subject_mastery(self.school_class, self.subject, self.term)
+
+        with self.assertNumQueries(0):
+            second = class_subject_mastery(self.school_class, self.subject, self.term)
+
+        self.assertEqual(second, first)
+
+    def _cache_key(self):
+        return mastery_cache_key(self.school_class.id, self.subject.id, self.term.id)
+
+    def test_publishing_a_grade_entry_busts_the_cache(self):
+        class_subject_mastery(self.school_class, self.subject, self.term)  # populate the cache
+        self.assertIsNotNone(cache.get(self._cache_key()))
+
+        record_grade_entry(
+            school=self.school, assessment=self.assessment_three, student=self.student,
+            actor=self.teacher, score=Decimal("90"), source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.PUBLISHED, reason="Marked",
+        )
+
+        self.assertIsNone(cache.get(self._cache_key()))
+
+    def test_approving_a_grade_entry_busts_the_cache(self):
+        entry, _ = record_grade_entry(
+            school=self.school, assessment=self.assessment_three, student=self.student,
+            actor=self.teacher, score=Decimal("90"), source=GradeEntry.Source.MANUAL,
+            status=GradeEntry.Status.PUBLISHED, reason="Marked",
+        )
+        # Published but not yet approved: Angles has no APPROVED evidence yet.
+        cached = class_subject_mastery(self.school_class, self.subject, self.term)
+        self.assertEqual(cached["strands"][1]["topics"][0]["evidence_count"], 0)
+
+        review_grade_entry(
+            entry=entry, reviewer=self.admin, decision=GradeReviewDecision.Decision.APPROVED,
+        )
+
+        refreshed = class_subject_mastery(self.school_class, self.subject, self.term)
+        self.assertEqual(refreshed["strands"][1]["topics"][0]["evidence_count"], 1)
 
 
 class CurriculumViewTests(MasteryTestCase):

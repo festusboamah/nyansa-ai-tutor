@@ -1,6 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import F
@@ -284,14 +285,32 @@ def school_remediation_plan_outcomes(school, term):
     return remediation_plan_outcomes_for_classes(classes, term)
 
 
+# Safety-net TTL for class_subject_mastery's cache - real invalidation is
+# signal-driven (see mastery/receivers.py) for GradeEntry publish/approval,
+# the two events that matter most. Quiz-answer grading and roster changes
+# don't bust the cache directly (no single-target key to compute cheaply for
+# either), so this TTL bounds how stale those specific paths can get.
+MASTERY_CACHE_TTL_SECONDS = 1200
+
+
+def mastery_cache_key(school_class_id, subject_id, term_id):
+    return f"mastery:class_subject:v1:{school_class_id}:{subject_id}:{term_id}"
+
+
 def class_subject_mastery(school_class, subject, term):
+    key = mastery_cache_key(school_class.id, subject.id, term.id)
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
     strands = Strand.objects.filter(subject=subject).prefetch_related("topics")
     rows = []
     for strand in strands:
         topic_rows = [class_topic_mastery(school_class, topic, term) for topic in strand.topics.all()]
         rows.append({"strand": strand, "topics": topic_rows})
-    return {
+    result = {
         "period": f"{term.academic_year.name} · {term.name}",
         "subject": subject,
         "strands": rows,
     }
+    cache.set(key, result, MASTERY_CACHE_TTL_SECONDS)
+    return result
