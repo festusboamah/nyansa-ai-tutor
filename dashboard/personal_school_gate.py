@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from ai_core.models import AIUsageEvent
 
-FREE_GENERATION_LIMIT = 3
+FREE_GENERATION_LIMIT = 6
 GENERATION_SOURCES = (
     AIUsageEvent.Source.LESSON_AI,
     AIUsageEvent.Source.SCHEME_OF_LEARNING,
@@ -20,8 +20,9 @@ GENERATION_SOURCES = (
 
 
 def generation_allowed(request):
-    """True unless this is a personal school that's used its 3 free
-    generations (across all document types) and isn't on a paid license."""
+    """True unless this is a personal school that's used its free
+    generations (FREE_GENERATION_LIMIT, across all document types) and
+    isn't on a paid license."""
     school = request.school
     if not school or not school.is_personal:
         return True

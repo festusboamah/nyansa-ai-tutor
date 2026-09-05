@@ -15,7 +15,7 @@ from .scheme_ai import generate_demo_scheme, generate_scheme_of_learning
 from .scheme_docx import build_scheme_of_learning_docx
 from .student_notes_ai import generate_demo_student_note, generate_student_notes
 from .student_note_docx import build_student_note_docx
-from .personal_school_gate import generation_allowed, redirect_to_subscribe
+from .personal_school_gate import FREE_GENERATION_LIMIT, generation_allowed, redirect_to_subscribe
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
@@ -126,7 +126,7 @@ def create_lesson_note_view(request):
 
     if request.method == "POST":
         if not generation_allowed(request):
-            messages.warning(request, "You've used your 3 free generations - subscribe to keep going.")
+            messages.warning(request, f"You've used your {FREE_GENERATION_LIMIT} free generations - subscribe to keep going.")
             return redirect_to_subscribe(request)
         form = LessonNoteForm(request.POST, school=request.school)
         if form.is_valid():
@@ -217,7 +217,7 @@ def create_scheme_of_learning_view(request):
 
     if request.method == "POST":
         if not generation_allowed(request):
-            messages.warning(request, "You've used your 3 free generations - subscribe to keep going.")
+            messages.warning(request, f"You've used your {FREE_GENERATION_LIMIT} free generations - subscribe to keep going.")
             return redirect_to_subscribe(request)
         form = SchemeOfLearningForm(request.POST, school=request.school)
         if form.is_valid():
@@ -317,7 +317,7 @@ def create_student_note_view(request):
 
     if request.method == "POST":
         if not generation_allowed(request):
-            messages.warning(request, "You've used your 3 free generations - subscribe to keep going.")
+            messages.warning(request, f"You've used your {FREE_GENERATION_LIMIT} free generations - subscribe to keep going.")
             return redirect_to_subscribe(request)
         form = StudentNoteForm(request.POST, school=request.school)
         if form.is_valid():

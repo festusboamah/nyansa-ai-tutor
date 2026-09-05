@@ -3,6 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+from dashboard.personal_school_gate import FREE_GENERATION_LIMIT
 from .forms import IndependentTeacherSignUpForm, SchoolAdminSignUpForm, StudentSignUpForm
 from schools.models import SchoolMembership
 from schools.services import has_school_role
@@ -47,7 +48,7 @@ def teacher_signup_view(request):
             return redirect("create_content")
     else:
         form = IndependentTeacherSignUpForm()
-    return render(request, "accounts/teacher_signup.html", {"form": form})
+    return render(request, "accounts/teacher_signup.html", {"form": form, "free_generation_limit": FREE_GENERATION_LIMIT})
 
 
 @login_required

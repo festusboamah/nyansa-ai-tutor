@@ -384,11 +384,11 @@ class PersonalSchoolGenerationGateTests(TestCase):
                 school=self.school, source=AIUsageEvent.Source.LESSON_AI, model="claude", succeeded=True,
             )
 
-    def test_generation_allowed_helper_blocks_after_three_free_uses(self):
-        from dashboard.personal_school_gate import generation_allowed
+    def test_generation_allowed_helper_blocks_after_the_free_limit_is_used(self):
+        from dashboard.personal_school_gate import FREE_GENERATION_LIMIT, generation_allowed
         from types import SimpleNamespace
 
-        self._use_up_free_generations(2)
+        self._use_up_free_generations(FREE_GENERATION_LIMIT - 1)
         self.assertTrue(generation_allowed(SimpleNamespace(school=self.school)))
 
         self._use_up_free_generations(1)
@@ -407,21 +407,22 @@ class PersonalSchoolGenerationGateTests(TestCase):
         self.assertTrue(generation_allowed(SimpleNamespace(school=real_school)))
 
     def test_active_license_lifts_the_gate_regardless_of_usage_count(self):
-        from dashboard.personal_school_gate import generation_allowed
+        from dashboard.personal_school_gate import FREE_GENERATION_LIMIT, generation_allowed
         from billing.models import SchoolLicense
         from types import SimpleNamespace
 
-        self._use_up_free_generations(5)
+        self._use_up_free_generations(FREE_GENERATION_LIMIT + 5)
         self.license.status = SchoolLicense.Status.ACTIVE
         self.license.save(update_fields=["status"])
 
         self.assertTrue(generation_allowed(SimpleNamespace(school=self.school)))
 
     @patch("dashboard.views.generate_lesson_note")
-    def test_the_fourth_generation_attempt_is_blocked_and_sent_to_pay(self, generate):
+    def test_the_generation_attempt_past_the_free_limit_is_blocked_and_sent_to_pay(self, generate):
         from billing.models import LicenseInvoice
+        from dashboard.personal_school_gate import FREE_GENERATION_LIMIT
 
-        self._use_up_free_generations(3)
+        self._use_up_free_generations(FREE_GENERATION_LIMIT)
         self.client.force_login(self.teacher)
 
         response = self.client.post(
