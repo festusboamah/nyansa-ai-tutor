@@ -1,6 +1,9 @@
 from django.contrib import admin
 
-from .models import Assessment, AssessmentCategory, GradeEntry, GradeEntryRevision, GradeImportBatch, GradeImportRow, GradeReviewDecision, GradeScheme
+from .models import (
+    Assessment, AssessmentCategory, GradeBoundary, GradeEntry, GradeEntryRevision,
+    GradeImportBatch, GradeImportRow, GradeReviewDecision, GradeScheme,
+)
 
 
 class AssessmentCategoryInline(admin.TabularInline):
@@ -8,11 +11,16 @@ class AssessmentCategoryInline(admin.TabularInline):
     extra = 0
 
 
+class GradeBoundaryInline(admin.TabularInline):
+    model = GradeBoundary
+    extra = 0
+
+
 @admin.register(GradeScheme)
 class GradeSchemeAdmin(admin.ModelAdmin):
-    list_display = ("name", "school", "academic_year", "status")
-    list_filter = ("status", "school")
-    inlines = [AssessmentCategoryInline]
+    list_display = ("name", "school", "academic_year", "status", "boundary_type")
+    list_filter = ("status", "boundary_type", "school")
+    inlines = [AssessmentCategoryInline, GradeBoundaryInline]
 
 
 @admin.register(Assessment)

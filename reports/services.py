@@ -7,6 +7,7 @@ from django.utils import timezone
 from academics.models import ClassEnrollment, SubjectOffering, TeacherAssignment
 from attendance.services import student_attendance_summary
 from gradebook.evidence import active_scheme_for, category_evidence
+from gradebook.grading import resolve_grade
 from schools.models import School, SchoolMembership
 
 from .models import ReportPolicy, ReportWorkflowEvent, TermReport
@@ -49,11 +50,16 @@ def _ges_grade(score):
 GES_EDUCATION_SYSTEMS = (School.EducationSystem.BASIC, School.EducationSystem.SENIOR_HIGH)
 
 
-def _grade_for_school(score, education_system):
+def _grade_for_school(score, education_system, *, scheme=None, subject=None):
     if education_system in GES_EDUCATION_SYSTEMS:
         return _ges_grade(score)
     if score is None:
         return "—", "No approved score"
+    if scheme is not None:
+        resolved = resolve_grade(score, scheme=scheme, subject=subject)
+        if resolved is not None:
+            grade, _grade_point = resolved
+            return grade, ""
     return str(score), ""
 
 
@@ -91,7 +97,7 @@ def _subject_result(student, offering, scheme, pass_mark, education_system):
         })
     complete = bool(categories) and all(item["average"] is not None for item in categories)
     score = (weighted / Decimal("100")).quantize(Decimal("0.01")) if complete else None
-    grade, remark = _grade_for_school(score, education_system)
+    grade, remark = _grade_for_school(score, education_system, scheme=scheme, subject=offering.subject)
     return {
         "subject": offering.subject.name,
         "score": str(score) if score is not None else None,

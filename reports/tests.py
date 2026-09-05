@@ -10,7 +10,7 @@ from django.urls import reverse
 from academics.models import AcademicYear, ClassEnrollment, SchoolClass, SubjectOffering, TeacherAssignment, Term
 from accounts.models import User
 from courses.models import Subject
-from gradebook.models import Assessment, AssessmentCategory, GradeEntry, GradeScheme
+from gradebook.models import Assessment, AssessmentCategory, GradeBoundary, GradeEntry, GradeScheme
 from schools.models import School, SchoolMembership
 
 from .models import ReportPolicy, ReportWorkflowEvent, TermReport
@@ -399,4 +399,26 @@ class EducationSystemGradingTests(TestCase):
         subject = report.snapshot["subjects"][0]
         self.assertEqual(subject["score"], "72.00")
         self.assertEqual(subject["grade"], "72.00")
+        self.assertEqual(subject["remark"], "")
+
+    def test_cambridge_report_uses_configured_grade_boundaries_when_present(self):
+        self.scheme.boundary_type = GradeScheme.BoundaryType.DYNAMIC_MARK
+        self.scheme.save(update_fields=["boundary_type"])
+        GradeBoundary.objects.create(
+            scheme=self.scheme, subject=self.subject, grade="A",
+            minimum_mark=Decimal("49"), reference_max_mark=Decimal("70"),
+        )
+        GradeBoundary.objects.create(
+            scheme=self.scheme, subject=self.subject, grade="B",
+            minimum_mark=Decimal("42"), reference_max_mark=Decimal("70"),
+        )
+
+        report = generate_class_reports(
+            school_class=self.school_class, term=self.term, actor=self.teacher
+        )[0]
+
+        # 72.00% clears the A boundary (49/70 = 70.00%).
+        subject = report.snapshot["subjects"][0]
+        self.assertEqual(subject["score"], "72.00")
+        self.assertEqual(subject["grade"], "A")
         self.assertEqual(subject["remark"], "")

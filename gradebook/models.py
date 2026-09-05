@@ -11,12 +11,21 @@ class GradeScheme(models.Model):
         ACTIVE = "ACTIVE", "Active"
         ARCHIVED = "ARCHIVED", "Archived"
 
+    class BoundaryType(models.TextChoices):
+        FIXED = "FIXED", "Fixed scale (e.g. GES 1-9, code-defined)"
+        CONFIGURABLE_PERCENTAGE = "CONFIGURABLE_PERCENTAGE", "School-defined percentage bands"
+        DYNAMIC_MARK = "DYNAMIC_MARK", "Per-subject mark boundaries (e.g. Cambridge)"
+
     school = models.ForeignKey("schools.School", on_delete=models.CASCADE, related_name="grade_schemes")
     academic_year = models.ForeignKey(
         "academics.AcademicYear", on_delete=models.CASCADE, related_name="grade_schemes"
     )
     name = models.CharField(max_length=100)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    boundary_type = models.CharField(
+        max_length=30, choices=BoundaryType.choices, default=BoundaryType.FIXED,
+        help_text="How GradeBoundary rows for this scheme should be interpreted.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -61,6 +70,53 @@ class AssessmentCategory(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.weight}%)"
+
+
+class GradeBoundary(models.Model):
+    """A grade threshold for a GradeScheme, keyed optionally by subject.
+
+    Interpretation depends on the scheme's boundary_type: CONFIGURABLE_PERCENTAGE
+    boundaries are usually scheme-wide (subject=None) and reference_max_mark=100;
+    DYNAMIC_MARK boundaries are per-subject and reference_max_mark matches the
+    real published maximum for that subject/paper, so an admin can enter
+    boundaries exactly as published (e.g. "49 out of 70") without the system
+    needing genuine raw multi-component marks yet - resolve_grade() converts
+    to a percentage internally.
+    """
+
+    scheme = models.ForeignKey(GradeScheme, on_delete=models.CASCADE, related_name="boundaries")
+    subject = models.ForeignKey(
+        "courses.Subject", null=True, blank=True, on_delete=models.CASCADE, related_name="grade_boundaries",
+        help_text="Leave blank for a scheme-wide band. Required in practice for DYNAMIC_MARK schemes.",
+    )
+    exam_series = models.CharField(
+        max_length=40, blank=True,
+        help_text="e.g. 'June 2026'. Record-keeping only for now - lookup doesn't key on it yet.",
+    )
+    grade = models.CharField(max_length=5, help_text="e.g. A*, A, B, 1, 2")
+    minimum_mark = models.DecimalField(max_digits=6, decimal_places=2)
+    reference_max_mark = models.DecimalField(
+        max_digits=6, decimal_places=2, default=Decimal("100"),
+        help_text="What minimum_mark is out of - enter boundaries exactly as published.",
+    )
+    grade_point = models.DecimalField(
+        max_digits=4, decimal_places=2, null=True, blank=True, help_text="Optional GPA value, e.g. 4.0.",
+    )
+
+    class Meta:
+        ordering = ["scheme_id", "subject_id", "-minimum_mark"]
+        constraints = [
+            models.UniqueConstraint(fields=["scheme", "subject", "grade"], name="unique_boundary_grade"),
+        ]
+
+    def clean(self):
+        if self.scheme_id and self.subject_id and self.subject.school_id != self.scheme.school_id:
+            raise ValidationError("Grade boundary subject must belong to the scheme's school.")
+        if self.minimum_mark is not None and self.reference_max_mark and self.minimum_mark > self.reference_max_mark:
+            raise ValidationError({"minimum_mark": "Minimum mark cannot exceed the reference maximum."})
+
+    def __str__(self):
+        return f"{self.grade} ({self.minimum_mark}/{self.reference_max_mark})"
 
 
 class Assessment(models.Model):
