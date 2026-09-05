@@ -31,6 +31,12 @@ def _daily_tokens_used(school):
     return (totals["input_total"] or 0) + (totals["output_total"] or 0)
 
 
+def _daily_token_cap(school):
+    if school.is_personal:
+        return settings.AI_DAILY_TOKEN_CAP_PER_PERSONAL_SCHOOL
+    return settings.AI_DAILY_TOKEN_CAP_PER_SCHOOL
+
+
 def _log_usage(*, school, source, model, input_tokens=None, output_tokens=None, succeeded=True, error_message=""):
     from ai_core.models import AIUsageEvent
 
@@ -48,7 +54,7 @@ def _log_usage(*, school, source, model, input_tokens=None, output_tokens=None, 
 def complete_text(prompt, *, max_tokens, model=None, school=None, source=None):
     resolved_model = model or settings.NYANSA_AI_MODEL
 
-    if school is not None and _daily_tokens_used(school) >= settings.AI_DAILY_TOKEN_CAP_PER_SCHOOL:
+    if school is not None and _daily_tokens_used(school) >= _daily_token_cap(school):
         raise AIError("Daily AI usage limit reached for this school. Try again tomorrow.")
 
     try:

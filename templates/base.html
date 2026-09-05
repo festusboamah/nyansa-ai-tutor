@@ -14,8 +14,8 @@
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <meta name="theme-color" content="#CF5123">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260903-1">
-    <script src="{% static 'js/navigation.js' %}?v=20260830-2" defer></script>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260905-1">
+    <script src="{% static 'js/navigation.js' %}?v=20260905-1" defer></script>
     <script src="{% static 'js/offline-queue.js' %}?v=20260830-2" defer></script>
     <script src="{% static 'js/low-data-mode.js' %}?v=20260830-2" defer></script>
     <script src="{% static 'js/scroll-reveal.js' %}?v=20260903-1" defer></script>
@@ -156,14 +156,17 @@
 
         <div class="app-main">
     {% else %}
-    <nav class="navbar">
+    <nav class="navbar" id="public-navbar">
         <div class="navbar-brand">
             <a href="{% url 'home' %}" class="brand-link">
                 <img src="{% static 'images/logo.png' %}" alt="Nyansa logo" class="brand-logo">
                 Nyansa <span class="brand-ai">AI</span>
             </a>
         </div>
-        <div class="navbar-links">
+        <button type="button" id="navbar-toggle" class="navbar-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="public-navbar-links">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="navbar-links" id="public-navbar-links">
             <a href="#" id="low-data-toggle" class="low-data-toggle">Low-data mode: Off</a>
             <a href="{% url 'school_signup' %}">For schools</a>
             <a href="{% url 'teacher_signup' %}">For teachers</a>

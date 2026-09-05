@@ -82,6 +82,15 @@ class SEOTests(TestCase):
         self.assertContains(response, "EducationalOrganization")
 
 
+class PublicNavbarMobileMenuTests(TestCase):
+    def test_public_home_includes_the_mobile_menu_toggle(self):
+        response = self.client.get(reverse("home"), secure=True)
+
+        self.assertContains(response, 'id="navbar-toggle"')
+        self.assertContains(response, 'aria-controls="public-navbar-links"')
+        self.assertContains(response, 'id="public-navbar-links"')
+
+
 class NavigationTests(TestCase):
     def test_school_admin_navigation_is_grouped_and_uses_membership_role(self):
         school = School.objects.create(name="Demo School", slug="demo-school")

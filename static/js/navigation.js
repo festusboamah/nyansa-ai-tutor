@@ -45,4 +45,22 @@
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") closeSidebar();
     });
+
+    // Public marketing header's mobile menu toggle.
+    const navbar = document.getElementById("public-navbar");
+    const navbarToggle = document.getElementById("navbar-toggle");
+
+    if (navbar && navbarToggle) {
+        navbarToggle.addEventListener("click", () => {
+            const isOpen = navbar.classList.toggle("navbar-open");
+            navbarToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                navbar.classList.remove("navbar-open");
+                navbarToggle.setAttribute("aria-expanded", "false");
+            }
+        });
+    }
 })();

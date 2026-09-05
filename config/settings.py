@@ -124,6 +124,12 @@ ANALYTICS_AI_MODEL = os.getenv("ANALYTICS_AI_MODEL", "claude-sonnet-4-5")
 TUTOR_AI_MODEL = os.getenv("TUTOR_AI_MODEL", "claude-sonnet-4-5")
 NYANSA_AI_MODEL = os.getenv("NYANSA_AI_MODEL", "claude-sonnet-4-5")
 AI_DAILY_TOKEN_CAP_PER_SCHOOL = int(os.getenv("AI_DAILY_TOKEN_CAP_PER_SCHOOL", "500000"))
+# A personal (independent-teacher) school has no usage-based billing markup,
+# unlike the STANDARD school plan - it's a flat fee, so a much lower cap than
+# a whole institution's is what actually protects against one account's AI
+# cost outrunning what they pay. ~30k tokens/day is a soft ceiling well above
+# the 3-free-generation trial gate, not a per-generation limit.
+AI_DAILY_TOKEN_CAP_PER_PERSONAL_SCHOOL = int(os.getenv("AI_DAILY_TOKEN_CAP_PER_PERSONAL_SCHOOL", "30000"))
 # ai_core.pricing estimates AI cost in USD; billing invoices schools in GHS.
 # This is a rough, illustrative placeholder rate (not live FX data) - tune via
 # env var, or replace with a real FX lookup, before this matters at real volume.

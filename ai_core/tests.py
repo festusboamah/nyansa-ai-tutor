@@ -117,6 +117,28 @@ class UsageLoggingTests(TestCase):
 
         mock_client.messages.create.assert_not_called()
 
+    @override_settings(AI_DAILY_TOKEN_CAP_PER_SCHOOL=500000, AI_DAILY_TOKEN_CAP_PER_PERSONAL_SCHOOL=250)
+    @patch("ai_core.client.client")
+    def test_personal_schools_get_the_lower_daily_cap(self, mock_client):
+        personal_school = School.objects.create(name="Solo Teacher", slug="solo-teacher-ai", is_personal=True)
+        AIUsageEvent.objects.create(
+            school=personal_school, source=AIUsageEvent.Source.LESSON_AI, model="claude-sonnet-4-5",
+            input_tokens=150, output_tokens=150, succeeded=True,
+        )
+
+        with self.assertRaises(AIError):
+            complete_text("prompt", max_tokens=100, school=personal_school, source=AIUsageEvent.Source.LESSON_AI)
+        mock_client.messages.create.assert_not_called()
+
+        # The same usage level does NOT trip a real institution's much higher cap.
+        mock_client.messages.create.return_value = _fake_response("ok")
+        AIUsageEvent.objects.create(
+            school=self.school, source=AIUsageEvent.Source.LESSON_AI, model="claude-sonnet-4-5",
+            input_tokens=150, output_tokens=150, succeeded=True,
+        )
+        complete_text("prompt", max_tokens=100, school=self.school, source=AIUsageEvent.Source.LESSON_AI)
+        mock_client.messages.create.assert_called_once()
+
 
 class AIUsageReportViewTests(TestCase):
     def setUp(self):
