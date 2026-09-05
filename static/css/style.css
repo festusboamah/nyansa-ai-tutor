@@ -202,6 +202,7 @@ body {
     .navbar {
         position: relative;
         flex-wrap: wrap;
+        align-items: center;
     }
 
     .navbar-toggle {
