@@ -202,6 +202,32 @@ class BillingViewTenancyTests(TestCase):
         self.assertEqual(license.status, SchoolLicense.Status.TRIAL)
         self.assertEqual(license.plan, self.plan)
 
+    def test_plans_page_stays_reachable_after_already_subscribing(self):
+        # Regression test: this page used to redirect away entirely once a
+        # school had any license at all, with no way back to compare plans.
+        SchoolLicense.objects.create(
+            school=self.school, plan=self.plan, status=SchoolLicense.Status.TRIAL,
+            current_period_start=date(2026, 8, 1), current_period_end=date(2026, 8, 31),
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse("billing_plans"), secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.plan.name)
+
+    def test_posting_a_plan_choice_when_already_subscribed_does_not_create_a_second_license(self):
+        SchoolLicense.objects.create(
+            school=self.school, plan=self.plan, status=SchoolLicense.Status.TRIAL,
+            current_period_start=date(2026, 8, 1), current_period_end=date(2026, 8, 31),
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(reverse("billing_plans"), {"plan_id": self.plan.id}, secure=True)
+
+        self.assertRedirects(response, reverse("billing_dashboard"), fetch_redirect_response=False)
+        self.assertEqual(SchoolLicense.objects.filter(school=self.school).count(), 1)
+
 
 class PersonalSchoolBillingAccessTests(TestCase):
     def setUp(self):

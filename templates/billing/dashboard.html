@@ -17,6 +17,10 @@
     <div><span>Estimated AI cost this month</span><strong>{% if usage.total_cost != None %}${{ usage.total_cost }}{% else %}—{% endif %}</strong></div>
 </div>
 
+{% if not request.school.is_personal %}
+<p style="margin-top: 1rem;"><a href="{% url 'billing_plans' %}">Compare plans</a></p>
+{% endif %}
+
 <div class="table-scroll">
     <table>
         <thead>

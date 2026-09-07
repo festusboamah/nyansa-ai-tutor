@@ -15,6 +15,7 @@ from schools.models import SchoolMembership
 from schools.services import has_school_role
 
 from .models import LicenseInvoice, LicensePayment, LicensePlan, SchoolLicense
+from .plan_features import FEATURE_ROWS, INSTITUTIONAL_COMPARISON_CODES
 from .services import TRIAL_LENGTH_DAYS, generate_invoice, initiate_license_payment, process_paystack_webhook
 
 logger = logging.getLogger("nyansa")
@@ -46,12 +47,16 @@ def billing_dashboard_view(request):
 
 @login_required
 def plans_view(request):
+    """Viewing/comparing plans is always allowed, even once already
+    subscribed (there was previously no way back to this page after
+    starting a trial) - only *starting a new trial* is guarded against an
+    existing license, on POST."""
     _admin(request)
-    if SchoolLicense.objects.filter(school=request.school).exists():
-        return redirect("billing_dashboard")
+    license_exists = SchoolLicense.objects.filter(school=request.school).exists()
 
-    plans = LicensePlan.objects.filter(is_active=True)
     if request.method == "POST":
+        if license_exists:
+            return redirect("billing_dashboard")
         plan = get_object_or_404(LicensePlan, pk=request.POST.get("plan_id"), is_active=True)
         today = timezone.localdate()
         SchoolLicense.objects.create(
@@ -61,7 +66,20 @@ def plans_view(request):
         messages.success(request, f"Started a trial of the {plan.name} plan.")
         return redirect("billing_dashboard")
 
-    return render(request, "billing/plans.html", {"plans": plans})
+    # Individual Teacher is a different product for a different buyer (one
+    # person, not a school) with its own dedicated signup page - never
+    # shown or chosen from this institutional list. Fixed column order
+    # (not DB order) so the comparison table lines up with FEATURE_ROWS.
+    plans = list(LicensePlan.objects.filter(is_active=True, code__in=INSTITUTIONAL_COMPARISON_CODES))
+    plans.sort(key=lambda plan: INSTITUTIONAL_COMPARISON_CODES.index(plan.code))
+    comparison_rows = [
+        {"label": label, "cells": [values.get(plan.code, "-") for plan in plans]}
+        for label, values in FEATURE_ROWS
+    ]
+
+    return render(request, "billing/plans.html", {
+        "plans": plans, "license_exists": license_exists, "comparison_rows": comparison_rows,
+    })
 
 
 @login_required

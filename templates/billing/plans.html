@@ -4,12 +4,44 @@
 <div class="admin-heading">
     <div>
         <p class="eyebrow">School subscription</p>
-        <h1>Choose a plan</h1>
+        <h1>Compare plans</h1>
+        {% if license_exists %}
+        <p>You already have a subscription - starting a new trial isn't available while one exists. Visit your <a href="{% url 'billing_dashboard' %}">billing dashboard</a> to manage it.</p>
+        {% else %}
         <p>Starting a plan begins a 30-day trial. You'll be invoiced at the end of each period.</p>
+        {% endif %}
     </div>
 </div>
 
-<div class="card-grid">
+<div class="table-scroll">
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                {% for plan in plans %}
+                <th>{{ plan.name }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in comparison_rows %}
+            <tr>
+                <td>{{ row.label }}</td>
+                {% for cell in row.cells %}
+                <td>
+                    {% if cell == True %}&#10003;
+                    {% elif cell == False %}&mdash;
+                    {% else %}{{ cell }}
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card-grid" style="margin-top: 1.5rem;">
     {% for plan in plans %}
     <div class="card">
         <h2>{{ plan.name }}</h2>
@@ -17,11 +49,13 @@
         <p><strong>{{ plan.currency }} {{ plan.base_price }}</strong> / {{ plan.get_billing_period_display|lower }}
             {% if plan.ai_usage_markup_percent %}+ AI usage at cost + {{ plan.ai_usage_markup_percent }}%{% endif %}
         </p>
+        {% if not license_exists %}
         <form method="post">
             {% csrf_token %}
             <input type="hidden" name="plan_id" value="{{ plan.id }}">
             <button type="submit" class="btn-small">Start trial</button>
         </form>
+        {% endif %}
     </div>
     {% empty %}
     <p>No plans are available right now.</p>
