@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Pricing and Plan Comparison | Nyansa{% endblock %}
+{% block meta_description %}Compare Nyansa plans for learners, independent teachers, schools, and education partners.{% endblock %}
+{% block content %}
+<div class="pricing-page">
+    <header class="pricing-hero">
+        <p class="platform-kicker">Clear plans, human support</p>
+        <h1>Choose how you want to grow with Nyansa.</h1>
+        <p>Learners can begin free. Independent teachers get six free content generations{% if individual_plan %}, then pay {{ individual_plan.currency }} {{ individual_plan.base_price|floatformat:0 }} monthly{% endif %}. Schools can compare the learning tools and support included in each monthly plan.</p>
+        <div class="landing-actions"><a href="#school-plans" class="landing-cta landing-cta-primary">Compare school plans</a><a href="{% url 'teacher_signup' %}" class="landing-cta landing-cta-outline">Start as a teacher</a></div>
+    </header>
+
+    <section class="pricing-paths" aria-labelledby="individual-options-title">
+        <div class="pricing-section-heading"><p class="platform-kicker">For individuals</p><h2 id="individual-options-title">Start with room to explore.</h2></div>
+        <div class="pricing-path-grid">
+            <article><span class="pricing-audience">Learner</span><h3>Learning account</h3><p class="pricing-display-price">Free <small>to start</small></p><ul class="pricing-feature-list"><li>Curriculum-aware learning support</li><li>Subjects and study workspace</li><li>Practice and progress tools</li></ul><a class="pricing-card-cta" href="{% url 'signup' %}">Create learner account</a></article>
+            <article><span class="pricing-audience">Independent teacher</span><h3>Teacher Copilot</h3><p class="pricing-display-price">6 <small>free generations</small></p>{% if individual_plan %}<p class="pricing-teacher-price">Then <strong>{{ individual_plan.currency }} {{ individual_plan.base_price|floatformat:0 }}/month</strong> for up to 30 AI generations per billing period.</p>{% endif %}<ul class="pricing-feature-list"><li>Lesson notes in GES format</li><li>Schemes of learning</li><li>Student notes and editable exports</li></ul><a class="pricing-card-cta" href="{% url 'teacher_signup' %}">Start creating free</a></article>
+        </div>
+        <p class="pricing-note">The teacher subscription begins only after the free allowance is used and payment is completed.</p>
+    </section>
+
+    <section class="school-pricing" id="school-plans" aria-labelledby="school-plans-title">
+        <div class="pricing-section-heading"><p class="platform-kicker">For schools</p><h2 id="school-plans-title">Compare plans side by side.</h2><p>All fixed prices are billed monthly in Ghana cedis. Standard AI usage is billed separately at the stated rate.</p></div>
+        <div class="table-scroll pricing-table-wrap"><table class="pricing-comparison-table"><thead><tr><th scope="col">Feature</th>{% for plan in plans %}<th scope="col">{{ plan.name }}</th>{% endfor %}</tr></thead><tbody>{% for row in comparison_rows %}<tr><th scope="row">{{ row.label }}</th>{% for cell in row.cells %}<td>{% if cell == True %}<span aria-label="Included">&#10003;</span>{% elif cell == False %}<span aria-label="Not included">&mdash;</span>{% else %}{{ cell }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+        <div class="school-plan-grid">
+            {% for plan in plans %}
+            <article class="school-plan-card{% if plan.code == 'STANDARD' %} is-recommended{% endif %}">
+                {% if plan.code == 'STANDARD' %}<span class="pricing-recommended">Best for connected learning</span>{% endif %}
+                <span class="pricing-audience">{% if plan.code == 'PARTNER' %}Education partners{% else %}Schools{% endif %}</span>
+                <h3>{{ plan.name }}</h3>
+                {% if plan.code == 'PARTNER' %}<p class="pricing-display-price">Let's talk</p>{% else %}<p class="pricing-display-price"><small>{{ plan.currency }}</small> {{ plan.base_price|floatformat:0 }} <small>/ month</small></p>{% endif %}
+                <p class="school-plan-summary">{{ plan.description }}</p>
+                <ul class="pricing-feature-list">{% if plan.code == 'PARTNER' %}<li>Suku360 integration API</li><li>Scope agreed with each partner</li>{% else %}<li>Learning Workspace</li><li>Subjects, materials and assessments</li>{% if plan.code == 'STANDARD' %}<li>AI Tutor and Teacher Copilot</li><li>Mastery and learning intelligence</li>{% else %}<li>Gradebook and basic analytics</li><li>Core school learning tools</li>{% endif %}{% endif %}</ul>
+                {% if plan.ai_usage_markup_percent %}<p class="pricing-usage">AI usage: provider cost + {{ plan.ai_usage_markup_percent|floatformat:0 }}%</p>{% endif %}
+                <a class="pricing-card-cta" href="{% url 'school_signup' %}">{% if plan.code == 'PARTNER' %}Discuss a partnership{% else %}Start 30-day trial{% endif %}</a>
+            </article>
+            {% empty %}<div class="pricing-empty"><h3>School plans are being updated.</h3><p>Register your school and we will help you choose the right setup.</p><a href="{% url 'school_signup' %}" class="pricing-card-cta">Register your school</a></div>{% endfor %}
+        </div>
+    </section>
+
+    <section class="pricing-clarity" aria-labelledby="pricing-clarity-title"><div><p class="platform-kicker">What to expect</p><h2 id="pricing-clarity-title">No mystery in the bill.</h2></div><div class="pricing-clarity-grid"><article><strong>30 days</strong><span>School trial before the first invoice</span></article><article><strong>Monthly</strong><span>Clear billing period for fixed plans</span></article><article><strong>Visible usage</strong><span>AI charges shown separately from the base fee</span></article></div></section>
+</div>
+{% endblock %}

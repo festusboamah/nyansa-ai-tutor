@@ -131,6 +131,9 @@ body {
 
 .navbar-toggle {
     display: none;
+    width: 44px;
+    height: 44px;
+    align-items: center;
     flex-direction: column;
     justify-content: center;
     gap: 4px;
@@ -2785,3 +2788,54 @@ svg[stroke="currentColor"] { vertical-align: -0.15em; }
 .checkbox-field label { font-weight: 700; font-size: .92rem; }
 .checkbox-field .help-text { grid-column: 1 / -1; margin: .15rem 0 0; font-size: .78rem; color: #6b7a90; }
 @media (max-width: 640px) { .field-grid { grid-template-columns: 1fr; } }
+
+/* Public pricing */
+.pricing-preview { border-top:1px solid #d7cbc0; }
+.pricing-preview-grid,.pricing-path-grid,.school-plan-grid { display:grid; gap:1rem; }
+.pricing-preview-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.pricing-preview-card { display:flex; flex-direction:column; min-height:310px; padding:2rem; border:1px solid #d7cbc0; background:#fffdf9; }
+.pricing-preview-card.pricing-preview-featured { background:#f8dfd2; border-color:var(--primary); }
+.pricing-preview-card h3 { margin:.7rem 0; font-size:1.65rem; }
+.pricing-preview-card > p:not(.pricing-preview-price) { flex:1; color:#655349; }
+.pricing-audience { color:var(--primary); font-size:.73rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.pricing-preview-price { margin:.25rem 0 1.2rem; color:#2d2119; font-size:1.15rem; font-weight:800; }
+.pricing-page { max-width:1240px; margin:0 auto; }
+.pricing-hero { max-width:920px; padding:clamp(4rem,9vw,7.5rem) 0 5rem; }
+.pricing-hero h1 { max-width:850px; margin:.7rem 0 1.4rem; font-size:clamp(3rem,7vw,6rem); line-height:.92; letter-spacing:-.055em; }
+.pricing-hero > p:not(.platform-kicker) { max-width:740px; color:#655349; font-size:1.2rem; line-height:1.7; }
+.pricing-paths,.school-pricing { padding:4.5rem 0; border-top:1px solid #d7cbc0; }
+.pricing-section-heading { max-width:780px; margin-bottom:2rem; }
+.pricing-section-heading h2,.pricing-clarity h2 { margin:.5rem 0 1rem; font-size:clamp(2.3rem,5vw,4rem); line-height:1; letter-spacing:-.045em; }
+.pricing-section-heading > p:last-child { color:#655349; }
+.pricing-path-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pricing-path-grid article,.school-plan-card,.pricing-empty { display:flex; flex-direction:column; padding:clamp(1.7rem,3vw,2.5rem); border:1px solid #d7cbc0; background:#fff; }
+.pricing-path-grid h3,.school-plan-card h3 { margin:.65rem 0 .2rem; font-size:1.65rem; }
+.pricing-display-price { margin:.8rem 0 1.4rem; font-size:clamp(2.1rem,4vw,3.2rem); font-weight:800; letter-spacing:-.04em; }
+.pricing-display-price small { font-size:.9rem; font-weight:700; letter-spacing:0; }
+.pricing-feature-list { flex:1; margin:0 0 1.6rem; padding:0; list-style:none; }
+.pricing-feature-list li { position:relative; padding:.65rem 0 .65rem 1.65rem; border-bottom:1px solid #ede5de; color:#4d4037; }
+.pricing-feature-list li::before { position:absolute; left:0; color:#2e6041; content:'\2713'; font-weight:900; }
+.pricing-card-cta { display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:.8rem 1.1rem; border:2px solid var(--primary); color:var(--primary); font-weight:800; text-align:center; text-decoration:none; transition:background .18s ease,color .18s ease; }
+.pricing-card-cta:hover { background:var(--primary); color:#fff; }
+.pricing-card-cta:focus-visible { outline:3px solid #f4ab29; outline-offset:3px; }
+.pricing-note,.pricing-usage { margin-top:1rem; color:#655349; font-size:.9rem; }
+.pricing-teacher-price { margin:-.5rem 0 1rem; color:#4d4037; }
+.pricing-table-wrap { margin-bottom:2rem; border:1px solid #d7cbc0; background:#fff; }
+.pricing-comparison-table { width:100%; min-width:720px; border-collapse:collapse; }
+.pricing-comparison-table :is(th,td) { padding:1rem; border-bottom:1px solid #e7ddd5; text-align:center; }
+.pricing-comparison-table th:first-child { width:44%; text-align:left; }
+.pricing-comparison-table thead th { background:#f8dfd2; color:#2d2119; }
+.school-plan-grid { grid-template-columns:repeat(3,minmax(0,1fr)); align-items:stretch; }
+.school-plan-card { position:relative; }
+.school-plan-card.is-recommended { border:3px solid var(--primary); background:#fff8f3; }
+.pricing-recommended { margin:-2.5rem -2.5rem 1.5rem; padding:.6rem 1rem; background:var(--primary); color:#fff; font-size:.76rem; font-weight:800; letter-spacing:.08em; text-align:center; text-transform:uppercase; }
+.school-plan-summary { min-height:125px; color:#655349; font-size:.92rem; line-height:1.6; }
+.pricing-usage { min-height:24px; font-weight:700; }
+.pricing-clarity { display:grid; grid-template-columns:.75fr 1.25fr; gap:4rem; margin:4rem 0 6rem; padding:clamp(2rem,5vw,4rem); background:#2e6041; color:#fff; }
+.pricing-clarity .platform-kicker { color:#f4ab29; }
+.pricing-clarity-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; align-items:center; }
+.pricing-clarity-grid article { display:flex; flex-direction:column; gap:.5rem; }
+.pricing-clarity-grid strong { color:#f4ab29; font-size:1.8rem; }
+.pricing-clarity-grid span { color:#f6eee8; font-size:.9rem; line-height:1.5; }
+@media(max-width:900px){.pricing-preview-grid,.school-plan-grid{grid-template-columns:1fr}.school-plan-summary{min-height:0}.pricing-clarity{grid-template-columns:1fr}.pricing-clarity-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.pricing-path-grid,.pricing-clarity-grid{grid-template-columns:1fr}.pricing-hero{padding-top:3rem}.pricing-hero .landing-cta{width:100%}.pricing-paths,.school-pricing{padding:3rem 0}.pricing-recommended{margin:-1.7rem -1.7rem 1.5rem}}

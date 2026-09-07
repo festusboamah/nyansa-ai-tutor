@@ -21,6 +21,20 @@ from .services import TRIAL_LENGTH_DAYS, generate_invoice, initiate_license_paym
 logger = logging.getLogger("nyansa")
 
 
+def pricing_view(request):
+    """Render the public, read-only school plan comparison."""
+    plans = list(LicensePlan.objects.filter(is_active=True, code__in=INSTITUTIONAL_COMPARISON_CODES))
+    plans.sort(key=lambda plan: INSTITUTIONAL_COMPARISON_CODES.index(plan.code))
+    comparison_rows = [
+        {"label": label, "cells": [values[plan.code] for plan in plans]}
+        for label, values in FEATURE_ROWS
+    ]
+    individual_plan = LicensePlan.objects.filter(code=LicensePlan.Code.INDIVIDUAL, is_active=True).first()
+    return render(request, "billing/pricing.html", {
+        "plans": plans, "comparison_rows": comparison_rows, "individual_plan": individual_plan,
+    })
+
+
 def _admin(request):
     if has_school_role(request, SchoolMembership.Role.SCHOOL_ADMIN):
         return

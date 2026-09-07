@@ -35,6 +35,7 @@ Sitemap: {sitemap_url}
 # search engine indexing - everything else needs a login.
 SITEMAP_URL_NAMES = (
     ("home", "1.0"),
+    ("pricing", "0.8"),
     ("signup", "0.8"),
     ("school_signup", "0.8"),
     ("login", "0.3"),

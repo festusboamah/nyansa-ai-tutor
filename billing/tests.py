@@ -244,3 +244,52 @@ class PersonalSchoolBillingAccessTests(TestCase):
         self.client.force_login(self.teacher)
         response = self.client.get(reverse("billing_plans"), secure=True)
         self.assertEqual(response.status_code, 200)
+
+
+class PublicPricingTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.starter, _ = LicensePlan.objects.update_or_create(
+            code=LicensePlan.Code.STARTER,
+            defaults={"name": "Starter", "description": "Core workspace", "base_price": Decimal("500.00"), "currency": "GHS"},
+        )
+        cls.standard, _ = LicensePlan.objects.update_or_create(
+            code=LicensePlan.Code.STANDARD,
+            defaults={"name": "Standard", "description": "AI learning tools", "base_price": Decimal("1500.00"), "currency": "GHS", "ai_usage_markup_percent": Decimal("20.00")},
+        )
+        cls.partner, _ = LicensePlan.objects.update_or_create(
+            code=LicensePlan.Code.PARTNER,
+            defaults={"name": "Partner", "description": "Integration partnership", "base_price": Decimal("0.00"), "currency": "GHS"},
+        )
+        LicensePlan.objects.update_or_create(
+            code=LicensePlan.Code.INDIVIDUAL,
+            defaults={"name": "Individual Teacher", "description": "30 generations per month", "base_price": Decimal("30.00"), "currency": "GHS"},
+        )
+
+    def test_pricing_is_public_and_shows_current_school_prices(self):
+        response = self.client.get(reverse("pricing"), secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "<small>GHS</small>", count=2, html=True)
+        self.assertContains(response, "500")
+        self.assertContains(response, "1500")
+        self.assertContains(response, "provider cost + 20%")
+        self.assertContains(response, "6 <small>free generations</small>", html=True)
+        self.assertContains(response, "GHS 30/month")
+        self.assertContains(response, "up to 30 AI generations")
+
+    def test_pricing_excludes_individual_plan_from_school_columns(self):
+        response = self.client.get(reverse("pricing"), secure=True)
+
+        self.assertContains(response, 'class="school-plan-card', count=3)
+        self.assertContains(response, "Starter")
+        self.assertContains(response, "Standard")
+        self.assertContains(response, "Partner")
+
+    def test_home_and_sitemap_link_to_public_pricing(self):
+        home = self.client.get(reverse("home"), secure=True)
+        sitemap = self.client.get(reverse("sitemap_xml"), secure=True)
+
+        self.assertContains(home, reverse("pricing"))
+        self.assertContains(home, "Compare school plans")
+        self.assertContains(sitemap, reverse("pricing"))

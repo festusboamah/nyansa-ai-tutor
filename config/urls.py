@@ -5,6 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from accounts.views import home_view
+from billing.views import pricing_view
 from config.views import health_live, health_ready, robots_txt_view, service_worker_view, sitemap_xml_view
 from integrations.views import suku360_credential_webhook_view, suku360_sso_login_view
 
@@ -32,6 +33,7 @@ urlpatterns = [
     path("health/live/", health_live, name="health_live"),
     path("health/ready/", health_ready, name="health_ready"),
     path("", home_view, name="home"),
+    path("pricing/", pricing_view, name="pricing"),
     path("terms/", TemplateView.as_view(template_name="legal/terms.html"), name="terms"),
     path("privacy/", TemplateView.as_view(template_name="legal/privacy.html"), name="privacy"),
     path("accounts/", include("accounts.urls")),

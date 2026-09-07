@@ -14,7 +14,7 @@
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <meta name="theme-color" content="#CF5123">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260908-2">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260908-3">
     {% if user.is_authenticated %}<link rel="stylesheet" href="{% static 'css/learning-workspace.css' %}?v=20260907-1"><script src="{% static 'js/learning-workspace.js' %}?v=20260907-1" defer></script>{% endif %}
     <script src="{% static 'js/navigation.js' %}?v=20260907-1" defer></script>
     <script src="{% static 'js/offline-queue.js' %}?v=20260830-2" defer></script>
@@ -179,6 +179,7 @@
             <a href="#" id="low-data-toggle" class="low-data-toggle">Low-data mode: Off</a>
             <a href="{% url 'school_signup' %}">For schools</a>
             <a href="{% url 'teacher_signup' %}">For teachers</a>
+            <a href="{% url 'pricing' %}">Compare plans</a>
             <a href="{% url 'login' %}">Sign in</a>
             <a href="{% url 'signup' %}" class="btn-signup">For students</a>
         </div>
@@ -215,7 +216,7 @@
                 <p>A trusted teaching and learning layer that helps every learner find their next step.</p>
                 <span class="footer-origin">Built with care for African classrooms</span>
             </div>
-            <nav class="footer-nav" aria-label="Explore Nyansa"><h2>Explore</h2><a href="{% url 'home' %}#learning-pillars">How it works</a><a href="{% url 'signup' %}">For learners</a><a href="{% url 'teacher_signup' %}">For teachers</a><a href="{% url 'school_signup' %}">For schools</a></nav>
+            <nav class="footer-nav" aria-label="Explore Nyansa"><h2>Explore</h2><a href="{% url 'home' %}#learning-pillars">How it works</a><a href="{% url 'pricing' %}">Compare plans</a><a href="{% url 'signup' %}">For learners</a><a href="{% url 'teacher_signup' %}">For teachers</a><a href="{% url 'school_signup' %}">For schools</a></nav>
             <nav class="footer-nav" aria-label="Account links"><h2>Get started</h2><a href="{% url 'login' %}">Sign in</a><a href="{% url 'signup' %}">Create learner account</a><a href="{% url 'teacher_signup' %}">Register as a teacher</a><a href="{% url 'school_signup' %}">Register your school</a></nav>
             <nav class="footer-nav" aria-label="Legal links"><h2>Trust</h2><a href="{% url 'privacy' %}">Privacy</a><a href="{% url 'terms' %}">Terms</a><span>Human-reviewed AI</span></nav>
         </div>
