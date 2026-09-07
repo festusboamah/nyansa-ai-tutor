@@ -218,6 +218,37 @@ class SessionDetailViewTests(TutorTestCase):
         )
         self.assertEqual(session.messages.count(), 2)
 
+    @patch("tutor.engine.client")
+    def test_async_post_returns_json_instead_of_redirecting(self, mock_client):
+        mock_client.messages.create.return_value = _fake_response("Sure, let's break it down.")
+        session = self._session(self.student)
+        self.client.force_login(self.student)
+
+        response = self.client.post(
+            reverse("tutor_session_detail", args=[session.id]),
+            {"message": "Can you help me with fractions?"},
+            secure=True, HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["role"], "TUTOR")
+        self.assertEqual(data["content"], "Sure, let's break it down.")
+        self.assertEqual(session.messages.count(), 2)
+
+    def test_async_post_with_an_empty_message_returns_a_400(self):
+        session = self._session(self.student)
+        self.client.force_login(self.student)
+
+        response = self.client.post(
+            reverse("tutor_session_detail", args=[session.id]),
+            {"message": "   "},
+            secure=True, HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(session.messages.count(), 0)
+
 
 class ExamModeEngineTests(TutorTestCase):
     @patch("tutor.engine.client")

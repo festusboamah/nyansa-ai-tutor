@@ -14,13 +14,14 @@
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <meta name="theme-color" content="#CF5123">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260905-2">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260908-1">
     {% if user.is_authenticated %}<link rel="stylesheet" href="{% static 'css/learning-workspace.css' %}?v=20260907-1"><script src="{% static 'js/learning-workspace.js' %}?v=20260907-1" defer></script>{% endif %}
     <script src="{% static 'js/navigation.js' %}?v=20260907-1" defer></script>
     <script src="{% static 'js/offline-queue.js' %}?v=20260830-2" defer></script>
     <script src="{% static 'js/low-data-mode.js' %}?v=20260830-2" defer></script>
     <script src="{% static 'js/scroll-reveal.js' %}?v=20260903-1" defer></script>
-    <script src="{% static 'js/form-enhancements.js' %}?v=20260907-1" defer></script>
+    <script src="{% static 'js/form-enhancements.js' %}?v=20260908-1" defer></script>
+    <script src="{% static 'js/tutor-chat.js' %}?v=20260908-1" defer></script>
     <script>
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function () {

@@ -2,7 +2,7 @@
     "use strict";
 
     document.addEventListener("DOMContentLoaded", function () {
-        var forms = Array.from(document.querySelectorAll("form:not(.inline-form)"));
+        var forms = Array.from(document.querySelectorAll("form:not(.inline-form):not(.tutor-chat-form)"));
 
         forms.forEach(function (form) {
             if (form.closest(".auth-panel")) return;

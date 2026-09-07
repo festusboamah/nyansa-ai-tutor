@@ -19,7 +19,7 @@
 </div>
 
 <div class="card form-card">
-    <form method="post">
+    <form method="post" class="tutor-chat-form">
         {% csrf_token %}
         <textarea name="message" rows="3" placeholder="Type your message..." required></textarea>
         <button type="submit" class="btn-small">Send</button>

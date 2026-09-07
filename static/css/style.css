@@ -21,6 +21,17 @@
 /* Breakpoints are literal (900px tablet / 640px mobile) - CSS custom
    properties can't be used inside @media conditions without a preprocessor. */
 
+/* Native browser crossfade between full page loads - no JS, no dependency.
+   Unsupporting browsers silently ignore this and navigate as before. */
+@view-transition {
+    navigation: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
+        animation: none !important;
+    }
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -671,7 +682,15 @@ button[type="submit"]:hover {
 
 .btn-small:hover {
     background-color: var(--primary-dark);
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.btn-small:active {
+    transform: translateY(0) scale(.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn-small:hover, .btn-small:active { transform: none; }
 }
 
 .badge-enrolled {
@@ -1712,6 +1731,32 @@ h2 {
     color: var(--text-muted);
     padding-left: 1rem;
     border-left: 3px solid var(--secondary);
+}
+
+.thinking-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+}
+
+.thinking-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+    animation: thinking-bounce 1.2s ease-in-out infinite;
+}
+
+.thinking-dots span:nth-child(2) { animation-delay: .2s; }
+.thinking-dots span:nth-child(3) { animation-delay: .4s; }
+
+@keyframes thinking-bounce {
+    0%, 80%, 100% { opacity: .3; transform: scale(.8); }
+    40% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .thinking-dots span { animation: none; opacity: .6; }
 }
 
 .ai-summary-content h1,

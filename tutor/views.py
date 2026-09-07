@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.dateparse import parse_date
 
@@ -112,8 +113,17 @@ def session_detail_view(request, session_id):
 
     if request.method == "POST":
         student_text = request.POST.get("message", "").strip()
-        if student_text:
-            engine.send_message(session, student_text)
+        is_async = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        if not student_text:
+            if is_async:
+                return JsonResponse({"error": "A message is required."}, status=400)
+            return redirect("tutor_session_detail", session_id=session.id)
+        reply = engine.send_message(session, student_text)
+        if is_async:
+            return JsonResponse({
+                "role": reply.role, "content": reply.content,
+                "created_at": reply.created_at.isoformat(),
+            })
         return redirect("tutor_session_detail", session_id=session.id)
 
     return render(request, "tutor/session_detail.html", {
