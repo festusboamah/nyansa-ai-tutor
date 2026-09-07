@@ -15,7 +15,10 @@ from .scheme_ai import generate_demo_scheme, generate_scheme_of_learning
 from .scheme_docx import build_scheme_of_learning_docx
 from .student_notes_ai import generate_demo_student_note, generate_student_notes
 from .student_note_docx import build_student_note_docx
-from .personal_school_gate import FREE_GENERATION_LIMIT, generation_allowed, redirect_to_subscribe, subscribe_redirect_url
+from .personal_school_gate import (
+    FREE_GENERATION_LIMIT, PAID_MONTHLY_GENERATION_LIMIT, generation_allowed,
+    paid_monthly_limit_reached, redirect_to_subscribe, subscribe_redirect_url,
+)
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -127,6 +130,12 @@ def create_lesson_note_view(request):
     if request.method == "POST":
         is_async = request.headers.get("X-Requested-With") == "XMLHttpRequest"
         if not generation_allowed(request):
+            if paid_monthly_limit_reached(request):
+                message = f"You've reached this month's generation limit ({PAID_MONTHLY_GENERATION_LIMIT}) for your plan. It resets at the start of your next billing period."
+                if is_async:
+                    return JsonResponse({"error": message}, status=429)
+                messages.warning(request, message)
+                return redirect("create_lesson_note")
             messages.warning(request, f"You've used your {FREE_GENERATION_LIMIT} free generations - subscribe to keep going.")
             if is_async:
                 return JsonResponse({"redirect_to": subscribe_redirect_url(request)})
@@ -227,6 +236,12 @@ def create_scheme_of_learning_view(request):
     if request.method == "POST":
         is_async = request.headers.get("X-Requested-With") == "XMLHttpRequest"
         if not generation_allowed(request):
+            if paid_monthly_limit_reached(request):
+                message = f"You've reached this month's generation limit ({PAID_MONTHLY_GENERATION_LIMIT}) for your plan. It resets at the start of your next billing period."
+                if is_async:
+                    return JsonResponse({"error": message}, status=429)
+                messages.warning(request, message)
+                return redirect("create_scheme_of_learning")
             messages.warning(request, f"You've used your {FREE_GENERATION_LIMIT} free generations - subscribe to keep going.")
             if is_async:
                 return JsonResponse({"redirect_to": subscribe_redirect_url(request)})
@@ -336,6 +351,12 @@ def create_student_note_view(request):
     if request.method == "POST":
         is_async = request.headers.get("X-Requested-With") == "XMLHttpRequest"
         if not generation_allowed(request):
+            if paid_monthly_limit_reached(request):
+                message = f"You've reached this month's generation limit ({PAID_MONTHLY_GENERATION_LIMIT}) for your plan. It resets at the start of your next billing period."
+                if is_async:
+                    return JsonResponse({"error": message}, status=429)
+                messages.warning(request, message)
+                return redirect("create_student_note")
             messages.warning(request, f"You've used your {FREE_GENERATION_LIMIT} free generations - subscribe to keep going.")
             if is_async:
                 return JsonResponse({"redirect_to": subscribe_redirect_url(request)})

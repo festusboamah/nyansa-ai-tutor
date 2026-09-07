@@ -1,9 +1,10 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.test import TestCase, override_settings
 from unittest.mock import Mock, patch
 from django.urls import reverse
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.utils import timezone
 
 from accounts.models import User
 from ai_core.models import AIUsageEvent
@@ -510,7 +511,9 @@ class PersonalSchoolGenerationGateTests(TestCase):
 
         self.assertTrue(generation_allowed(SimpleNamespace(school=real_school)))
 
-    def test_active_license_lifts_the_gate_regardless_of_usage_count(self):
+    def test_active_license_lifts_the_free_trial_gate(self):
+        # Being ACTIVE bypasses the *free-trial* count (FREE_GENERATION_LIMIT)
+        # - it isn't literally unlimited, see the monthly-cap tests below.
         from dashboard.personal_school_gate import FREE_GENERATION_LIMIT, generation_allowed
         from billing.models import SchoolLicense
         from types import SimpleNamespace
@@ -518,6 +521,58 @@ class PersonalSchoolGenerationGateTests(TestCase):
         self._use_up_free_generations(FREE_GENERATION_LIMIT + 5)
         self.license.status = SchoolLicense.Status.ACTIVE
         self.license.save(update_fields=["status"])
+
+        self.assertTrue(generation_allowed(SimpleNamespace(school=self.school)))
+
+    def test_active_license_blocks_once_the_monthly_limit_is_reached(self):
+        from dashboard.personal_school_gate import PAID_MONTHLY_GENERATION_LIMIT, generation_allowed
+        from billing.models import SchoolLicense
+        from types import SimpleNamespace
+
+        self.license.status = SchoolLicense.Status.ACTIVE
+        self.license.save(update_fields=["status"])
+
+        self._use_up_free_generations(PAID_MONTHLY_GENERATION_LIMIT - 1)
+        self.assertTrue(generation_allowed(SimpleNamespace(school=self.school)))
+
+        self._use_up_free_generations(1)
+        self.assertFalse(generation_allowed(SimpleNamespace(school=self.school)))
+
+    def test_paid_monthly_limit_reached_is_false_for_the_free_trial_case(self):
+        from dashboard.personal_school_gate import FREE_GENERATION_LIMIT, paid_monthly_limit_reached
+        from types import SimpleNamespace
+
+        self._use_up_free_generations(FREE_GENERATION_LIMIT)
+
+        self.assertFalse(paid_monthly_limit_reached(SimpleNamespace(school=self.school)))
+
+    def test_paid_monthly_limit_reached_is_true_once_an_active_license_hits_the_cap(self):
+        from dashboard.personal_school_gate import PAID_MONTHLY_GENERATION_LIMIT, paid_monthly_limit_reached
+        from billing.models import SchoolLicense
+        from types import SimpleNamespace
+
+        self.license.status = SchoolLicense.Status.ACTIVE
+        self.license.save(update_fields=["status"])
+        self._use_up_free_generations(PAID_MONTHLY_GENERATION_LIMIT)
+
+        self.assertTrue(paid_monthly_limit_reached(SimpleNamespace(school=self.school)))
+
+    def test_the_monthly_limit_resets_for_a_new_billing_period(self):
+        from dashboard.personal_school_gate import PAID_MONTHLY_GENERATION_LIMIT, generation_allowed
+        from billing.models import SchoolLicense
+        from types import SimpleNamespace
+
+        self.license.status = SchoolLicense.Status.ACTIVE
+        self.license.save(update_fields=["status"])
+        self._use_up_free_generations(PAID_MONTHLY_GENERATION_LIMIT)
+        self.assertFalse(generation_allowed(SimpleNamespace(school=self.school)))
+
+        # A new period starting *after* today so the prior period's usage
+        # (created "now", i.e. today, by _use_up_free_generations) falls
+        # before it and doesn't count against the new period.
+        self.license.current_period_start = timezone.localdate() + timedelta(days=1)
+        self.license.current_period_end = timezone.localdate() + timedelta(days=31)
+        self.license.save(update_fields=["current_period_start", "current_period_end"])
 
         self.assertTrue(generation_allowed(SimpleNamespace(school=self.school)))
 
@@ -568,6 +623,58 @@ class PersonalSchoolGenerationGateTests(TestCase):
         invoice = LicenseInvoice.objects.get(license=self.license)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"redirect_to": reverse("billing_pay_invoice", args=[invoice.pk])})
+
+    @patch("dashboard.views.generate_lesson_note")
+    def test_async_generation_past_the_monthly_cap_on_an_active_license_returns_a_json_error_not_a_paywall(self, generate):
+        from billing.models import LicenseInvoice, SchoolLicense
+        from dashboard.personal_school_gate import PAID_MONTHLY_GENERATION_LIMIT
+
+        self.license.status = SchoolLicense.Status.ACTIVE
+        self.license.save(update_fields=["status"])
+        self._use_up_free_generations(PAID_MONTHLY_GENERATION_LIMIT)
+        self.client.force_login(self.teacher)
+
+        response = self.client.post(
+            reverse("create_lesson_note"),
+            {
+                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "strand_topic": "Introduction to Computers", "content_standard": "",
+                "learning_indicator": "", "performance_indicator": "", "reference": "",
+                "resources": "", "teaching_days": ["Monday"],
+            },
+            secure=True, HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        generate.assert_not_called()
+        self.assertEqual(response.status_code, 429)
+        self.assertIn("this month's generation limit", response.json()["error"])
+        # No new invoice was generated - this teacher is already paying, there's nothing to bill.
+        self.assertFalse(LicenseInvoice.objects.filter(license=self.license).exists())
+
+    @patch("dashboard.views.generate_lesson_note")
+    def test_sync_generation_past_the_monthly_cap_redirects_back_to_the_form_not_to_pay(self, generate):
+        from billing.models import LicenseInvoice, SchoolLicense
+        from dashboard.personal_school_gate import PAID_MONTHLY_GENERATION_LIMIT
+
+        self.license.status = SchoolLicense.Status.ACTIVE
+        self.license.save(update_fields=["status"])
+        self._use_up_free_generations(PAID_MONTHLY_GENERATION_LIMIT)
+        self.client.force_login(self.teacher)
+
+        response = self.client.post(
+            reverse("create_lesson_note"),
+            {
+                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "strand_topic": "Introduction to Computers", "content_standard": "",
+                "learning_indicator": "", "performance_indicator": "", "reference": "",
+                "resources": "", "teaching_days": ["Monday"],
+            },
+            secure=True,
+        )
+
+        generate.assert_not_called()
+        self.assertRedirects(response, reverse("create_lesson_note"), fetch_redirect_response=False)
+        self.assertFalse(LicenseInvoice.objects.filter(license=self.license).exists())
 
 
 class LessonNoteApprovalWorkflowTests(TestCase):
