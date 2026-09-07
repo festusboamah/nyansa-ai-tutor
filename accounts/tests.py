@@ -178,3 +178,12 @@ class IndependentTeacherSignupTests(TestCase):
         self.assertTrue(
             SchoolMembership.objects.filter(user=user, role=SchoolMembership.Role.TEACHER).exists()
         )
+
+    def test_teacher_signup_page_shows_the_real_individual_plan_price(self):
+        from billing.models import LicensePlan
+
+        plan = LicensePlan.objects.get(code="INDIVIDUAL")
+
+        response = self.client.get(reverse("teacher_signup"), secure=True)
+
+        self.assertContains(response, f"{plan.currency} {plan.base_price:.0f}/month")

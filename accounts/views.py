@@ -48,7 +48,13 @@ def teacher_signup_view(request):
             return redirect("create_content")
     else:
         form = IndependentTeacherSignUpForm()
-    return render(request, "accounts/teacher_signup.html", {"form": form, "free_generation_limit": FREE_GENERATION_LIMIT})
+
+    from billing.models import LicensePlan
+    individual_plan = LicensePlan.objects.filter(code="INDIVIDUAL", is_active=True).first()
+
+    return render(request, "accounts/teacher_signup.html", {
+        "form": form, "free_generation_limit": FREE_GENERATION_LIMIT, "individual_plan": individual_plan,
+    })
 
 
 @login_required
