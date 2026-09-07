@@ -40,15 +40,20 @@ def dashboard_view(request):
 
     upcoming_quizzes = Quiz.objects.filter(
         subject_id__in=enrolled_subject_ids, deadline__gte=now
-    ).order_by("deadline")[:5]
+    ).exclude(status=Quiz.Status.DRAFT).select_related("subject").order_by("deadline")
 
     upcoming_assignments = Assignment.objects.filter(
         subject_id__in=enrolled_subject_ids, deadline__gte=now
-    ).order_by("deadline")[:5]
+    ).select_related("subject").order_by("deadline")[:5]
 
     upcoming_items = []
     for q in upcoming_quizzes:
+        # Match the subject page's existing exam-roster visibility rule.
+        if q.offerings.exists() and not student_may_sit_exam(q, request.school_membership):
+            continue
         upcoming_items.append({"title": q.title, "subject": q.subject.name, "deadline": q.deadline, "type": "Quiz" if q.assessment_type == "QUIZ" else "Exam", "url_name": "quiz_start", "url_id": q.id})
+        if len(upcoming_items) == 5:
+            break
     for a in upcoming_assignments:
         upcoming_items.append({"title": a.title, "subject": a.subject.name, "deadline": a.deadline, "type": "Assignment", "url_name": "assignment_detail", "url_id": a.id})
 

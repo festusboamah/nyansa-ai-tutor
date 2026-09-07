@@ -1,9 +1,11 @@
 {% load static %}
-const CACHE_NAME = "nyansa-shell-v4";
+const CACHE_NAME = "nyansa-shell-v5";
 const STATIC_URL = "{{ static_url }}";
 
 const PRECACHE_URLS = [
     "{% static 'css/style.css' %}",
+    "{% static 'css/learning-workspace.css' %}",
+    "{% static 'js/learning-workspace.js' %}",
     "{% static 'js/navigation.js' %}",
     "{% static 'js/offline-queue.js' %}",
     "{% static 'js/low-data-mode.js' %}",

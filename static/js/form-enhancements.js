@@ -36,7 +36,8 @@
                 window.setTimeout(function () { summary.focus(); }, 0);
             }
 
-            form.addEventListener("submit", function () {
+            form.addEventListener("submit", function (event) {
+                if (event.defaultPrevented) return;
                 if (!form.checkValidity()) return;
                 var submit = form.querySelector('button[type="submit"], input[type="submit"]');
                 if (!submit || submit.dataset.submitting === "true") return;

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load icons %}
+{% block title %}My Learning | Nyansa{% endblock %}
+{% block content %}
+<div class="ny-workspace">
+    <header class="ny-heading"><div><p class="ny-eyebrow">My learning</p><h1>Welcome back, {{ user.first_name|default:user.username }}.</h1><p>A little progress today. A stronger understanding tomorrow.</p></div><a class="ny-button ny-button-outline" href="{% url 'browse_subjects' %}">{% icon "book" %} Explore subjects</a></header>
+    <div class="ny-home-grid">
+        <div class="ny-primary">
+            <section class="ny-hero" aria-labelledby="tutor-prompt"><div><p class="ny-eyebrow">A study partner, at your pace</p><h2 id="tutor-prompt">Turn “I don’t get it”<br>into “I’ve got this.”</h2><p>Work through a tricky idea, ask a question, or practise with your AI tutor.</p><a href="{% url 'tutor_home' %}" class="ny-button ny-button-light">Open my tutor {% icon "arrow-right" %}</a></div><div class="ny-hero-art" aria-hidden="true"><span class="ny-orbit"></span><span class="ny-art-book">{% icon "book" size="72px" %}</span><span class="ny-art-spark">{% icon "sparkles" size="28px" %}</span><span class="ny-art-caption">Understand. Practise. Grow.</span></div></section>
+            <div class="ny-metrics" aria-label="Learning overview"><div><span>My subjects</span><strong>{{ subjects_with_grades|length }}</strong></div><div><span>Upcoming deadlines shown</span><strong>{{ upcoming_items|length }}</strong></div><a href="{% url 'mastery_study_goals' %}"><span>{% if due_goal_count %}Topics due for revision{% else %}Revision goals due{% endif %}</span><strong>{{ due_goal_count|default:0 }}</strong></a></div>
+            <section class="ny-section" aria-labelledby="subjects-heading" data-search-scope>
+                <div class="ny-section-heading"><div><p class="ny-eyebrow">Pick up where you left off</p><h2 id="subjects-heading">Your subjects</h2></div><a class="ny-text-link" href="{% url 'browse_subjects' %}">Browse all {% icon "arrow-right" %}</a></div>
+                {% if subjects_with_grades %}{% include "learning/_search.html" %}{% endif %}
+                <div class="ny-course-grid">
+                {% for item in subjects_with_grades %}
+                    <article class="ny-course" data-search-card data-search-text="{{ item.subject.name }} {{ item.subject.code }}">
+                        <div class="ny-course-cover ny-tone-{% cycle 'clay' 'sage' 'gold' 'blue' %}">{% icon "book" size="32px" %}<span>{{ item.subject.code|default:"My subject" }}</span></div>
+                        <div class="ny-course-body"><h3>{{ item.subject.name }}</h3><p>{{ item.subject.description|default:"Open your materials, quizzes and assignments."|truncatewords:20 }}</p><div class="ny-course-score"><span>Learning score</span><strong>{% if item.grade_data.final_score is not None %}{{ item.grade_data.final_score }}%{% else %}No scores yet{% endif %}</strong></div><a class="ny-course-link" href="{% url 'subject_detail' item.subject.id %}">Open subject <span class="ny-sr-only">{{ item.subject.name }}</span>{% icon "arrow-right" %}</a>
+                        <details class="ny-details"><summary>Assessment summary &amp; enrolment</summary><dl class="ny-grade-list"><div><dt>Quiz · 20%</dt><dd>{{ item.grade_data.quiz_avg|default_if_none:"—" }}</dd></div><div><dt>Assignment · 20%</dt><dd>{{ item.grade_data.assignment_avg|default_if_none:"—" }}</dd></div><div><dt>Exam · 60%</dt><dd>{{ item.grade_data.exam_avg|default_if_none:"—" }}</dd></div><div><dt>Grade</dt><dd>{{ item.grade_data.final_grade }}</dd></div></dl><form method="post" action="{% url 'unenroll_subject' item.subject.id %}" data-confirm="Unenroll from this subject? You will lose access to its learning materials.">{% csrf_token %}<button type="submit" class="ny-text-link ny-danger">Unenroll from subject</button></form></details></div>
+                    </article>
+                {% empty %}<div class="ny-empty">{% icon "book" size="32px" %}<h3>Your learning journey starts here</h3><p>Explore the subjects available in your school and choose one to begin.</p><a class="ny-button" href="{% url 'browse_subjects' %}">Find a subject {% icon "arrow-right" %}</a></div>{% endfor %}
+                </div>
+            </section>
+        </div>
+        <aside class="ny-aside" aria-label="Study planning">
+            <section class="ny-panel"><div class="ny-section-heading"><h2>Coming up</h2>{% icon "calendar" size="22px" %}</div><p class="ny-caption">Your next {{ upcoming_items|length }} scheduled deadline{{ upcoming_items|length|pluralize }}.</p><div class="ny-agenda">{% for item in upcoming_items %}<a class="ny-agenda-item" href="{% url item.url_name item.url_id %}"><time datetime="{{ item.deadline|date:'c' }}"><strong>{{ item.deadline|date:"d" }}</strong><span>{{ item.deadline|date:"M" }}</span></time><div><span class="ny-eyebrow">{{ item.type }}</span><h3>{{ item.title }}</h3><p>{{ item.subject }} · {{ item.deadline|date:"g:i A" }}</p></div>{% icon "arrow-right" %}</a>{% empty %}<div class="ny-small-empty">{% icon "check-circle" size="24px" %}<h3>A little breathing room</h3><p>No upcoming deadlines to show. This is a good moment to revisit a topic.</p></div>{% endfor %}</div></section>
+            <section class="ny-panel ny-panel-sage">{% icon "target" size="28px" %}<p class="ny-eyebrow">Build understanding</p><h2>Small steps. Lasting progress.</h2><p>{% if due_goal_count %}You have {{ due_goal_count }} topic{{ due_goal_count|pluralize }} due for revision.{% else %}Choose a study goal and give your next session a clear focus.{% endif %}</p><a class="ny-text-link" href="{% url 'mastery_study_goals' %}">My study goals {% icon "arrow-right" %}</a></section>
+            <a class="ny-tool-link" href="{% url 'study_documents' %}">{% icon "folder" size="24px" %}<div><h3>Your study library</h3><p>Revisit your PDFs, summaries and questions.</p></div>{% icon "arrow-right" %}</a>
+            <a class="ny-tool-link" href="{% url 'mastery_overview' %}">{% icon "trending-up" size="24px" %}<div><h3>See your understanding grow</h3><p>Explore topic mastery and learning gaps.</p></div>{% icon "arrow-right" %}</a>
+        </aside>
+    </div>
+</div>
+{% endblock %}

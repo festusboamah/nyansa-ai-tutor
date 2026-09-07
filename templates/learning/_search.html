@@ -1,0 +1,6 @@
+{% load icons %}
+<div class="ny-search-tools" data-search-tools hidden>
+    <label class="ny-search" for="workspace-search">{% icon "search" %}<span class="ny-sr-only">Search {{ search_label|default:"subjects" }}</span><input id="workspace-search" type="search" placeholder="Search {{ search_label|default:'subjects' }}…" data-search-input autocomplete="off"></label>
+    <span class="ny-search-count" data-search-count role="status" aria-live="polite"></span>
+</div>
+<div class="ny-empty" data-search-empty hidden><h3>No matches found</h3><p>Try a different name or clear your search.</p><button type="button" class="ny-button ny-button-outline" data-search-clear>Clear search</button></div>

@@ -15,6 +15,10 @@ register = template.Library()
 # viewBox, stroke) is added once in icon() below, so adding a new icon only
 # means adding one line here.
 _ICONS = {
+    "arrow-right": '<path d="M4 12h16M14 6l6 6-6 6"/>',
+    "arrow-left": '<path d="M20 12H4M10 6l-6 6 6 6"/>',
+    "plus": '<path d="M12 5v14M5 12h14"/>',
+    "search": '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
     "home": '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
     "academic-cap": '<path d="M2 8l10-5 10 5-10 5-10-5z"/><path d="M6 10.5v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4"/>',
     "building": '<rect x="5" y="4" width="14" height="17"/><rect x="8" y="7" width="2" height="2"/><rect x="14" y="7" width="2" height="2"/><rect x="8" y="12" width="2" height="2"/><rect x="14" y="12" width="2" height="2"/><rect x="10" y="17" width="4" height="4"/>',

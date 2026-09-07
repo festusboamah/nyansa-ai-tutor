@@ -15,11 +15,12 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     <meta name="theme-color" content="#CF5123">
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260905-2">
-    <script src="{% static 'js/navigation.js' %}?v=20260905-1" defer></script>
+    {% if user.is_authenticated %}<link rel="stylesheet" href="{% static 'css/learning-workspace.css' %}?v=20260907-1"><script src="{% static 'js/learning-workspace.js' %}?v=20260907-1" defer></script>{% endif %}
+    <script src="{% static 'js/navigation.js' %}?v=20260907-1" defer></script>
     <script src="{% static 'js/offline-queue.js' %}?v=20260830-2" defer></script>
     <script src="{% static 'js/low-data-mode.js' %}?v=20260830-2" defer></script>
     <script src="{% static 'js/scroll-reveal.js' %}?v=20260903-1" defer></script>
-    <script src="{% static 'js/form-enhancements.js' %}?v=20260830-2" defer></script>
+    <script src="{% static 'js/form-enhancements.js' %}?v=20260907-1" defer></script>
     <script>
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function () {
@@ -30,6 +31,7 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="{% if user.is_authenticated %}has-sidebar{% endif %}">
+    {% if user.is_authenticated %}<a class="ny-skip" href="#main-content">Skip to main content</a>{% endif %}
     <div id="offline-notices" class="messages"></div>
 
     {% if nyansa_demo_mode %}
@@ -55,6 +57,7 @@
 
             <nav class="sidebar-nav">
                 {% if request.school_membership.role == "STUDENT" %}
+                    <p class="ny-nav-label">My learning</p>
                     <a href="{% url 'dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'dashboard' %} active{% endif %}"><span class="sidebar-icon">{% icon "home" %}</span> Dashboard</a>
                     <a href="{% url 'browse_subjects' %}" class="sidebar-link{% if request.resolver_match.url_name == 'browse_subjects' %} active{% endif %}"><span class="sidebar-icon">{% icon "book" %}</span> Browse Subjects</a>
                     <a href="{% url 'tutor_home' %}" class="sidebar-link{% if request.resolver_match.url_name == 'tutor_home' %} active{% endif %}"><span class="sidebar-icon">{% icon "chat" %}</span> Tutor</a>
@@ -65,7 +68,10 @@
                 {% endif %}
 
                 {% if request.school_membership.role == "TEACHER" %}
+                    <p class="ny-nav-label">Teaching workspace</p>
                     <a href="{% url 'teacher_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'teacher_dashboard' %} active{% endif %}"><span class="sidebar-icon">{% icon "home" %}</span> Dashboard</a>
+                    <a href="{% url 'create_content' %}" class="sidebar-link{% if request.resolver_match.url_name == 'create_content' %} active{% endif %}"><span class="sidebar-icon">{% icon "sparkles" %}</span> Teacher Copilot</a>
+                    <a href="{% url 'lesson_notes_list' %}" class="sidebar-link{% if request.resolver_match.url_name == 'lesson_notes_list' %} active{% endif %}"><span class="sidebar-icon">{% icon "clipboard" %}</span> Lesson Notes</a>
                     <a href="{% url 'gradebook_offerings' %}" class="sidebar-link{% if request.resolver_match.url_name == 'gradebook_offerings' %} active{% endif %}"><span class="sidebar-icon">{% icon "bar-chart" %}</span> Gradebook</a>
                     <a href="{% url 'attendance_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'attendance_dashboard' %} active{% endif %}"><span class="sidebar-icon">{% icon "check-circle" %}</span> Attendance</a>
                     <a href="{% url 'term_report_dashboard' %}" class="sidebar-link{% if request.resolver_match.url_name == 'term_report_dashboard' %} active{% endif %}"><span class="sidebar-icon">{% icon "trending-up" %}</span> Reports</a>
@@ -155,6 +161,7 @@
         </aside>
 
         <div class="app-main">
+            <header class="ny-topbar"><div class="ny-topbar-school"><strong>{{ request.school.name|default:"Nyansa learning workspace" }}</strong><span>{% if request.school_membership %}{{ request.school_membership.get_role_display }}{% else %}Your workspace{% endif %}</span></div><div class="ny-topbar-right"><time datetime="{% now 'Y-m-d' %}">{% now "l, j F" %}</time><a class="ny-avatar" href="{% url 'profile' %}" aria-label="Your profile">{{ user.first_name|default:user.username|slice:":1"|upper }}</a></div></header>
     {% else %}
     <nav class="navbar" id="public-navbar">
         <div class="navbar-brand">
@@ -176,7 +183,7 @@
     </nav>
     {% endif %}
 
-    <main class="main-content">
+    <main class="main-content" id="main-content" tabindex="-1">
         {% if messages %}
             <div class="messages">
                 {% for message in messages %}

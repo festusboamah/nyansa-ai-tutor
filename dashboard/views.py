@@ -25,6 +25,7 @@ from schools.models import SchoolMembership
 from schools.services import has_school_role
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.utils import timezone
+from django.db.models import Q
 from .lesson_workflow import (
     add_lesson_comment,
     record_initial_lesson_version,
@@ -41,13 +42,11 @@ def teacher_dashboard_view(request):
         messages.error(request, "This page is only available to teachers.")
         return redirect("home")
 
-    subjects = Subject.objects.filter(
-        school=request.school, materials__teacher=request.user
-    ).distinct()
-    if not subjects.exists():
-        subjects = Subject.objects.filter(
-            school=request.school, quizzes__teacher=request.user
-        ).distinct()
+    subjects = Subject.objects.filter(school=request.school).filter(
+        Q(materials__teacher=request.user)
+        | Q(quizzes__teacher=request.user)
+        | Q(assignments__teacher=request.user)
+    ).distinct().order_by("name")
 
     subject_data = []
     for subject in subjects:
