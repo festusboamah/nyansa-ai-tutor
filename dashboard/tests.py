@@ -12,6 +12,7 @@ from quizzes.models import Quiz, Submission
 from schools.models import School, SchoolMembership
 
 from . import ai_reports, lesson_ai
+from .forms import LessonNoteForm
 from .lesson_workflow import (
     add_lesson_comment,
     record_initial_lesson_version,
@@ -104,7 +105,7 @@ class LessonNoteAccessBaselineTests(TestCase):
                 "performance_indicator": "",
                 "reference": "",
                 "resources": "Picture cards",
-                "num_days": 3,
+                "teaching_days": ["Monday", "Wednesday", "Friday"],
             },
             secure=True,
         )
@@ -171,7 +172,7 @@ class LessonNoteGESFieldsTests(TestCase):
                 "core_competencies": "",
                 "reference": "",
                 "resources": "",
-                "num_days": 1,
+                "teaching_days": ["Monday"],
             },
             secure=True,
         )
@@ -185,6 +186,68 @@ class LessonNoteGESFieldsTests(TestCase):
         self.assertIn("B7.3.1.1.1", note.learning_indicator)
         generate.assert_called_once()
         self.assertEqual(generate.call_args.kwargs["sub_strand"], "Measuring and marking out")
+
+    @patch("dashboard.views.generate_lesson_note")
+    def test_selected_teaching_days_are_passed_to_generation_as_a_list(self, generate):
+        generate.return_value = {"days": []}
+        self.client.force_login(self.teacher)
+
+        self.client.post(
+            reverse("create_lesson_note"),
+            {
+                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "strand_topic": "Tools", "content_standard": "",
+                "learning_indicator": "B7.3.1.1.1: Classify tools.", "performance_indicator": "",
+                "core_competencies": "", "reference": "", "resources": "",
+                "teaching_days": ["Monday", "Wednesday", "Friday"],
+            },
+            secure=True,
+        )
+
+        self.assertEqual(generate.call_args.kwargs["teaching_days"], ["Monday", "Wednesday", "Friday"])
+        note = LessonNote.objects.get(subject=self.subject)
+        self.assertEqual(note.teaching_days, "Monday, Wednesday, Friday")
+
+    @patch("dashboard.views.generate_lesson_note")
+    def test_async_post_returns_json_with_redirect_to_on_success(self, generate):
+        generate.return_value = {"days": []}
+        self.client.force_login(self.teacher)
+
+        response = self.client.post(
+            reverse("create_lesson_note"),
+            {
+                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "strand_topic": "Tools", "content_standard": "",
+                "learning_indicator": "B7.3.1.1.1: Classify tools.", "performance_indicator": "",
+                "core_competencies": "", "reference": "", "resources": "",
+                "teaching_days": ["Monday"],
+            },
+            secure=True, HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        note = LessonNote.objects.get(subject=self.subject)
+        self.assertEqual(response.json(), {"redirect_to": reverse("lesson_note_detail", args=[note.pk])})
+
+    @patch("dashboard.views.generate_lesson_note", return_value=None)
+    def test_async_post_returns_a_json_error_when_generation_fails(self, generate):
+        self.client.force_login(self.teacher)
+
+        response = self.client.post(
+            reverse("create_lesson_note"),
+            {
+                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "strand_topic": "Tools", "content_standard": "",
+                "learning_indicator": "B7.3.1.1.1: Classify tools.", "performance_indicator": "",
+                "core_competencies": "", "reference": "", "resources": "",
+                "teaching_days": ["Monday"],
+            },
+            secure=True, HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 502)
+        self.assertIn("error", response.json())
+        self.assertFalse(LessonNote.objects.filter(subject=self.subject).exists())
 
     @patch("dashboard.views.generate_lesson_note")
     def test_downloaded_docx_contains_the_ges_fields(self, generate):
@@ -207,7 +270,7 @@ class LessonNoteGESFieldsTests(TestCase):
                 "week_ending": "2026-08-07", "strand_topic": "Tools, equipment and processes",
                 "sub_strand": "Measuring and marking out", "content_standard": "",
                 "learning_indicator": "B7.3.1.1.1: Classify and use measuring tools.",
-                "performance_indicator": "", "core_competencies": "", "reference": "", "resources": "", "num_days": 1,
+                "performance_indicator": "", "core_competencies": "", "reference": "", "resources": "", "teaching_days": ["Monday"],
             },
             secure=True,
         )
@@ -224,6 +287,47 @@ class LessonNoteGESFieldsTests(TestCase):
         self.assertIn("Measuring and marking out", full_text)
         self.assertIn("Starter text", full_text)
         self.assertIn("Main text", full_text)
+
+
+class LessonNoteFormTests(TestCase):
+    def setUp(self):
+        self.school = School.objects.create(name="Form Test School", slug="form-test-school")
+        self.subject = Subject.objects.create(school=self.school, name="Mathematics")
+
+    def _data(self, **overrides):
+        data = {
+            "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+            "strand_topic": "Fractions", "content_standard": "",
+            "learning_indicator": "B7.3.1.1.1: Add fractions.", "performance_indicator": "",
+            "core_competencies": "", "reference": "", "resources": "",
+            "teaching_days": ["Monday", "Wednesday"],
+        }
+        data.update(overrides)
+        return data
+
+    def test_selected_days_are_joined_into_a_comma_separated_string(self):
+        form = LessonNoteForm(self._data(), school=self.school)
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["teaching_days"], "Monday, Wednesday")
+
+    def test_at_least_one_day_is_required(self):
+        form = LessonNoteForm(self._data(**{"teaching_days": []}), school=self.school)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("teaching_days", form.errors)
+
+    def test_editing_an_existing_note_pre_checks_its_stored_days(self):
+        note = LessonNote.objects.create(
+            teacher=User.objects.create_user(username="form-teacher", password="test-password", role=User.Role.TEACHER),
+            subject=self.subject, class_level="B7", week_ending=date(2026, 8, 7),
+            strand_topic="Fractions", learning_indicator="B7.3.1.1.1: Add fractions.",
+            teaching_days="Monday, Friday",
+        )
+
+        form = LessonNoteForm(instance=note, school=self.school)
+
+        self.assertEqual(form.initial["teaching_days"], ["Monday", "Friday"])
 
 
 class SchemeOfLearningTests(TestCase):
@@ -431,7 +535,7 @@ class PersonalSchoolGenerationGateTests(TestCase):
                 "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
                 "strand_topic": "Introduction to Computers", "content_standard": "",
                 "learning_indicator": "", "performance_indicator": "", "reference": "",
-                "resources": "", "num_days": 1,
+                "resources": "", "teaching_days": ["Monday"],
             },
             secure=True,
         )
@@ -440,6 +544,30 @@ class PersonalSchoolGenerationGateTests(TestCase):
         invoice = LicenseInvoice.objects.get(license=self.license)
         self.assertRedirects(response, reverse("billing_pay_invoice", args=[invoice.pk]), fetch_redirect_response=False)
         self.assertFalse(LessonNote.objects.filter(subject=self.subject).exists())
+
+    @patch("dashboard.views.generate_lesson_note")
+    def test_async_generation_past_the_free_limit_returns_a_json_redirect_to_pay(self, generate):
+        from billing.models import LicenseInvoice
+        from dashboard.personal_school_gate import FREE_GENERATION_LIMIT
+
+        self._use_up_free_generations(FREE_GENERATION_LIMIT)
+        self.client.force_login(self.teacher)
+
+        response = self.client.post(
+            reverse("create_lesson_note"),
+            {
+                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "strand_topic": "Introduction to Computers", "content_standard": "",
+                "learning_indicator": "", "performance_indicator": "", "reference": "",
+                "resources": "", "teaching_days": ["Monday"],
+            },
+            secure=True, HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        generate.assert_not_called()
+        invoice = LicenseInvoice.objects.get(license=self.license)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"redirect_to": reverse("billing_pay_invoice", args=[invoice.pk])})
 
 
 class LessonNoteApprovalWorkflowTests(TestCase):
@@ -609,7 +737,7 @@ class DashboardAIHelpersTests(TestCase):
     def test_generate_lesson_note_returns_parsed_dict_on_success(self, mock_client):
         mock_client.messages.create.return_value = _fake_response('{"content_standard": "Understand fractions"}')
         result = lesson_ai.generate_lesson_note(
-            "Basic 6", "Mathematics", "2026-09-12", "Fractions", "", "Add fractions", "", "", "", 3,
+            "Basic 6", "Mathematics", "2026-09-12", "Fractions", "", "Add fractions", "", "", "", ["Monday", "Wednesday", "Friday"],
         )
         self.assertEqual(result, {"content_standard": "Understand fractions"})
 
@@ -617,7 +745,7 @@ class DashboardAIHelpersTests(TestCase):
     def test_generate_lesson_note_falls_back_to_none_on_ai_failure(self, mock_client):
         mock_client.messages.create.side_effect = RuntimeError("down")
         result = lesson_ai.generate_lesson_note(
-            "Basic 6", "Mathematics", "2026-09-12", "Fractions", "", "Add fractions", "", "", "", 3,
+            "Basic 6", "Mathematics", "2026-09-12", "Fractions", "", "Add fractions", "", "", "", ["Monday", "Wednesday", "Friday"],
         )
         self.assertIsNone(result)
 

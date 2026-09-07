@@ -15,9 +15,10 @@ from .scheme_ai import generate_demo_scheme, generate_scheme_of_learning
 from .scheme_docx import build_scheme_of_learning_docx
 from .student_notes_ai import generate_demo_student_note, generate_student_notes
 from .student_note_docx import build_student_note_docx
-from .personal_school_gate import FREE_GENERATION_LIMIT, generation_allowed, redirect_to_subscribe
-from django.http import HttpResponse
+from .personal_school_gate import FREE_GENERATION_LIMIT, generation_allowed, redirect_to_subscribe, subscribe_redirect_url
+from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
+from django.urls import reverse
 from xhtml2pdf import pisa
 import markdown as md
 from .email_utils import send_report_email
@@ -124,8 +125,11 @@ def create_lesson_note_view(request):
         return redirect("home")
 
     if request.method == "POST":
+        is_async = request.headers.get("X-Requested-With") == "XMLHttpRequest"
         if not generation_allowed(request):
             messages.warning(request, f"You've used your {FREE_GENERATION_LIMIT} free generations - subscribe to keep going.")
+            if is_async:
+                return JsonResponse({"redirect_to": subscribe_redirect_url(request)})
             return redirect_to_subscribe(request)
         form = LessonNoteForm(request.POST, school=request.school)
         if form.is_valid():
@@ -143,7 +147,7 @@ def create_lesson_note_view(request):
                 performance_indicator=lesson_note.performance_indicator,
                 reference=lesson_note.reference,
                 resources=lesson_note.resources,
-                num_days=lesson_note.num_days,
+                teaching_days=[day.strip() for day in lesson_note.teaching_days.split(",")],
                 sub_strand=lesson_note.sub_strand,
                 core_competencies=lesson_note.core_competencies,
                 school=request.school,
@@ -161,13 +165,15 @@ def create_lesson_note_view(request):
                     performance_indicator=lesson_note.performance_indicator,
                     reference=lesson_note.reference,
                     resources=lesson_note.resources,
-                    num_days=lesson_note.num_days,
+                    teaching_days=[day.strip() for day in lesson_note.teaching_days.split(",")],
                 )
                 used_demo_fallback = True
 
             if result is None:
-                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
                 lesson_note.delete()
+                if is_async:
+                    return JsonResponse({"error": "AI generation is unavailable. Ask an administrator to configure the AI provider."}, status=502)
+                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
                 return redirect("create_lesson_note")
 
             import json
@@ -189,7 +195,11 @@ def create_lesson_note_view(request):
                 messages.warning(request, "Demo lesson template created without an external AI call. Review and edit it before submission.")
             else:
                 messages.success(request, "Lesson note generated successfully!")
+            if is_async:
+                return JsonResponse({"redirect_to": reverse("lesson_note_detail", args=[lesson_note.id])})
             return redirect("lesson_note_detail", note_id=lesson_note.id)
+        elif is_async:
+            return JsonResponse({"error": "Please check the form and try again."}, status=400)
     else:
         form = LessonNoteForm(school=request.school)
 
@@ -215,8 +225,11 @@ def create_scheme_of_learning_view(request):
         return redirect("home")
 
     if request.method == "POST":
+        is_async = request.headers.get("X-Requested-With") == "XMLHttpRequest"
         if not generation_allowed(request):
             messages.warning(request, f"You've used your {FREE_GENERATION_LIMIT} free generations - subscribe to keep going.")
+            if is_async:
+                return JsonResponse({"redirect_to": subscribe_redirect_url(request)})
             return redirect_to_subscribe(request)
         form = SchemeOfLearningForm(request.POST, school=request.school)
         if form.is_valid():
@@ -242,8 +255,10 @@ def create_scheme_of_learning_view(request):
                 used_demo_fallback = True
 
             if result is None:
-                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
                 scheme.delete()
+                if is_async:
+                    return JsonResponse({"error": "AI generation is unavailable. Ask an administrator to configure the AI provider."}, status=502)
+                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
                 return redirect("create_scheme_of_learning")
 
             import json
@@ -254,7 +269,11 @@ def create_scheme_of_learning_view(request):
                 messages.warning(request, "Demo scheme created without an external AI call. Review it before use.")
             else:
                 messages.success(request, "Scheme of learning generated successfully!")
+            if is_async:
+                return JsonResponse({"redirect_to": reverse("scheme_of_learning_detail", args=[scheme.id])})
             return redirect("scheme_of_learning_detail", scheme_id=scheme.id)
+        elif is_async:
+            return JsonResponse({"error": "Please check the form and try again."}, status=400)
     else:
         form = SchemeOfLearningForm(school=request.school)
 
@@ -315,8 +334,11 @@ def create_student_note_view(request):
         return redirect("home")
 
     if request.method == "POST":
+        is_async = request.headers.get("X-Requested-With") == "XMLHttpRequest"
         if not generation_allowed(request):
             messages.warning(request, f"You've used your {FREE_GENERATION_LIMIT} free generations - subscribe to keep going.")
+            if is_async:
+                return JsonResponse({"redirect_to": subscribe_redirect_url(request)})
             return redirect_to_subscribe(request)
         form = StudentNoteForm(request.POST, school=request.school)
         if form.is_valid():
@@ -339,8 +361,10 @@ def create_student_note_view(request):
                 used_demo_fallback = True
 
             if result is None:
-                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
                 note.delete()
+                if is_async:
+                    return JsonResponse({"error": "AI generation is unavailable. Ask an administrator to configure the AI provider."}, status=502)
+                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
                 return redirect("create_student_note")
 
             import json
@@ -351,7 +375,11 @@ def create_student_note_view(request):
                 messages.warning(request, "Demo student notes created without an external AI call. Review them before use.")
             else:
                 messages.success(request, "Student notes generated successfully!")
+            if is_async:
+                return JsonResponse({"redirect_to": reverse("student_note_detail", args=[note.id])})
             return redirect("student_note_detail", note_id=note.id)
+        elif is_async:
+            return JsonResponse({"error": "Please check the form and try again."}, status=400)
     else:
         form = StudentNoteForm(school=request.school)
 

@@ -241,7 +241,7 @@ class Command(BaseCommand):
                 "performance_indicator": "Learners accurately classify examples and justify their choices.",
                 "reference": "Synthetic curriculum demonstration",
                 "resources": "Picture cards, leaves, and a school-environment checklist",
-                "num_days": 3,
+                "teaching_days": "Monday, Wednesday, Friday",
                 "generated_content": '{"days":[{"day":"Monday","starter":"Observe school surroundings","main":"Classify living and non-living examples","reflection":"Explain one classification"},{"day":"Wednesday","starter":"Review classifications","main":"Map organisms to habitats","reflection":"Share one habitat relationship"},{"day":"Friday","starter":"Quick retrieval quiz","main":"Small-group environment audit","reflection":"Record one action to protect a habitat"}]}',
             },
         )

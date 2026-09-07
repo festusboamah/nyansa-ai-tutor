@@ -31,7 +31,10 @@ class LessonNote(models.Model):
     core_competencies = models.CharField(max_length=300, blank=True, help_text="e.g. Communication and Collaboration; Critical Thinking")
     reference = models.CharField(max_length=300, blank=True, help_text="Optional - defaults to a standard curriculum textbook if left blank.")
     resources = models.CharField(max_length=300, blank=True, help_text="Optional - defaults to standard classroom resources if left blank.")
-    num_days = models.PositiveIntegerField(default=5)
+    teaching_days = models.CharField(
+        max_length=100, blank=True,
+        help_text="Which days this lesson meets, e.g. Monday, Wednesday, Friday",
+    )
     generated_content = models.TextField(blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
     current_version = models.PositiveIntegerField(default=0)
@@ -50,7 +53,7 @@ class LessonNote(models.Model):
     EDITABLE_FIELDS = (
         "subject_id", "class_level", "class_size", "duration", "week_ending", "strand_topic",
         "sub_strand", "content_standard", "learning_indicator", "performance_indicator",
-        "core_competencies", "reference", "resources", "num_days", "generated_content",
+        "core_competencies", "reference", "resources", "teaching_days", "generated_content",
     )
 
     def clean(self):

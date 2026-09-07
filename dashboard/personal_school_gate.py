@@ -39,10 +39,12 @@ def generation_allowed(request):
     return used < FREE_GENERATION_LIMIT
 
 
-def redirect_to_subscribe(request):
-    """Sends the teacher to pay for a personal-school license, generating a
-    payable invoice on demand rather than waiting for the periodic billing
-    job (which only runs on a fixed schedule, not the moment usage runs out).
+def subscribe_redirect_url(request):
+    """Generates (on demand, rather than waiting for the periodic billing
+    job) a payable invoice for this personal school and returns the URL to
+    pay it. Shared by redirect_to_subscribe (full-page redirect) and the
+    async JSON generation-gate response, which needs the same URL string
+    to hand back to client-side JS.
     """
     from billing.models import LicenseInvoice, SchoolLicense
     from billing.services import generate_invoice
@@ -56,4 +58,10 @@ def redirect_to_subscribe(request):
         invoice = generate_invoice(
             school_license=license, period_start=today, period_end=today + timedelta(days=30),
         )
-    return redirect(reverse("billing_pay_invoice", args=[invoice.pk]))
+    return reverse("billing_pay_invoice", args=[invoice.pk])
+
+
+def redirect_to_subscribe(request):
+    """Sends the teacher to pay for a personal-school license (full-page
+    redirect - see subscribe_redirect_url for the async JSON equivalent)."""
+    return redirect(subscribe_redirect_url(request))

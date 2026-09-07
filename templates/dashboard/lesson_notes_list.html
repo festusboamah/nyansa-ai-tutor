@@ -12,7 +12,7 @@
     <a href="{% url 'lesson_note_detail' note.id %}" class="card study-doc-card">
         <h2>{{ note.subject.name }} - {{ note.strand_topic }}</h2>
         <p class="submission-date">{{ note.class_level }} | Week Ending {{ note.week_ending|date:"M d, Y" }}</p>
-        <p>{{ note.num_days }} day{{ note.num_days|pluralize }} plan</p>
+        <p>Meets {{ note.teaching_days }}</p>
         <span class="status-pill status-{{ note.status|lower }}">{{ note.get_status_display }}</span>
     </a>
     {% empty %}

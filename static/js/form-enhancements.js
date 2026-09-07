@@ -39,6 +39,10 @@
             form.addEventListener("submit", function (event) {
                 if (event.defaultPrevented) return;
                 if (!form.checkValidity()) return;
+                // ai-generation-form.js owns this form's submit UX (thinking
+                // dots instead of a static "Working..." label) - don't
+                // double-handle it here.
+                if (form.classList.contains("ai-generation-form")) return;
                 var submit = form.querySelector('button[type="submit"], input[type="submit"]');
                 if (!submit || submit.dataset.submitting === "true") return;
                 submit.dataset.submitting = "true";

@@ -1,9 +1,8 @@
 from ai_core.client import AIError, complete_json
 
 
-def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator, resources, num_days, **kwargs):
+def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator, resources, teaching_days, **kwargs):
     """Create a deterministic synthetic plan when the hosted demo has no AI credentials."""
-    day_names = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
     return {
         "content_standard": f"Demonstrate understanding of {strand_topic} in {subject_name}.",
         "learning_indicator": learning_indicator,
@@ -12,19 +11,19 @@ def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator,
         "resources": resources or "Chalkboard; learner notebooks; locally available teaching materials",
         "days": [
             {
-                "day": day_names[index % len(day_names)],
+                "day": day,
                 "starter": f"Review prior knowledge and introduce {strand_topic} with a familiar example.",
                 "main": f"Guide learners through a structured {subject_name} activity on {strand_topic}. Model the task, let learners practise in pairs, then discuss evidence of understanding as a class.",
                 "reflection": f"Ask learners to explain one idea about {strand_topic} and record what needs reinforcement.",
             }
-            for index in range(num_days)
+            for day in teaching_days
         ],
     }
 
 
 def generate_lesson_note(class_level, subject_name, week_ending, strand_topic,
                           content_standard, learning_indicator, performance_indicator,
-                          reference, resources, num_days, *, sub_strand="",
+                          reference, resources, teaching_days, *, sub_strand="",
                           core_competencies="", school=None):
     """
     Returns a dict: {"header": {...}, "days": [{"day": "Monday", "starter": "...", "main": "...", "reflection": "..."}, ...]}
@@ -43,7 +42,7 @@ Details:
 - Core Competencies: {core_competencies or "Infer 2-4 relevant ones, e.g. Communication and Collaboration; Critical Thinking and Problem Solving; Personal Development; Creativity and Innovation"}
 - Reference: {reference or "Standard curriculum textbook"}
 - Teaching/Learning Resources: {resources or "Standard classroom resources"}
-- Number of days to plan: {num_days}
+- Teaching Days: {", ".join(teaching_days)}
 
 Respond ONLY with valid JSON in this exact structure, nothing else - no markdown formatting, no code fences, no preamble:
 
@@ -63,7 +62,7 @@ Respond ONLY with valid JSON in this exact structure, nothing else - no markdown
   ]
 }}
 
-Include exactly {num_days} day entries (starting Monday). Each day's content must be specific and practical for {class_level} on the topic "{strand_topic}", building logically day to day. Keep each field's text plain (no markdown, no bullet symbols) since it will be placed directly into table cells."""
+Create one entry for each of these teaching days, in this exact order: {", ".join(teaching_days)}. Use these exact day names - do not add, remove, or rename any of them. Each day's content must be specific and practical for {class_level} on the topic "{strand_topic}", building logically day to day. Keep each field's text plain (no markdown, no bullet symbols) since it will be placed directly into table cells."""
 
     try:
         return complete_json(prompt, max_tokens=3000, school=school, source="lesson_ai")

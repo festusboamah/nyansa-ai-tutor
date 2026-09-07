@@ -3,13 +3,21 @@ import json
 from .models import LessonNote, SchemeOfLearning, StudentNote
 
 
+WEEKDAY_CHOICES = [(day, day) for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]]
+
+
 class LessonNoteForm(forms.ModelForm):
+    teaching_days = forms.MultipleChoiceField(
+        choices=WEEKDAY_CHOICES, widget=forms.CheckboxSelectMultiple,
+        help_text="Select the days this lesson meets during the week.",
+    )
+
     class Meta:
         model = LessonNote
         fields = [
             "subject", "class_level", "class_size", "duration", "week_ending", "strand_topic",
             "sub_strand", "content_standard", "learning_indicator", "performance_indicator",
-            "core_competencies", "reference", "resources", "num_days",
+            "core_competencies", "reference", "resources", "teaching_days",
         ]
         widgets = {
             "week_ending": forms.DateInput(attrs={"type": "date"}),
@@ -24,6 +32,11 @@ class LessonNoteForm(forms.ModelForm):
         self.fields["subject"].queryset = (
             Subject.objects.filter(school=school) if school else Subject.objects.none()
         )
+        if self.instance.pk and self.instance.teaching_days:
+            self.initial["teaching_days"] = [day.strip() for day in self.instance.teaching_days.split(",")]
+
+    def clean_teaching_days(self):
+        return ", ".join(self.cleaned_data["teaching_days"])
 
 
 class LessonNoteRevisionForm(LessonNoteForm):
