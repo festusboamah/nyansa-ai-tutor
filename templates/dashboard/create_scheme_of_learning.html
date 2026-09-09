@@ -4,7 +4,7 @@
 {% block content %}
 <div class="card form-card">
     <h1>{% icon "calendar" %} Create Scheme of Learning</h1>
-    <p>Fill in the details below to generate a term's week-by-week topic table. Review it before use.</p>
+    <p>Create a yearly overview across three terms, or a detailed termly scheme with content standards, indicators and resources. Strands can continue across several weeks. Review curriculum references and pacing before use.</p>
     <form method="post" class="ai-generation-form">
         {% csrf_token %}
         {{ form.as_p }}

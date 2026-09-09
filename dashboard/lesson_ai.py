@@ -1,4 +1,5 @@
 from ai_core.client import AIError, complete_json
+from .curriculum import curriculum_pages, evidence_prompt, references, valid_codes, codes, valid_alignment, source_wording
 
 
 def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator, resources, teaching_days, **kwargs):
@@ -28,6 +29,7 @@ def generate_lesson_note(class_level, subject_name, week_ending, strand_topic,
     """
     Returns a dict: {"header": {...}, "days": [{"day": "Monday", "starter": "...", "main": "...", "reflection": "..."}, ...]}
     """
+    pages = curriculum_pages(subject_name, class_level, " ".join([strand_topic, sub_strand, content_standard, learning_indicator]))
     prompt = f"""You are an experienced teacher creating a weekly lesson plan following the Ghana Education Service (GES) standards-based curriculum format.
 
 Details:
@@ -36,8 +38,8 @@ Details:
 - Week Ending: {week_ending}
 - Strand: {strand_topic}
 - Sub-Strand: {sub_strand or "Not specified - infer a reasonable one from the strand"}
-- Content Standard: {content_standard or "Not specified - infer a reasonable one from the topic"}
-- Learning Indicator(s): {learning_indicator or "Not specified - infer one, and write it in the official GES format '<code>: <description>', e.g. 'B7.3.1.1.1: Classify and use measuring and marking out tools and equipment for production'"}
+- Content Standard: {content_standard or "Select the matching standard from curriculum evidence; otherwise Curriculum reference required"}
+- Learning Indicator(s): {learning_indicator or "Select from curriculum evidence in code: description format; otherwise Curriculum reference required"}
 - Performance Indicator(s): {performance_indicator or "Infer reasonable performance indicators"}
 - Core Competencies: {core_competencies or "Infer 2-4 relevant ones, e.g. Communication and Collaboration; Critical Thinking and Problem Solving; Personal Development; Creativity and Innovation"}
 - Reference: {reference or "Standard curriculum textbook"}
@@ -64,7 +66,38 @@ Respond ONLY with valid JSON in this exact structure, nothing else - no markdown
 
 Create one entry for each of these teaching days, in this exact order: {", ".join(teaching_days)}. Use these exact day names - do not add, remove, or rename any of them. Each day's content must be specific and practical for {class_level} on the topic "{strand_topic}", building logically day to day. Keep each field's text plain (no markdown, no bullet symbols) since it will be placed directly into table cells."""
 
+    prompt += evidence_prompt(pages)
     try:
-        return complete_json(prompt, max_tokens=3000, school=school, source="lesson_ai")
+        result = complete_json(prompt, max_tokens=5000, school=school, source="lesson_ai")
+        if not isinstance(result, dict) or not isinstance(result.get("days"), list):
+            return None
+        if len(result["days"]) != len(teaching_days):
+            return None
+        for day, expected in zip(result["days"], teaching_days):
+            if not isinstance(day, dict) or day.get("day") != expected:
+                return None
+            if any(not isinstance(day.get(k), str) or not day[k].strip() or len(day[k]) > 6000 for k in ("starter", "main", "reflection")):
+                return None
+        for field in ("content_standard", "learning_indicator", "performance_indicators", "core_competencies", "resources"):
+            if not isinstance(result.get(field), str) or len(result[field]) > (300 if field in {"core_competencies", "resources"} else 4000):
+                return None
+        for text in (result["content_standard"], result["learning_indicator"], content_standard, learning_indicator):
+            if codes(text) and not valid_codes(text, pages, class_level):
+                return None
+        if pages and any(not valid_codes(result[field], pages, class_level)
+                         for field in ("content_standard", "learning_indicator")):
+            return None
+        if pages and not valid_alignment(result["content_standard"], result["learning_indicator"]):
+            return None
+        if pages and any(not source_wording(result[field], pages)
+                         for field in ("content_standard", "learning_indicator")):
+            return None
+        result["curriculum_sources"] = references(pages)
+        result["curriculum_warning"] = "Review curriculum wording and activities before use."
+        if not pages:
+            result["content_standard"] = content_standard or "Curriculum reference required"
+            result["learning_indicator"] = learning_indicator or "Curriculum reference required"
+            result["curriculum_warning"] = "No matching curriculum evidence in the supplied pack. Teacher-supplied references require verification."
+        return result
     except AIError:
         return None

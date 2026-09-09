@@ -1,0 +1,7 @@
+<section class="lesson-vetting">
+    <h2 class="keep-with-next">Headteacher Vetting</h2>
+    <p class="keep-with-next"><strong>Headteacher Name:</strong> {% if note.date_vetted and note.reviewed_by %}{{ note.reviewed_by.user.get_full_name|default:note.reviewed_by.user.username }}{% else %}________________________{% endif %}</p>
+    <p class="keep-with-next"><strong>Date Vetted:</strong> {% if note.date_vetted %}{{ note.date_vetted|date:"d/m/Y" }}{% else %}________________________{% endif %}</p>
+    <p class="keep-with-next"><strong>Headteacher Signature:</strong> ________________________</p>
+    <p><strong>Remarks:</strong> ________________________________________________________</p>
+</section>

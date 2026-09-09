@@ -1,10 +1,23 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}{{ scheme.subject.name }} Scheme of Learning - Nyansa{% endblock %}
 {% block content %}
-<h1>{{ scheme.subject.name }}: Scheme of Learning</h1>
-<p>{{ scheme.class_level }} · {{ scheme.term }}</p>
+<h1>{{ scheme.subject.name }}: {{ scheme.get_plan_type_display }} Scheme of Learning</h1>
+<p>{{ scheme.class_level }} · {{ scheme.academic_year }} · {{ scheme.term }}</p>
 {% if scheme_data %}
-<table class="lesson-table"><tr><th>Week</th><th>Topic</th></tr>{% for week in scheme_data.weeks %}<tr><td>{{ week.week }}</td><td>{{ week.topic }}</td></tr>{% endfor %}</table>
+<div style="overflow-x:auto" tabindex="0" role="region" aria-label="Scheme of learning table">
+<table class="lesson-table">
+{% if scheme.plan_type == "YEARLY" %}
+<thead><tr><th scope="col">Week</th><th scope="col">First Term</th><th scope="col">Second Term</th><th scope="col">Third Term</th></tr></thead>
+<tbody>{% for week in scheme_data.weeks %}<tr><th scope="row">{{ week.week }}</th><td>{{ week.term_1 }}</td><td>{{ week.term_2 }}</td><td>{{ week.term_3 }}</td></tr>{% endfor %}</tbody>
+{% elif scheme_data.weeks.0.strand %}
+<thead><tr><th scope="col">Week</th><th scope="col">Strand</th><th scope="col">Sub-Strand</th><th scope="col">Content Standard</th><th scope="col">Indicators</th><th scope="col">Resources</th></tr></thead>
+<tbody>{% for week in scheme_data.weeks %}<tr><th scope="row">{{ week.week }}</th><td>{{ week.strand }}</td><td>{{ week.sub_strand }}</td><td>{{ week.content_standard }}</td><td>{{ week.indicators }}</td><td>{{ week.resources }}</td></tr>{% endfor %}</tbody>
+{% else %}
+<thead><tr><th scope="col">Week</th><th scope="col">Topic</th></tr></thead>
+<tbody>{% for week in scheme_data.weeks %}<tr><th scope="row">{{ week.week }}</th><td>{{ week.topic }}</td></tr>{% endfor %}</tbody>
+{% endif %}
+</table></div>
+{% include "dashboard/curriculum_sources.html" with data=scheme_data %}
 {% else %}<div class="card"><p>This scheme could not be loaded properly.</p></div>{% endif %}
 <div class="result-actions"><a href="{% url 'download_scheme_of_learning_docx' scheme.id %}" class="btn-small">Download Word</a><a href="{% url 'schemes_of_learning_list' %}" class="btn-small btn-secondary">Back</a></div>
 {% endblock %}

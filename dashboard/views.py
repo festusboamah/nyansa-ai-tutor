@@ -144,6 +144,7 @@ def create_lesson_note_view(request):
         if form.is_valid():
             lesson_note = form.save(commit=False)
             lesson_note.teacher = request.user
+            lesson_note.teacher_name = lesson_note.teacher_name or request.user.get_full_name() or request.user.username
             lesson_note.save()
 
             result = generate_lesson_note(
@@ -181,16 +182,14 @@ def create_lesson_note_view(request):
             if result is None:
                 lesson_note.delete()
                 if is_async:
-                    return JsonResponse({"error": "AI generation is unavailable. Ask an administrator to configure the AI provider."}, status=502)
-                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
+                    return JsonResponse({"error": "A complete curriculum-aligned draft could not be generated. Check the class, subject and indicator references, then retry. If this continues, ask an administrator to check the AI provider."}, status=502)
+                messages.error(request, "A complete curriculum-aligned draft could not be generated. Check the class, subject and indicator references, then retry. If this continues, ask an administrator to check the AI provider.")
                 return redirect("create_lesson_note")
 
             import json
             lesson_note.generated_content = json.dumps(result)
-            if not lesson_note.content_standard:
-                lesson_note.content_standard = result.get("content_standard", "")
-            if not lesson_note.learning_indicator:
-                lesson_note.learning_indicator = result.get("learning_indicator", "")
+            lesson_note.content_standard = result.get("content_standard", lesson_note.content_standard)
+            lesson_note.learning_indicator = result.get("learning_indicator", lesson_note.learning_indicator)
             if not lesson_note.performance_indicator:
                 lesson_note.performance_indicator = result.get("performance_indicators", "")
             if not lesson_note.core_competencies:
@@ -258,6 +257,8 @@ def create_scheme_of_learning_view(request):
                 term=scheme.term,
                 num_weeks=scheme.num_weeks,
                 starting_topics=form.cleaned_data.get("starting_topics", ""),
+                plan_type=scheme.plan_type,
+                academic_year=scheme.academic_year,
                 school=request.school,
             )
 
@@ -266,14 +267,15 @@ def create_scheme_of_learning_view(request):
                 result = generate_demo_scheme(
                     class_level=scheme.class_level, subject_name=scheme.subject.name,
                     term=scheme.term, num_weeks=scheme.num_weeks,
+                    plan_type=scheme.plan_type,
                 )
                 used_demo_fallback = True
 
             if result is None:
                 scheme.delete()
                 if is_async:
-                    return JsonResponse({"error": "AI generation is unavailable. Ask an administrator to configure the AI provider."}, status=502)
-                messages.error(request, "AI generation is unavailable. Ask an administrator to configure the AI provider.")
+                    return JsonResponse({"error": "A complete curriculum-aligned draft could not be generated. Check the class, subject and indicator references, then retry. If this continues, ask an administrator to check the AI provider."}, status=502)
+                messages.error(request, "A complete curriculum-aligned draft could not be generated. Check the class, subject and indicator references, then retry. If this continues, ask an administrator to check the AI provider.")
                 return redirect("create_scheme_of_learning")
 
             import json

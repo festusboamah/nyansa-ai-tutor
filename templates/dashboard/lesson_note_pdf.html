@@ -1,12 +1,15 @@
 <html>
 <head>
 <style>
+    @page { size: a4 landscape; margin: 12mm; }
     body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; }
-    h1 { font-size: 16px; color: #4f46e5; }
-    h2 { font-size: 13px; color: #4f46e5; margin-top: 16px; }
+    h1 { font-size: 16px; color: #000000; }
+    h2 { font-size: 13px; color: #000000; margin-top: 16px; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
     th { background-color: #4f46e5; color: white; padding: 6px 8px; text-align: left; }
-    td { padding: 6px 8px; border: 1px solid #cccccc; vertical-align: top; }
+    td { padding: 3px 6px; border: 1px solid #cccccc; vertical-align: top; }
+    .lesson-vetting p { margin: 5px 0; }
+    .keep-with-next { -pdf-keep-with-next: true; }
     tr:nth-child(even) td { background-color: #f5f5f5; }
 </style>
 </head>
@@ -15,9 +18,9 @@
     <p><strong>Class:</strong> {{ note.class_level }} | <strong>Week Ending:</strong> {{ note.week_ending|date:"M d, Y" }}</p>
 
     {% if lesson_data %}
-    <table>
-        <tr><th>Field</th><th>Details</th></tr>
-        <tr><td>Class</td><td>{{ note.class_level }}</td></tr>
+    <table repeat="1">
+        <tr><th width="20%">Field</th><th width="80%">Details</th></tr>
+        <tr><td>Teacher Name</td><td>{{ note.display_teacher_name }}</td></tr><tr><td>Class</td><td>{{ note.class_level }}</td></tr>
         <tr><td>Class Size</td><td>{{ note.class_size|default:"-" }}</td></tr>
         <tr><td>Duration</td><td>{{ note.duration|default:"-" }}</td></tr>
         <tr><td>Subject</td><td>{{ note.subject.name }}</td></tr>
@@ -33,12 +36,12 @@
     </table>
 
     <h2>Daily Lesson Breakdown</h2>
-    <table>
+    <table repeat="1">
         <tr>
-            <th>Day</th>
-            <th>Starter Activity</th>
-            <th>Main Activity</th>
-            <th>Reflection</th>
+            <th width="8%">Day / Date</th>
+            <th width="22%">Phase 1: Starter</th>
+            <th width="45%">Phase 2: Main</th>
+            <th width="25%">Phase 3: Reflection</th>
         </tr>
         {% for day in lesson_data.days %}
         <tr>
@@ -50,5 +53,7 @@
         {% endfor %}
     </table>
     {% endif %}
+{% include "dashboard/curriculum_sources.html" with data=lesson_data %}
+{% include "dashboard/lesson_vetting.html" %}
 </body>
 </html>

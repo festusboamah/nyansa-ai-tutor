@@ -841,12 +841,12 @@ class DashboardAIHelpersTests(TestCase):
         self.subject = Subject.objects.create(school=self.school, name="Mathematics")
 
     @patch("ai_core.client.client")
-    def test_generate_lesson_note_returns_parsed_dict_on_success(self, mock_client):
+    def test_generate_lesson_note_rejects_incomplete_json(self, mock_client):
         mock_client.messages.create.return_value = _fake_response('{"content_standard": "Understand fractions"}')
         result = lesson_ai.generate_lesson_note(
             "Basic 6", "Mathematics", "2026-09-12", "Fractions", "", "Add fractions", "", "", "", ["Monday", "Wednesday", "Friday"],
         )
-        self.assertEqual(result, {"content_standard": "Understand fractions"})
+        self.assertIsNone(result)
 
     @patch("ai_core.client.client")
     def test_generate_lesson_note_falls_back_to_none_on_ai_failure(self, mock_client):

@@ -15,7 +15,7 @@ class LessonNoteForm(forms.ModelForm):
     class Meta:
         model = LessonNote
         fields = [
-            "subject", "class_level", "class_size", "duration", "week_ending", "strand_topic",
+            "subject", "teacher_name", "class_level", "class_size", "duration", "week_ending", "strand_topic",
             "sub_strand", "content_standard", "learning_indicator", "performance_indicator",
             "core_competencies", "reference", "resources", "teaching_days",
         ]
@@ -68,6 +68,9 @@ class LessonCommentForm(forms.Form):
 
 
 class SchemeOfLearningForm(forms.ModelForm):
+    plan_type = forms.ChoiceField(choices=[("TERMLY", "Termly"), ("YEARLY", "Yearly")], required=False, initial="TERMLY")
+    term = forms.CharField(required=False, max_length=100, help_text="Required for a termly scheme, e.g. Term 2. Yearly schemes cover all three terms.")
+    num_weeks = forms.IntegerField(min_value=1, max_value=16, initial=12, label="Weeks per term")
     starting_topics = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={"rows": 2}),
@@ -76,7 +79,18 @@ class SchemeOfLearningForm(forms.ModelForm):
 
     class Meta:
         model = SchemeOfLearning
-        fields = ["subject", "class_level", "term", "num_weeks"]
+        fields = ["subject", "class_level", "plan_type", "academic_year", "term", "num_weeks"]
+
+    def clean(self):
+        cleaned = super().clean()
+        cleaned["plan_type"] = cleaned.get("plan_type") or "TERMLY"
+        if cleaned["plan_type"] == "YEARLY":
+            cleaned["term"] = "All three terms"
+            if not cleaned.get("academic_year"):
+                self.add_error("academic_year", "Enter the academic year for this yearly scheme.")
+        elif not cleaned.get("term"):
+            self.add_error("term", "Enter the term for this termly scheme.")
+        return cleaned
 
     def __init__(self, *args, school=None, **kwargs):
         from courses.models import Subject

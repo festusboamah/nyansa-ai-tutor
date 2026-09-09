@@ -1,0 +1,4 @@
+{% if data.curriculum_warning %}<p>{{ data.curriculum_warning }}</p>{% endif %}
+{% if data.curriculum_sources %}
+<p><strong>Curriculum reference:</strong> {{ data.curriculum_sources.0.filename }}. PDF pages: {% for source in data.curriculum_sources %}{{ source.page }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+{% endif %}

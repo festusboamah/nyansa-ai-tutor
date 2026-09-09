@@ -18,14 +18,15 @@ class LessonNote(models.Model):
         Subject, on_delete=models.CASCADE, related_name="lesson_notes"
     )
     class_level = models.CharField(max_length=100, help_text="e.g. Basic 5, JHS 2")
+    teacher_name = models.CharField(max_length=150, blank=True, help_text="Name printed on the lesson note; defaults to your profile name.")
     class_size = models.PositiveIntegerField(null=True, blank=True, help_text="e.g. 35")
     duration = models.CharField(max_length=100, blank=True, help_text="e.g. 1 hour, 40 minutes")
     week_ending = models.DateField()
     strand_topic = models.CharField(max_length=200, help_text="e.g. Numbers, Reproduction")
     sub_strand = models.CharField(max_length=200, blank=True, help_text="e.g. Cutting/Shaping")
-    content_standard = models.TextField(blank=True, help_text="Optional - the AI will infer one from the topic if left blank.")
+    content_standard = models.TextField(blank=True, help_text="Optional - selected from the supplied NaCCA curriculum where available.")
     learning_indicator = models.TextField(
-        help_text="e.g. B7.3.1.1.1: Classify and use measuring and marking out tools and equipment for production"
+        blank=True, help_text="Optional - selected from the supplied NaCCA curriculum. You can enter a specific indicator code and wording."
     )
     performance_indicator = models.TextField(blank=True, help_text="Optional - the AI will infer reasonable ones if left blank.")
     core_competencies = models.CharField(max_length=300, blank=True, help_text="e.g. Communication and Collaboration; Critical Thinking")
@@ -51,7 +52,7 @@ class LessonNote(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     EDITABLE_FIELDS = (
-        "subject_id", "class_level", "class_size", "duration", "week_ending", "strand_topic",
+        "subject_id", "teacher_name", "class_level", "class_size", "duration", "week_ending", "strand_topic",
         "sub_strand", "content_standard", "learning_indicator", "performance_indicator",
         "core_competencies", "reference", "resources", "teaching_days", "generated_content",
     )
@@ -76,6 +77,14 @@ class LessonNote(models.Model):
 
     def __str__(self):
         return f"{self.subject.name} - {self.strand_topic} ({self.week_ending})"
+
+    @property
+    def display_teacher_name(self):
+        return self.teacher_name or self.teacher.get_full_name() or self.teacher.username
+
+    @property
+    def date_vetted(self):
+        return self.reviewed_at if self.status == self.Status.APPROVED else None
 
 
 class LessonNoteVersion(models.Model):
@@ -161,9 +170,7 @@ class LessonNoteNotification(models.Model):
 
 
 class SchemeOfLearning(models.Model):
-    """A term's week-by-week topic table (the sample's "Yearly Scheme of
-    Learning"). No approval workflow - a teacher's own working document,
-    unlike LessonNote which a school may review."""
+    """A yearly overview or detailed termly plan, owned by its teacher."""
 
     teacher = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="schemes_of_learning"
@@ -171,6 +178,8 @@ class SchemeOfLearning(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="schemes_of_learning")
     class_level = models.CharField(max_length=100, help_text="e.g. Basic 5, JHS 2")
     term = models.CharField(max_length=100, help_text="e.g. Term 2")
+    plan_type = models.CharField(max_length=6, choices=[("TERMLY", "Termly"), ("YEARLY", "Yearly")], default="TERMLY")
+    academic_year = models.CharField(max_length=30, blank=True, help_text="e.g. 2026/2027")
     num_weeks = models.PositiveIntegerField(default=12)
     generated_content = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
