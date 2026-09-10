@@ -48,6 +48,7 @@ def build_lesson_note_docx(note, lesson_data):
         ("Duration", note.duration or "-"),
         ("Subject", note.subject.name),
         ("Reference", note.reference or "-"),
+        ("Week", note.week_label),
         ("Week Ending", note.week_ending.strftime("%b %d, %Y")),
         ("Strand", note.strand_topic),
         ("Sub-Strand", note.sub_strand or "-"),

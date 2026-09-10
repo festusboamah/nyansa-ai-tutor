@@ -2,9 +2,10 @@ from ai_core.client import AIError, complete_json
 from .curriculum import curriculum_pages, evidence_prompt, references, valid_codes, codes, valid_alignment, source_wording
 
 
-def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator, resources, teaching_days, **kwargs):
+def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator, resources, teaching_days, week_number=1, **kwargs):
     """Create a deterministic synthetic plan when the hosted demo has no AI credentials."""
     return {
+        "week": f"Week {week_number}",
         "content_standard": f"Demonstrate understanding of {strand_topic} in {subject_name}.",
         "learning_indicator": learning_indicator,
         "performance_indicators": learning_indicator,
@@ -24,7 +25,7 @@ def generate_demo_lesson_note(*, subject_name, strand_topic, learning_indicator,
 
 def generate_lesson_note(class_level, subject_name, week_ending, strand_topic,
                           content_standard, learning_indicator, performance_indicator,
-                          reference, resources, teaching_days, *, sub_strand="",
+                          reference, resources, teaching_days, *, week_number=1, sub_strand="",
                           core_competencies="", school=None):
     """
     Returns a dict: {"header": {...}, "days": [{"day": "Monday", "starter": "...", "main": "...", "reflection": "..."}, ...]}
@@ -35,6 +36,7 @@ def generate_lesson_note(class_level, subject_name, week_ending, strand_topic,
 Details:
 - Class: {class_level}
 - Subject: {subject_name}
+- Week: Week {week_number}
 - Week Ending: {week_ending}
 - Strand: {strand_topic}
 - Sub-Strand: {sub_strand or "Not specified - infer a reasonable one from the strand"}
@@ -49,6 +51,7 @@ Details:
 Respond ONLY with valid JSON in this exact structure, nothing else - no markdown formatting, no code fences, no preamble:
 
 {{
+  "week": "Week {week_number}",
   "content_standard": "the content standard, written out fully",
   "learning_indicator": "the indicator in '<code>: <description>' format",
   "performance_indicators": "performance indicators as a single string, semicolon separated",
@@ -78,6 +81,9 @@ Create one entry for each of these teaching days, in this exact order: {", ".joi
                 return None
             if any(not isinstance(day.get(k), str) or not day[k].strip() or len(day[k]) > 6000 for k in ("starter", "main", "reflection")):
                 return None
+        if result.get("week") not in (None, f"Week {week_number}"):
+            return None
+        result["week"] = f"Week {week_number}"
         for field in ("content_standard", "learning_indicator", "performance_indicators", "core_competencies", "resources"):
             if not isinstance(result.get(field), str) or len(result[field]) > (300 if field in {"core_competencies", "resources"} else 4000):
                 return None

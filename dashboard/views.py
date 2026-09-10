@@ -158,6 +158,7 @@ def create_lesson_note_view(request):
                 reference=lesson_note.reference,
                 resources=lesson_note.resources,
                 teaching_days=[day.strip() for day in lesson_note.teaching_days.split(",")],
+                week_number=lesson_note.week_number,
                 sub_strand=lesson_note.sub_strand,
                 core_competencies=lesson_note.core_competencies,
                 school=request.school,
@@ -176,6 +177,7 @@ def create_lesson_note_view(request):
                     reference=lesson_note.reference,
                     resources=lesson_note.resources,
                     teaching_days=[day.strip() for day in lesson_note.teaching_days.split(",")],
+                    week_number=lesson_note.week_number,
                 )
                 used_demo_fallback = True
 

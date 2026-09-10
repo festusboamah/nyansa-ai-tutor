@@ -15,7 +15,7 @@
 </head>
 <body>
     <h1>{{ note.subject.name }}: {{ note.strand_topic }}</h1>
-    <p><strong>Class:</strong> {{ note.class_level }} | <strong>Week Ending:</strong> {{ note.week_ending|date:"M d, Y" }}</p>
+    <p><strong>Class:</strong> {{ note.class_level }} | <strong>Week:</strong> {{ note.week_label }} | <strong>Week Ending:</strong> {{ note.week_ending|date:"M d, Y" }}</p>
 
     {% if lesson_data %}
     <table repeat="1">
@@ -25,6 +25,7 @@
         <tr><td>Duration</td><td>{{ note.duration|default:"-" }}</td></tr>
         <tr><td>Subject</td><td>{{ note.subject.name }}</td></tr>
         <tr><td>Reference</td><td>{{ note.reference|default:"-" }}</td></tr>
+        <tr><td>Week</td><td>{{ note.week_label }}</td></tr>
         <tr><td>Week Ending</td><td>{{ note.week_ending|date:"M d, Y" }}</td></tr>
         <tr><td>Strand</td><td>{{ note.strand_topic }}</td></tr>
         <tr><td>Sub-Strand</td><td>{{ note.sub_strand|default:"-" }}</td></tr>

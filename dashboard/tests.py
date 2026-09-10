@@ -99,6 +99,7 @@ class LessonNoteAccessBaselineTests(TestCase):
             {
                 "subject": self.subject.pk,
                 "class_level": "JHS 2",
+                "week_number": 2,
                 "week_ending": "2026-08-07",
                 "strand_topic": "Habitats",
                 "content_standard": "",
@@ -162,6 +163,7 @@ class LessonNoteGESFieldsTests(TestCase):
             {
                 "subject": self.subject.pk,
                 "class_level": "B7",
+                "week_number": 3,
                 "class_size": 45,
                 "duration": "1 hour",
                 "week_ending": "2026-08-07",
@@ -181,12 +183,14 @@ class LessonNoteGESFieldsTests(TestCase):
         note = LessonNote.objects.get(subject=self.subject)
         self.assertRedirects(response, reverse("lesson_note_detail", args=[note.pk]), fetch_redirect_response=False)
         self.assertEqual(note.class_size, 45)
+        self.assertEqual(note.week_number, 3)
         self.assertEqual(note.duration, "1 hour")
         self.assertEqual(note.sub_strand, "Measuring and marking out")
         self.assertEqual(note.core_competencies, "Communication and Collaboration; Critical Thinking")
         self.assertIn("B7.3.1.1.1", note.learning_indicator)
         generate.assert_called_once()
         self.assertEqual(generate.call_args.kwargs["sub_strand"], "Measuring and marking out")
+        self.assertEqual(generate.call_args.kwargs["week_number"], 3)
 
     @patch("dashboard.views.generate_lesson_note")
     def test_selected_teaching_days_are_passed_to_generation_as_a_list(self, generate):
@@ -196,7 +200,7 @@ class LessonNoteGESFieldsTests(TestCase):
         self.client.post(
             reverse("create_lesson_note"),
             {
-                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "subject": self.subject.pk, "class_level": "B7", "week_number": 4, "week_ending": "2026-08-07",
                 "strand_topic": "Tools", "content_standard": "",
                 "learning_indicator": "B7.3.1.1.1: Classify tools.", "performance_indicator": "",
                 "core_competencies": "", "reference": "", "resources": "",
@@ -208,6 +212,7 @@ class LessonNoteGESFieldsTests(TestCase):
         self.assertEqual(generate.call_args.kwargs["teaching_days"], ["Monday", "Wednesday", "Friday"])
         note = LessonNote.objects.get(subject=self.subject)
         self.assertEqual(note.teaching_days, "Monday, Wednesday, Friday")
+        self.assertEqual(note.week_label, "Week 4")
 
     @patch("dashboard.views.generate_lesson_note")
     def test_async_post_returns_json_with_redirect_to_on_success(self, generate):
@@ -217,7 +222,7 @@ class LessonNoteGESFieldsTests(TestCase):
         response = self.client.post(
             reverse("create_lesson_note"),
             {
-                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "subject": self.subject.pk, "class_level": "B7", "week_number": 4, "week_ending": "2026-08-07",
                 "strand_topic": "Tools", "content_standard": "",
                 "learning_indicator": "B7.3.1.1.1: Classify tools.", "performance_indicator": "",
                 "core_competencies": "", "reference": "", "resources": "",
@@ -237,7 +242,7 @@ class LessonNoteGESFieldsTests(TestCase):
         response = self.client.post(
             reverse("create_lesson_note"),
             {
-                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "subject": self.subject.pk, "class_level": "B7", "week_number": 4, "week_ending": "2026-08-07",
                 "strand_topic": "Tools", "content_standard": "",
                 "learning_indicator": "B7.3.1.1.1: Classify tools.", "performance_indicator": "",
                 "core_competencies": "", "reference": "", "resources": "",
@@ -267,7 +272,7 @@ class LessonNoteGESFieldsTests(TestCase):
         self.client.post(
             reverse("create_lesson_note"),
             {
-                "subject": self.subject.pk, "class_level": "B7", "class_size": 45, "duration": "1 hour",
+                "subject": self.subject.pk, "class_level": "B7", "week_number": 5, "class_size": 45, "duration": "1 hour",
                 "week_ending": "2026-08-07", "strand_topic": "Tools, equipment and processes",
                 "sub_strand": "Measuring and marking out", "content_standard": "",
                 "learning_indicator": "B7.3.1.1.1: Classify and use measuring tools.",
@@ -286,6 +291,7 @@ class LessonNoteGESFieldsTests(TestCase):
         document = Document(BytesIO(response.content))
         full_text = "\n".join(cell.text for table in document.tables for row in table.rows for cell in row.cells)
         self.assertIn("Measuring and marking out", full_text)
+        self.assertIn("Week 5", full_text)
         self.assertIn("Starter text", full_text)
         self.assertIn("Main text", full_text)
 
@@ -297,7 +303,7 @@ class LessonNoteFormTests(TestCase):
 
     def _data(self, **overrides):
         data = {
-            "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+            "subject": self.subject.pk, "class_level": "B7", "week_number": 4, "week_ending": "2026-08-07",
             "strand_topic": "Fractions", "content_standard": "",
             "learning_indicator": "B7.3.1.1.1: Add fractions.", "performance_indicator": "",
             "core_competencies": "", "reference": "", "resources": "",
@@ -587,7 +593,7 @@ class PersonalSchoolGenerationGateTests(TestCase):
         response = self.client.post(
             reverse("create_lesson_note"),
             {
-                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "subject": self.subject.pk, "class_level": "B7", "week_number": 4, "week_ending": "2026-08-07",
                 "strand_topic": "Introduction to Computers", "content_standard": "",
                 "learning_indicator": "", "performance_indicator": "", "reference": "",
                 "resources": "", "teaching_days": ["Monday"],
@@ -611,7 +617,7 @@ class PersonalSchoolGenerationGateTests(TestCase):
         response = self.client.post(
             reverse("create_lesson_note"),
             {
-                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "subject": self.subject.pk, "class_level": "B7", "week_number": 4, "week_ending": "2026-08-07",
                 "strand_topic": "Introduction to Computers", "content_standard": "",
                 "learning_indicator": "", "performance_indicator": "", "reference": "",
                 "resources": "", "teaching_days": ["Monday"],
@@ -637,7 +643,7 @@ class PersonalSchoolGenerationGateTests(TestCase):
         response = self.client.post(
             reverse("create_lesson_note"),
             {
-                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "subject": self.subject.pk, "class_level": "B7", "week_number": 4, "week_ending": "2026-08-07",
                 "strand_topic": "Introduction to Computers", "content_standard": "",
                 "learning_indicator": "", "performance_indicator": "", "reference": "",
                 "resources": "", "teaching_days": ["Monday"],
@@ -664,7 +670,7 @@ class PersonalSchoolGenerationGateTests(TestCase):
         response = self.client.post(
             reverse("create_lesson_note"),
             {
-                "subject": self.subject.pk, "class_level": "B7", "week_ending": "2026-08-07",
+                "subject": self.subject.pk, "class_level": "B7", "week_number": 4, "week_ending": "2026-08-07",
                 "strand_topic": "Introduction to Computers", "content_standard": "",
                 "learning_indicator": "", "performance_indicator": "", "reference": "",
                 "resources": "", "teaching_days": ["Monday"],

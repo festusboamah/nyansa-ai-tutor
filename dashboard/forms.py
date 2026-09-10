@@ -15,11 +15,12 @@ class LessonNoteForm(forms.ModelForm):
     class Meta:
         model = LessonNote
         fields = [
-            "subject", "teacher_name", "class_level", "class_size", "duration", "week_ending", "strand_topic",
+            "subject", "teacher_name", "class_level", "class_size", "duration", "week_number", "week_ending", "strand_topic",
             "sub_strand", "content_standard", "learning_indicator", "performance_indicator",
             "core_competencies", "reference", "resources", "teaching_days",
         ]
         widgets = {
+            "week_number": forms.NumberInput(attrs={"min": 1, "max": 16}),
             "week_ending": forms.DateInput(attrs={"type": "date"}),
             "content_standard": forms.Textarea(attrs={"rows": 2}),
             "learning_indicator": forms.Textarea(attrs={"rows": 2}),
@@ -32,8 +33,16 @@ class LessonNoteForm(forms.ModelForm):
         self.fields["subject"].queryset = (
             Subject.objects.filter(school=school) if school else Subject.objects.none()
         )
+        self.fields["week_number"].label = "Week"
+        self.fields["week_number"].help_text = "Enter the school-term week this lesson note is prepared for, e.g. 1 for Week 1."
         if self.instance.pk and self.instance.teaching_days:
             self.initial["teaching_days"] = [day.strip() for day in self.instance.teaching_days.split(",")]
+
+    def clean_week_number(self):
+        week_number = self.cleaned_data["week_number"]
+        if week_number < 1 or week_number > 16:
+            raise forms.ValidationError("Enter a week number between 1 and 16.")
+        return week_number
 
     def clean_teaching_days(self):
         return ", ".join(self.cleaned_data["teaching_days"])
@@ -98,8 +107,6 @@ class SchemeOfLearningForm(forms.ModelForm):
         self.fields["subject"].queryset = (
             Subject.objects.filter(school=school) if school else Subject.objects.none()
         )
-
-
 class StudentNoteForm(forms.ModelForm):
     class Meta:
         model = StudentNote

@@ -21,6 +21,7 @@ class LessonNote(models.Model):
     teacher_name = models.CharField(max_length=150, blank=True, help_text="Name printed on the lesson note; defaults to your profile name.")
     class_size = models.PositiveIntegerField(null=True, blank=True, help_text="e.g. 35")
     duration = models.CharField(max_length=100, blank=True, help_text="e.g. 1 hour, 40 minutes")
+    week_number = models.PositiveSmallIntegerField(default=1, help_text="Week number for this lesson note, e.g. 1 for Week 1.")
     week_ending = models.DateField()
     strand_topic = models.CharField(max_length=200, help_text="e.g. Numbers, Reproduction")
     sub_strand = models.CharField(max_length=200, blank=True, help_text="e.g. Cutting/Shaping")
@@ -52,7 +53,7 @@ class LessonNote(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     EDITABLE_FIELDS = (
-        "subject_id", "teacher_name", "class_level", "class_size", "duration", "week_ending", "strand_topic",
+        "subject_id", "teacher_name", "class_level", "class_size", "duration", "week_number", "week_ending", "strand_topic",
         "sub_strand", "content_standard", "learning_indicator", "performance_indicator",
         "core_competencies", "reference", "resources", "teaching_days", "generated_content",
     )
@@ -85,6 +86,10 @@ class LessonNote(models.Model):
     @property
     def date_vetted(self):
         return self.reviewed_at if self.status == self.Status.APPROVED else None
+
+    @property
+    def week_label(self):
+        return f"Week {self.week_number}"
 
 
 class LessonNoteVersion(models.Model):

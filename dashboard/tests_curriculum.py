@@ -84,10 +84,11 @@ class CurriculumGenerationTests(SimpleTestCase):
         payload = dict(content_standard=STANDARD, learning_indicator=INDICATOR, performance_indicators="Explain family systems",
                        core_competencies="Communication", resources="Pictures",
                        days=[dict(day="Monday", starter="Discuss families", main="Draw a family tree", reflection="Explain relationships")])
-        kwargs = dict(class_level="B7", subject_name="RME", week_ending=date(2026, 1, 16), strand_topic="Family systems",
+        kwargs = dict(class_level="B7", subject_name="RME", week_number=2, week_ending=date(2026, 1, 16), strand_topic="Family systems",
                       content_standard="", learning_indicator="", performance_indicator="", reference="", resources="", teaching_days=["Monday"])
         complete.return_value = copy.deepcopy(payload)
         result = generate_lesson_note(**kwargs)
+        self.assertEqual(result["week"], "Week 2")
         self.assertIn(41, [p["page"] for p in result["curriculum_sources"]])
         complete.return_value["learning_indicator"] = "B7.99.99.99.99: Invented"
         self.assertIsNone(generate_lesson_note(**kwargs))
@@ -134,7 +135,7 @@ class PlanningOutputTests(TestCase):
 
     def test_lesson_signoff_does_not_claim_draft_or_return_was_vetted(self):
         note = LessonNote(teacher=self.teacher, teacher_name="Ama Mensah", subject=self.subject, class_level="B7",
-                          strand_topic="Family", week_ending=date(2026, 1, 16), reviewed_at=timezone.now())
+                          week_number=3, strand_topic="Family", week_ending=date(2026, 1, 16), reviewed_at=timezone.now())
         for state in ["DRAFT", "SENT_BACK", "PENDING_REVIEW"]:
             note.status = state
             self.assertIsNone(note.date_vetted)
@@ -142,20 +143,22 @@ class PlanningOutputTests(TestCase):
         self.assertEqual(note.date_vetted, note.reviewed_at)
         doc = Document(build_lesson_note_docx(note, {"days": []}))
         text = " ".join(c.text for t in doc.tables for r in t.rows for c in r.cells)
-        for expected in ["Teacher Name", "Ama Mensah", "Date Vetted", "Headteacher Signature"]:
+        for expected in ["Teacher Name", "Ama Mensah", "Week 3", "Date Vetted", "Headteacher Signature"]:
             self.assertIn(expected, text)
         html = render_to_string("dashboard/lesson_note_pdf.html", dict(note=note, lesson_data={"days": []}))
         self.assertIn("Ama Mensah", html)
+        self.assertIn("Week 3", html)
         self.assertIn("Date Vetted", html)
 
     def test_teacher_name_is_versioned_and_locked_after_approval(self):
         from django.core.exceptions import ValidationError
         from .lesson_workflow import record_initial_lesson_version
         note = LessonNote.objects.create(teacher=self.teacher, teacher_name="Ama Mensah", subject=self.subject,
-            class_level="B7", strand_topic="Family", week_ending=date(2026, 1, 16), generated_content='{"days": []}')
+            class_level="B7", week_number=2, strand_topic="Family", week_ending=date(2026, 1, 16), generated_content='{"days": []}')
         actor = SchoolMembership.objects.get(user=self.teacher, school=self.school)
         version = record_initial_lesson_version(note=note, actor=actor)
         self.assertEqual(version.snapshot["teacher_name"], "Ama Mensah")
+        self.assertEqual(version.snapshot["week_number"], 2)
         note.status = "APPROVED"
         note.save()
         note.teacher_name = "Different name"
