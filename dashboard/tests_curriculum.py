@@ -53,7 +53,8 @@ class CurriculumGenerationTests(SimpleTestCase):
     @patch("dashboard.scheme_ai.complete_json")
     def test_termly_repeated_strands_and_grounded_codes(self, complete):
         complete.return_value = {"weeks": [term_week(1), term_week(2)]}
-        result = generate_scheme_of_learning("B7", "RME", "Term 2", 2)
+        result = generate_scheme_of_learning("B7", "RME", "Term 2", 2, starting_topics="Family systems")
+        self.assertIn("Family systems", complete.call_args.args[0])
         self.assertEqual(result["weeks"][0]["strand"], result["weeks"][1]["strand"])
         self.assertTrue(result["curriculum_sources"])
         self.assertIn("untrusted reference DATA", complete.call_args.args[0])

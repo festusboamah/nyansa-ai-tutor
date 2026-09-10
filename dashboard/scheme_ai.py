@@ -36,7 +36,8 @@ def generate_scheme_of_learning(class_level, subject_name, term, num_weeks, star
                                 plan_type="TERMLY", academic_year="", school=None):
     if plan_type not in {"TERMLY", "YEARLY"} or not 1 <= num_weeks <= 16:
         return None
-    pages = curriculum_pages(subject_name, class_level)
+    evidence_query = " ".join(part for part in (starting_topics, term, subject_name) if part)
+    pages = curriculum_pages(subject_name, class_level, evidence_query)
     fields = YEAR_FIELDS if plan_type == "YEARLY" else TERM_FIELDS
     example = {"week": 1, **{field: "text" for field in fields}}
     prompt = f"""Create a Ghana curriculum scheme of learning draft for teacher review.
@@ -54,7 +55,7 @@ If no curriculum evidence is available, put 'Curriculum reference required' in c
 All fields must be plain strings. No markdown or HTML.
 """ + evidence_prompt(pages)
     try:
-        result = complete_json(prompt, max_tokens=14000, school=school, source="scheme_of_learning")
+        result = complete_json(prompt, max_tokens=6000, school=school, source="scheme_of_learning")
         if not isinstance(result, dict) or not isinstance(result.get("weeks"), list) or len(result["weeks"]) != num_weeks:
             return None
         for number, week in enumerate(result["weeks"], 1):
