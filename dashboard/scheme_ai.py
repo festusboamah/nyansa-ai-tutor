@@ -10,11 +10,25 @@ YEAR_FIELDS = ("term_1", "term_2", "term_3")
 
 def generate_demo_scheme(*, subject_name, class_level, term, num_weeks, plan_type="TERMLY", **kwargs):
     fields = YEAR_FIELDS if plan_type == "YEARLY" else TERM_FIELDS
+    if plan_type == "YEARLY":
+        weeks = [{"week": week, **{field: "Teacher planning required" for field in fields}} for week in range(1, num_weeks + 1)]
+    else:
+        topic_hint = kwargs.get("starting_topics") or subject_name
+        weeks = [
+            {
+                "week": week,
+                "strand": topic_hint,
+                "sub_strand": "Teacher planning required",
+                "content_standard": "Curriculum reference required",
+                "indicators": "Curriculum reference required",
+                "resources": "Teacher-selected teaching and learning resources",
+            }
+            for week in range(1, num_weeks + 1)
+        ]
     return {
         "plan_type": plan_type,
-        "curriculum_warning": "Demo template only. Curriculum references require teacher verification.",
-        "weeks": [{"week": week, **{field: "Teacher planning required" for field in fields}}
-                  for week in range(1, num_weeks + 1)],
+        "curriculum_warning": "Provisional scheme created because AI generation could not complete. Review curriculum references, pacing, standards and indicators before use.",
+        "weeks": weeks,
     }
 
 

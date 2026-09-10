@@ -265,27 +265,21 @@ def create_scheme_of_learning_view(request):
             )
 
             used_demo_fallback = False
-            if result is None and settings.NYANSA_DEMO_MODE:
+            if result is None:
                 result = generate_demo_scheme(
                     class_level=scheme.class_level, subject_name=scheme.subject.name,
                     term=scheme.term, num_weeks=scheme.num_weeks,
                     plan_type=scheme.plan_type,
+                    starting_topics=form.cleaned_data.get("starting_topics", ""),
                 )
                 used_demo_fallback = True
-
-            if result is None:
-                scheme.delete()
-                if is_async:
-                    return JsonResponse({"error": "A complete curriculum-aligned draft could not be generated. Check the class, subject and indicator references, then retry. If this continues, ask an administrator to check the AI provider."}, status=502)
-                messages.error(request, "A complete curriculum-aligned draft could not be generated. Check the class, subject and indicator references, then retry. If this continues, ask an administrator to check the AI provider.")
-                return redirect("create_scheme_of_learning")
 
             import json
             scheme.generated_content = json.dumps(result)
             scheme.save()
 
             if used_demo_fallback:
-                messages.warning(request, "Demo scheme created without an external AI call. Review it before use.")
+                messages.warning(request, "Provisional scheme created because AI generation could not complete. Review it before use.")
             else:
                 messages.success(request, "Scheme of learning generated successfully!")
             if is_async:

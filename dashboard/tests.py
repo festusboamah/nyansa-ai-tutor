@@ -370,6 +370,23 @@ class SchemeOfLearningTests(TestCase):
         self.assertIn("Personal Hygiene", scheme.generated_content)
         generate.assert_called_once()
 
+    @patch("dashboard.views.generate_scheme_of_learning", return_value=None)
+    def test_scheme_generation_falls_back_to_provisional_when_ai_returns_none(self, generate):
+        from .models import SchemeOfLearning
+
+        self.client.force_login(self.teacher)
+        response = self.client.post(
+            reverse("create_scheme_of_learning"),
+            {"subject": self.subject.pk, "class_level": "JHS 1", "term": "Term 2", "num_weeks": 2, "starting_topics": "Family systems"},
+            secure=True,
+        )
+
+        scheme = SchemeOfLearning.objects.get(subject=self.subject)
+        self.assertRedirects(response, reverse("scheme_of_learning_detail", args=[scheme.pk]), fetch_redirect_response=False)
+        self.assertIn("Curriculum reference required", scheme.generated_content)
+        self.assertIn("Family systems", scheme.generated_content)
+
+
     @patch("dashboard.views.generate_scheme_of_learning")
     def test_downloaded_docx_contains_the_week_topics(self, generate):
         from io import BytesIO
