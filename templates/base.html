@@ -143,27 +143,23 @@
                     <span class="sidebar-user-name">{{ user.username }}</span>
                     <small>{% if request.school_membership %}{{ request.school_membership.get_role_display }}{% else %}{{ user.get_role_display }}{% endif %}</small>
                 </a>
-                <form method="post" action="{% url 'logout' %}" class="inline-form" id="logout-form">
-                    {% csrf_token %}
-                    <button type="submit" class="link-button">Logout</button>
-                </form>
                 <script>
-                    var logoutForm = document.getElementById("logout-form");
-                    if (logoutForm) {
-                        logoutForm.addEventListener("submit", function () {
+                    document.addEventListener("DOMContentLoaded", function () {
+                        var logoutForm = document.getElementById("logout-form");
+                        if (logoutForm) logoutForm.addEventListener("submit", function () {
                             if ("caches" in window) {
                                 caches.keys().then(function (names) {
                                     names.forEach(function (name) { caches.delete(name); });
                                 });
                             }
                         });
-                    }
+                    });
                 </script>
             </div>
         </aside>
 
         <div class="app-main">
-            <header class="ny-topbar"><div class="ny-topbar-school"><strong>{{ request.school.name|default:"Nyansa learning workspace" }}</strong><span>{% if request.school_membership %}{{ request.school_membership.get_role_display }}{% else %}Your workspace{% endif %}</span></div><div class="ny-topbar-right"><time datetime="{% now 'Y-m-d' %}">{% now "l, j F" %}</time><a class="ny-avatar" href="{% url 'profile' %}" aria-label="Your profile">{{ user.first_name|default:user.username|slice:":1"|upper }}</a></div></header>
+            <header class="ny-topbar"><div class="ny-topbar-school"><strong>{{ request.school.name|default:"Nyansa learning workspace" }}</strong><span>{% if request.school_membership %}{{ request.school_membership.get_role_display }}{% else %}Your workspace{% endif %}</span></div><div class="ny-topbar-right"><time datetime="{% now 'Y-m-d' %}">{% now "l, j F" %}</time><a class="ny-avatar" href="{% url 'profile' %}" aria-label="Your profile">{{ user.first_name|default:user.username|slice:":1"|upper }}</a><form method="post" action="{% url 'logout' %}" class="ny-signout-form" id="logout-form">{% csrf_token %}<button type="submit" class="ny-signout-button">Sign out</button></form></div></header>
     {% else %}
     <nav class="navbar" id="public-navbar">
         <div class="navbar-brand">
