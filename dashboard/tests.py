@@ -371,6 +371,24 @@ class SchemeOfLearningTests(TestCase):
         generate.assert_called_once()
 
     @patch("dashboard.views.generate_scheme_of_learning", return_value=None)
+    def test_scheme_generation_uses_curriculum_seed_when_ai_returns_none(self, generate):
+        from .models import SchemeOfLearning
+
+        rme = Subject.objects.create(school=self.school, name="Religious and Moral Education")
+        self.client.force_login(self.teacher)
+        response = self.client.post(
+            reverse("create_scheme_of_learning"),
+            {"subject": rme.pk, "class_level": "JHS 1", "term": "Term 2", "num_weeks": 2, "starting_topics": "Family systems"},
+            secure=True,
+        )
+
+        scheme = SchemeOfLearning.objects.get(subject=rme)
+        self.assertRedirects(response, reverse("scheme_of_learning_detail", args=[scheme.pk]), fetch_redirect_response=False)
+        self.assertIn("B7.3.1.1", scheme.generated_content)
+        self.assertIn("B7.3.1.1.1", scheme.generated_content)
+
+
+    @patch("dashboard.views.generate_scheme_of_learning", return_value=None)
     def test_scheme_generation_falls_back_to_provisional_when_ai_returns_none(self, generate):
         from .models import SchemeOfLearning
 

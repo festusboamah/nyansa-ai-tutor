@@ -11,7 +11,7 @@ from .forms import LessonNoteForm, SchemeOfLearningForm, StudentNoteForm
 from .forms import LessonCommentForm, LessonNoteRevisionForm
 from .lesson_ai import generate_demo_lesson_note, generate_lesson_note
 from .lesson_docx import build_lesson_note_docx
-from .scheme_ai import generate_demo_scheme, generate_scheme_of_learning
+from .scheme_ai import generate_curriculum_seed_scheme, generate_demo_scheme, generate_scheme_of_learning
 from .scheme_docx import build_scheme_of_learning_docx
 from .student_notes_ai import generate_demo_student_note, generate_student_notes
 from .student_note_docx import build_student_note_docx
@@ -279,7 +279,7 @@ def create_scheme_of_learning_view(request):
             scheme.save()
 
             if used_demo_fallback:
-                messages.warning(request, "Provisional scheme created because AI generation could not complete. Review it before use.")
+                messages.warning(request, result.get("curriculum_warning", "Scheme created for review. Check it before use."))
             else:
                 messages.success(request, "Scheme of learning generated successfully!")
             if is_async:

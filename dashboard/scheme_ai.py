@@ -1,4 +1,5 @@
 import json
+import re
 
 from ai_core.client import AIError, complete_json
 from .curriculum import curriculum_pages, evidence_prompt, references, valid_codes, valid_alignment, codes
@@ -31,6 +32,57 @@ def generate_demo_scheme(*, subject_name, class_level, term, num_weeks, plan_typ
         "weeks": weeks,
     }
 
+
+
+def _short_reference_text(text, code):
+    normalized = " ".join(text.split())
+    match = re.search(re.escape(code).replace("\\ ", r"\\s*"), normalized, re.I)
+    if not match:
+        return code
+    segment = normalized[match.start(): match.start() + 240]
+    next_code = re.search(r"\sB[1-9](?:\.\d+){3,4}\b", segment[len(code):])
+    if next_code:
+        segment = segment[:len(code) + next_code.start()]
+    return segment.strip(" ;:-")
+
+def generate_curriculum_seed_scheme(*, subject_name, class_level, term, num_weeks, starting_topics="", plan_type="TERMLY", academic_year=""):
+    if plan_type != "TERMLY" or not 1 <= num_weeks <= 16:
+        return None
+    evidence_query = " ".join(part for part in (starting_topics, term, subject_name) if part)
+    pages = curriculum_pages(subject_name, class_level, evidence_query)
+    if not pages:
+        return None
+    standards = {}
+    indicators = {}
+    for page in pages:
+        page_codes = codes(page["text"])
+        for code in page_codes:
+            parts = code.split(".")
+            if len(parts) == 4:
+                standards.setdefault(code, _short_reference_text(page["text"], code))
+            elif len(parts) == 5:
+                indicators.setdefault(code, _short_reference_text(page["text"], code))
+    for indicator_code, indicator_text in indicators.items():
+        standard_code = indicator_code.rsplit(".", 1)[0]
+        if standard_code in standards:
+            topic_hint = starting_topics or subject_name
+            weeks = []
+            for week in range(1, num_weeks + 1):
+                weeks.append({
+                    "week": week,
+                    "strand": topic_hint,
+                    "sub_strand": topic_hint,
+                    "content_standard": standards[standard_code],
+                    "indicators": indicator_text,
+                    "resources": "NaCCA curriculum excerpts; pictures or charts; learner exercise books; locally available teaching and learning materials",
+                })
+            return {
+                "plan_type": plan_type,
+                "curriculum_sources": references(pages),
+                "curriculum_warning": "Curriculum-seeded scheme created from NaCCA references. Review pacing, activities and resources before use.",
+                "weeks": weeks,
+            }
+    return None
 
 def generate_scheme_of_learning(class_level, subject_name, term, num_weeks, starting_topics="", *,
                                 plan_type="TERMLY", academic_year="", school=None):

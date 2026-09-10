@@ -16,7 +16,7 @@ from schools.models import School, SchoolMembership
 from .curriculum import basic_level, codes, curriculum_pages, valid_codes, valid_alignment, source_wording
 from .forms import SchemeOfLearningForm
 from .models import LessonNote, SchemeOfLearning
-from .scheme_ai import generate_scheme_of_learning
+from .scheme_ai import generate_curriculum_seed_scheme, generate_scheme_of_learning
 from .lesson_ai import generate_lesson_note
 from .lesson_docx import build_lesson_note_docx
 from .scheme_docx import build_scheme_of_learning_docx
@@ -49,6 +49,21 @@ class CurriculumGenerationTests(SimpleTestCase):
     def test_primary_and_unknown_subject_do_not_borrow_jhs_codes(self):
         self.assertEqual(curriculum_pages("RME", "Basic 3"), [])
         self.assertEqual(curriculum_pages("Unknown", "B7"), [])
+
+    def test_curriculum_seed_scheme_uses_nacca_codes_when_ai_is_unavailable(self):
+        result = generate_curriculum_seed_scheme(
+            subject_name="Religious and Moral Education",
+            class_level="JHS 1",
+            term="Term 2",
+            num_weeks=2,
+            starting_topics="Family systems",
+        )
+
+        self.assertIsNotNone(result)
+        self.assertIn("B7.3.1.1", result["weeks"][0]["content_standard"])
+        self.assertIn("B7.3.1.1.1", result["weeks"][0]["indicators"])
+        self.assertEqual(result["weeks"][1]["week"], 2)
+
 
     @patch("dashboard.scheme_ai.complete_json")
     def test_termly_repeated_strands_and_grounded_codes(self, complete):
