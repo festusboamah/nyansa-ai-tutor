@@ -34,7 +34,7 @@ def build_lesson_note_docx(note, lesson_data):
     section.page_width, section.page_height = Inches(11.69), Inches(8.27)
     section.left_margin = section.right_margin = Inches(.5)
     section.top_margin = section.bottom_margin = Inches(.5)
-    document.styles["Normal"].font.size = Pt(10)
+    document.styles["Normal"].font.size = Pt(12)
     document.styles["Normal"].font.name = "Arial"
     document.styles["Normal"].paragraph_format.space_after = Pt(2)
     for style in ("Title", "Heading 1", "Heading 2"):

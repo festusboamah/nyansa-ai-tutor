@@ -289,6 +289,7 @@ class LessonNoteGESFieldsTests(TestCase):
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         )
         document = Document(BytesIO(response.content))
+        self.assertEqual(document.styles["Normal"].font.size.pt, 12)
         full_text = "\n".join(cell.text for table in document.tables for row in table.rows for cell in row.cells)
         self.assertIn("Measuring and marking out", full_text)
         self.assertIn("Week 5", full_text)

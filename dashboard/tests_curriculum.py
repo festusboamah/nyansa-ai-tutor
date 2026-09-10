@@ -59,6 +59,22 @@ class CurriculumGenerationTests(SimpleTestCase):
         self.assertIn("untrusted reference DATA", complete.call_args.args[0])
 
     @patch("dashboard.scheme_ai.complete_json")
+    def test_termly_scheme_accepts_valid_codes_with_teacher_friendly_wording(self, complete):
+        complete.return_value = {"weeks": [dict(
+            week=1,
+            strand="The family and the community",
+            sub_strand="Family systems",
+            content_standard="B7.3.1.1: Learners identify and explain family systems.",
+            indicators="B7.3.1.1.1: Learners explain types of family systems in Ghana.",
+            resources="Family tree pictures; role play cards",
+        )]}
+
+        result = generate_scheme_of_learning("JHS 1", "Religious and Moral Education", "Term 2", 1)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result["weeks"][0]["week"], 1)
+
+    @patch("dashboard.scheme_ai.complete_json")
     def test_invalid_or_unreferenced_scheme_is_rejected(self, complete):
         bad = [None, [], {"weeks": []}, {"weeks": ["bad"]}, {"weeks": [{"week": 1, "topic": "Family"}]}]
         for field, value in [("week", True), ("week", 2), ("indicators", "B7.99.99.99.99"), ("resources", "")]:

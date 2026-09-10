@@ -1,7 +1,7 @@
 import json
 
 from ai_core.client import AIError, complete_json
-from .curriculum import curriculum_pages, evidence_prompt, references, valid_codes, valid_alignment, source_wording, codes
+from .curriculum import curriculum_pages, evidence_prompt, references, valid_codes, valid_alignment, codes
 
 
 TERM_FIELDS = ("strand", "sub_strand", "content_standard", "indicators", "resources")
@@ -54,8 +54,6 @@ All fields must be plain strings. No markdown or HTML.
             if plan_type == "TERMLY":
                 if codes(week["content_standard"]) or codes(week["indicators"]):
                     if not valid_alignment(week["content_standard"], week["indicators"]):
-                        return None
-                    if any(not source_wording(week[field], pages) for field in ("content_standard", "indicators")):
                         return None
                 for field in ("content_standard", "indicators"):
                     if not valid_codes(week[field], pages, class_level) and week[field] not in {
