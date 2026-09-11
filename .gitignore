@@ -7,3 +7,6 @@ media/
 backups/
 tmp/
 output/
+
+# AI tooling (local only, not shared with contributors)
+AGENTS.md
