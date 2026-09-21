@@ -224,5 +224,9 @@
         </div>
     </div>
     {% endif %}
+
+    {% if not user.is_authenticated %}
+    <script src="https://app.myboafo.com/widget.js" data-public-key="a2ec41fd-5511-43d9-9364-a98cce8089fa" defer></script>
+    {% endif %}
 </body>
 </html>
